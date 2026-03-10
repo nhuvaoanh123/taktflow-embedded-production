@@ -1,0 +1,2 @@
+autosar-data>=0.14
+cantools>=39.0
