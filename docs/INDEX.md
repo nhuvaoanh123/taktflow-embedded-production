@@ -4,6 +4,16 @@
 | Document | Path | Status |
 |----------|------|--------|
 | ARXML Architecture Migration | `docs/plans/plan-arxml-architecture-migration.md` | IN PROGRESS |
+| Reusable Codegen Tool (arxmlgen) | `docs/plans/plan-reusable-codegen.md` | DRAFT |
+
+## arxmlgen (AUTOSAR Code Generator)
+| Document | Path | Description |
+|----------|------|-------------|
+| Architecture | `docs/arxmlgen/architecture.md` | Internal design, components, data flow, extension points |
+| User Guide | `docs/arxmlgen/user-guide.md` | Configuration, CLI, templates, CI integration |
+| API Reference | `docs/arxmlgen/api-reference.md` | Data model, generator interface, template variables, C struct types |
+| ARXML Coverage | `docs/arxmlgen/arxml-coverage.md` | Which ARXML elements are read/ignored and why |
+| Migration Guide | `docs/arxmlgen/migration-guide.md` | Hand-written to arxmlgen, arxmlgen to professional tools |
 
 ## Safety (ISO 26262)
 | Document | Path | ISO Part |
