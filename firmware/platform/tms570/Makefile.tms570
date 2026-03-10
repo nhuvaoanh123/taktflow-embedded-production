@@ -1,0 +1,25 @@
+# Makefile.tms570 — Safety Controller build (TMS570LS0432)
+# Cross-compiles SC for ARM Cortex-R4F (lockstep)
+# NOTE: SC does NOT use AUTOSAR BSW stack — minimal, auditable code only
+
+PREFIX   = arm-none-eabi-
+CC       = $(PREFIX)gcc
+OBJCOPY  = $(PREFIX)objcopy
+
+CFLAGS   = -mcpu=cortex-r4f -mthumb -mfloat-abi=hard -mfpu=vfpv3-d16 \
+           -Wall -Wextra -Werror -std=c11 -Os \
+           -DPLATFORM_TMS570
+
+ROOT     = ../../..
+
+.PHONY: all clean flash
+
+all:
+	@echo "Building SC for TMS570..."
+	@echo "TODO: implement build rules for SC"
+
+flash:
+	@echo "TODO: implement flash target (OpenOCD/XDS)"
+
+clean:
+	rm -rf $(ROOT)/build/tms570

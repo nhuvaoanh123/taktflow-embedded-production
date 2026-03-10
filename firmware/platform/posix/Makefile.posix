@@ -1,0 +1,43 @@
+# Makefile.posix — SIL build (Docker/Linux)
+# Compiles all ECUs for POSIX target using SocketCAN
+
+CC       = gcc
+CFLAGS   = -Wall -Wextra -Werror -std=c11 -DPLATFORM_POSIX
+LDFLAGS  = -lpthread
+
+# Project root (relative to this Makefile)
+ROOT     = ../../..
+
+# Common BSW include paths
+BSW_INC  = -I$(ROOT)/firmware/bsw/rte/include \
+           -I$(ROOT)/firmware/bsw/services/Com/include \
+           -I$(ROOT)/firmware/bsw/services/E2E/include \
+           -I$(ROOT)/firmware/bsw/services/Dem/include \
+           -I$(ROOT)/firmware/bsw/services/WdgM/include \
+           -I$(ROOT)/firmware/bsw/services/SchM/include \
+           -I$(ROOT)/firmware/bsw/services/Det/include \
+           -I$(ROOT)/firmware/bsw/services/Dcm/include \
+           -I$(ROOT)/firmware/bsw/services/BswM/include \
+           -I$(ROOT)/firmware/bsw/services/NvM/include \
+           -I$(ROOT)/firmware/bsw/services/CanTp/include \
+           -I$(ROOT)/firmware/bsw/ecual/CanIf/include \
+           -I$(ROOT)/firmware/bsw/ecual/PduR/include \
+           -I$(ROOT)/firmware/bsw/ecual/IoHwAb/include \
+           -I$(ROOT)/firmware/bsw/mcal/Can/include \
+           -I$(ROOT)/firmware/bsw/os/include \
+           -I$(ROOT)/firmware/platform/posix/include
+
+# ECU list
+ECUS     = cvc fzc rzc bcm icu tcu
+
+.PHONY: all clean $(ECUS)
+
+all: $(ECUS)
+
+# Per-ECU build target (to be filled in as SWCs are implemented)
+$(ECUS):
+	@echo "Building $@ for POSIX..."
+	@echo "TODO: implement build rules for $@"
+
+clean:
+	rm -rf $(ROOT)/build/posix

@@ -1,0 +1,39 @@
+# CI Pipeline — Build, test, and validate
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-posix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc make can-utils
+      - name: Build all ECUs (POSIX)
+        run: make -f firmware/platform/posix/Makefile.posix all
+
+  test-unit:
+    runs-on: ubuntu-latest
+    needs: build-posix
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        run: make test
+
+  codegen-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python dependencies
+        run: pip install -r tools/arxml/requirements.txt
+      - name: Regenerate and diff
+        run: |
+          python tools/arxml/dbc2arxml.py gateway/taktflow.dbc arxml/
+          python tools/arxml/swc_extractor.py firmware/ model/ecu_model.json
+          python tools/arxml/codegen.py model/ecu_model.json generated/
+          git diff --exit-code generated/

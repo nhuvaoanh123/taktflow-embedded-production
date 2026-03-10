@@ -1,0 +1,32 @@
+# Makefile.stm32 — Physical ECU build (STM32F407)
+# Cross-compiles CVC, FZC, RZC for ARM Cortex-M4
+
+PREFIX   = arm-none-eabi-
+CC       = $(PREFIX)gcc
+OBJCOPY  = $(PREFIX)objcopy
+SIZE     = $(PREFIX)size
+
+CFLAGS   = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+           -Wall -Wextra -Werror -std=c11 -Os \
+           -DPLATFORM_STM32 -DSTM32F407xx
+
+LDFLAGS  = -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 \
+           -T linker.ld -Wl,--gc-sections -lnosys
+
+ROOT     = ../../..
+
+ECUS     = cvc fzc rzc
+
+.PHONY: all clean flash $(ECUS)
+
+all: $(ECUS)
+
+$(ECUS):
+	@echo "Building $@ for STM32..."
+	@echo "TODO: implement build rules for $@"
+
+flash:
+	@echo "TODO: implement flash target (OpenOCD/ST-Link)"
+
+clean:
+	rm -rf $(ROOT)/build/stm32
