@@ -1,0 +1,193 @@
+# ============================================================
+# Sidecar config — non-ARXML data (DTCs, enums, thresholds, scheduling)
+# ============================================================
+
+ecus:
+  cvc:
+    dtc_events:
+      CVC_DTC_PEDAL_PLAUSIBILITY: 0
+      CVC_DTC_PEDAL_STUCK: 1
+      CVC_DTC_PEDAL_RANGE: 2
+      CVC_DTC_COMM_FZC_TIMEOUT: 3
+      CVC_DTC_COMM_RZC_TIMEOUT: 4
+      CVC_DTC_COMM_SC_TIMEOUT: 5
+      CVC_DTC_VEHICLE_STATE: 6
+      CVC_DTC_ESTOP_FAULT: 7
+      CVC_DTC_MOTOR_OVERCURRENT: 8
+      CVC_DTC_MOTOR_OVERSPEED: 9
+      CVC_DTC_BATTERY_LOW: 10
+      CVC_DTC_BATTERY_CRITICAL: 11
+      CVC_DTC_STEERING_FAULT: 12
+      CVC_DTC_BRAKE_FAULT: 13
+      CVC_DTC_LIDAR_FAULT: 14
+      CVC_DTC_CAN_BUS_OFF: 15
+      CVC_DTC_SELF_TEST_FAIL: 16
+      CVC_DTC_WATCHDOG_FAULT: 17
+      CVC_DTC_SC_RELAY_KILL: 18
+
+    e2e_data_ids:
+      CVC_E2E_ESTOP_DATA_ID: 0x01
+      CVC_E2E_VEHICLE_STATE_DATA_ID: 0x02
+      CVC_E2E_TORQUE_DATA_ID: 0x03
+      CVC_E2E_HEARTBEAT_DATA_ID: 0x04
+
+    enums:
+      CVC_STATE_INIT: 0
+      CVC_STATE_SELF_TEST: 1
+      CVC_STATE_RUN: 2
+      CVC_STATE_DEGRADED: 3
+      CVC_STATE_SAFE_STOP: 4
+      CVC_STATE_FAULT: 5
+      CVC_COMM_OK: 0
+      CVC_COMM_TIMEOUT: 1
+      CVC_COMM_ERROR: 2
+
+    thresholds:
+      CVC_INIT_HOLD_CYCLES: 500
+      CVC_RTE_PERIOD_MS: 10
+      CVC_COMM_TIMEOUT: 100
+      CVC_PEDAL_PLAUS_THRESHOLD: 819
+      CVC_PEDAL_STUCK_THRESHOLD: 10
+      CVC_FAULT_CONFIRM_THRESHOLD: 3
+      CVC_MOTOR_OVERCURRENT_LIMIT: 4000
+      CVC_MOTOR_OVERSPEED_LIMIT: 6000
+      CVC_BATTERY_LOW_THRESHOLD: 2200
+      CVC_BATTERY_CRITICAL_THRESHOLD: 2000
+
+    runnables:
+      Can_MainFunction_Read:
+        priority: 9
+        wdgm_se_id: 0xFF
+      Com_RxIndication:
+        priority: 8
+        wdgm_se_id: 0xFF
+      Swc_Pedal_MainFunction:
+        priority: 7
+        wdgm_se_id: 0
+      Swc_VehicleState_MainFunction:
+        priority: 6
+        wdgm_se_id: 1
+      Swc_EStop_MainFunction:
+        priority: 7
+        wdgm_se_id: 2
+      Swc_Heartbeat_MainFunction:
+        priority: 5
+        wdgm_se_id: 3
+      Swc_Dashboard_MainFunction:
+        priority: 3
+        wdgm_se_id: 4
+      Swc_CvcCom_MainFunction:
+        priority: 4
+        wdgm_se_id: 5
+      Com_MainFunction_Tx:
+        priority: 2
+        wdgm_se_id: 0xFF
+      Can_MainFunction_BusOff:
+        priority: 1
+        wdgm_se_id: 0xFF
+
+  fzc:
+    dtc_events:
+      FZC_DTC_STEERING_SENSOR: 0
+      FZC_DTC_STEERING_MOTOR: 1
+      FZC_DTC_BRAKE_SENSOR: 2
+      FZC_DTC_BRAKE_ACTUATOR: 3
+      FZC_DTC_BRAKE_PLAUSIBILITY: 4
+      FZC_DTC_LIDAR_COMM: 5
+      FZC_DTC_LIDAR_RANGE: 6
+      FZC_DTC_COMM_CVC_TIMEOUT: 7
+      FZC_DTC_CAN_BUS_OFF: 8
+      FZC_DTC_WATCHDOG_FAULT: 9
+      FZC_DTC_STEERING_PLAUSIBILITY: 10
+      FZC_DTC_STEERING_RANGE: 11
+      FZC_DTC_BRAKE_RANGE: 12
+      FZC_DTC_MOTOR_CUTOFF: 13
+      FZC_DTC_SELF_TEST_FAIL: 14
+      FZC_DTC_ESTOP_FAULT: 15
+
+    e2e_data_ids:
+      FZC_E2E_HEARTBEAT_DATA_ID: 0x11
+      FZC_E2E_STEER_STATUS_DATA_ID: 0x12
+      FZC_E2E_BRAKE_STATUS_DATA_ID: 0x13
+      FZC_E2E_STEER_CMD_DATA_ID: 0x14
+      FZC_E2E_BRAKE_CMD_DATA_ID: 0x15
+      FZC_E2E_BRAKE_FAULT_DATA_ID: 0x16
+      FZC_E2E_MOTOR_CUTOFF_DATA_ID: 0x17
+      FZC_E2E_LIDAR_DATA_ID: 0x18
+
+    enums:
+      FZC_STATE_INIT: 0
+      FZC_STATE_RUN: 1
+      FZC_STATE_DEGRADED: 2
+      FZC_STATE_SAFE_STOP: 3
+
+    thresholds:
+      FZC_RTE_PERIOD_MS: 10
+      FZC_COMM_TIMEOUT: 100
+      FZC_STEER_MAX_ANGLE: 450
+      FZC_STEER_DEADBAND: 5
+      FZC_BRAKE_MAX_PRESSURE: 1000
+      FZC_LIDAR_MAX_RANGE: 4000
+      FZC_LIDAR_MIN_RANGE: 50
+
+  rzc:
+    dtc_events:
+      RZC_DTC_MOTOR_OVERCURRENT: 0
+      RZC_DTC_MOTOR_OVERSPEED: 1
+      RZC_DTC_MOTOR_OVERTEMP: 2
+      RZC_DTC_BATTERY_LOW: 3
+      RZC_DTC_BATTERY_CRITICAL: 4
+      RZC_DTC_ENCODER_FAULT: 5
+      RZC_DTC_CURRENT_SENSOR: 6
+      RZC_DTC_TEMP_SENSOR: 7
+      RZC_DTC_COMM_CVC_TIMEOUT: 8
+      RZC_DTC_CAN_BUS_OFF: 9
+      RZC_DTC_WATCHDOG_FAULT: 10
+      RZC_DTC_SELF_TEST_FAIL: 11
+
+    e2e_data_ids:
+      RZC_E2E_HEARTBEAT_DATA_ID: 0x21
+      RZC_E2E_MOTOR_STATUS_DATA_ID: 0x22
+      RZC_E2E_MOTOR_CURRENT_DATA_ID: 0x23
+      RZC_E2E_TORQUE_REQ_DATA_ID: 0x24
+      RZC_E2E_MOTOR_TEMP_DATA_ID: 0x25
+      RZC_E2E_BATTERY_DATA_ID: 0x26
+      RZC_E2E_ENCODER_DATA_ID: 0x27
+
+    enums:
+      RZC_STATE_INIT: 0
+      RZC_STATE_RUN: 1
+      RZC_STATE_DEGRADED: 2
+      RZC_STATE_SAFE_STOP: 3
+
+    thresholds:
+      RZC_RTE_PERIOD_MS: 10
+      RZC_COMM_TIMEOUT: 100
+      RZC_MOTOR_OVERCURRENT_LIMIT: 4000
+      RZC_MOTOR_OVERSPEED_LIMIT: 6000
+      RZC_MOTOR_OVERTEMP_LIMIT: 850
+      RZC_BATTERY_LOW_MV: 2200
+      RZC_BATTERY_CRITICAL_MV: 2000
+      RZC_ENCODER_TIMEOUT: 50
+
+  bcm:
+    thresholds:
+      BCM_RTE_PERIOD_MS: 50
+      BCM_COMM_TIMEOUT: 200
+      BCM_INDICATOR_BLINK_MS: 500
+      BCM_DOOR_LOCK_TIMEOUT: 3000
+
+  icu:
+    thresholds:
+      ICU_RTE_PERIOD_MS: 50
+      ICU_COMM_TIMEOUT: 200
+      ICU_DISPLAY_REFRESH_MS: 100
+      ICU_DTC_PAGE_SIZE: 8
+
+  tcu:
+    dtc_events:
+      TCU_DTC_AGING_CLEAR_CYCLES: 0
+
+    thresholds:
+      TCU_RTE_PERIOD_MS: 10
+      TCU_COMM_TIMEOUT: 200
