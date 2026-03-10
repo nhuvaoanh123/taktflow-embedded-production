@@ -89,12 +89,12 @@ class Dbc2Arxml:
         self._create_communication()
         self._create_e2e_annotations()
 
-    def write(self, output_dir):
+    def write(self, output_dir, output_name="TaktflowSystem.arxml"):
         """Write ARXML file to output directory."""
         os.makedirs(output_dir, exist_ok=True)
         files = self.am.model.serialize_files()
-        for filename, content in files.items():
-            filepath = os.path.join(output_dir, os.path.basename(filename))
+        for _filename, content in files.items():
+            filepath = os.path.join(output_dir, output_name)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
             print("  Written: %s (%d bytes)" % (filepath, len(content)))
