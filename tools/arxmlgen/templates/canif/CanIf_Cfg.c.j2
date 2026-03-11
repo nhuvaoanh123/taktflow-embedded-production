@@ -7,10 +7,10 @@
  * Maps CAN TX ID → upper-layer (Com) PDU ID
  * ================================================================== */
 
-static const CanIf_TxPduCfgType {{ ecu.name }}_tx_pdu_config[] = {
-    /* canId,       upperPduId,                                      dlc */
+static const CanIf_TxPduConfigType {{ ecu.name }}_tx_pdu_config[] = {
+    /* canId,       upperPduId,                                      dlc, hth */
 {% for pdu in ecu.tx_pdus %}
-    { {{ pdu.can_id | hex3 }}u,  {{ ecu.prefix }}_COM_TX_{{ pdu.name | upper_snake }},  {{ pdu.dlc }}u },
+    { {{ pdu.can_id | hex3 }}u,  {{ ecu.prefix }}_COM_TX_{{ pdu.name | upper_snake }},  {{ pdu.dlc }}u, 0u },
 {% endfor %}
 };
 
@@ -21,10 +21,10 @@ static const CanIf_TxPduCfgType {{ ecu.name }}_tx_pdu_config[] = {
  * Maps CAN RX ID → upper-layer (Com) PDU ID
  * ================================================================== */
 
-static const CanIf_RxPduCfgType {{ ecu.name }}_rx_pdu_config[] = {
-    /* canId,       upperPduId,                                      dlc */
+static const CanIf_RxPduConfigType {{ ecu.name }}_rx_pdu_config[] = {
+    /* canId,       upperPduId,                                      dlc, isExtended */
 {% for pdu in ecu.rx_pdus %}
-    { {{ pdu.can_id | hex3 }}u,  {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }},  {{ pdu.dlc }}u },
+    { {{ pdu.can_id | hex3 }}u,  {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }},  {{ pdu.dlc }}u, FALSE },
 {% endfor %}
 };
 
@@ -36,7 +36,8 @@ static const CanIf_RxPduCfgType {{ ecu.name }}_rx_pdu_config[] = {
 
 const CanIf_ConfigType {{ ecu.name }}_canif_config = {
     .txPduConfig = {{ ecu.name }}_tx_pdu_config,
-    .txPduCount  = (uint8_t){{ ecu.prefix }}_CANIF_TX_PDU_COUNT,
+    .txPduCount  = (uint8){{ ecu.prefix }}_CANIF_TX_PDU_COUNT,
     .rxPduConfig = {{ ecu.name }}_rx_pdu_config,
-    .rxPduCount  = (uint8_t){{ ecu.prefix }}_CANIF_RX_PDU_COUNT,
+    .rxPduCount  = (uint8){{ ecu.prefix }}_CANIF_RX_PDU_COUNT,
+    .e2eRxCheck  = NULL_PTR,
 };
