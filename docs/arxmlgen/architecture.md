@@ -2,7 +2,12 @@
 
 **Version:** 1.0.0
 **Date:** 2026-03-10
-**Status:** DRAFT
+**Status:** DESIGN SPEC — Phase 1 (core framework) implemented, Phases 2–7 pending
+
+> **Current state:** arxmlgen has a working config loader, ARXML reader, data model, template
+> engine, and CLI. It successfully parses ARXML + sidecar and builds the internal model.
+> No generators produce output files yet (Phase 2). This document describes the full
+> target architecture — sections marked with **(planned)** are not yet implemented.
 
 ## 1. Purpose
 
@@ -17,13 +22,13 @@ config, and get a full set of generated C files — without modifying generator 
 
 | # | Principle | Rationale |
 |---|-----------|-----------|
-| P1 | **ARXML is the sole model input** | Standard exchange format. No proprietary intermediate JSON. Portable across professional tools (Vector, EB, dSPACE). |
+| P1 | **ARXML is the primary model input** | Standard exchange format, supplemented by optional sidecar YAML for data that ARXML doesn't cover (DTCs, enums, thresholds, scheduling). No proprietary intermediate JSON. Portable across professional tools (Vector, EB, dSPACE). |
 | P2 | **Jinja2 external templates** | Templates are files, not Python strings. Projects can override individual templates without forking the tool. Follows EB tresos pattern. |
 | P3 | **Declarative project config** | YAML file declares ECUs, output paths, and feature toggles. Version-controlled alongside source. No GUI required. |
 | P4 | **Generator modules are independent** | Each generator (Com, Rte, CanIf, ...) is a self-contained Python module. Enable, disable, or extend without touching other generators. |
 | P5 | **Never overwrite application code** | SWC skeletons use generate-if-absent. Config files always overwrite (they are fully derived from ARXML). |
-| P6 | **Deterministic output** | Same input produces byte-identical output. Enables CI staleness detection via `git diff`. No timestamps, no random ordering. |
-| P7 | **Minimal dependencies** | Only `autosar-data`, `jinja2`, `pyyaml`. No heavyweight frameworks, no Eclipse, no Java. |
+| P6 | **Deterministic output** | Same input produces byte-identical output. Enables CI staleness detection via `git diff`. Stable sort keys, no random ordering. File header includes a fixed tool version string only — no build date or timestamps. |
+| P7 | **Minimal dependencies** | Only `autosar-data`, `jinja2`, `pyyaml`, `cantools`. No heavyweight frameworks, no Eclipse, no Java. |
 
 ## 3. System Context
 
@@ -61,7 +66,13 @@ config, and get a full set of generated C files — without modifying generator 
 | Generate typed RTE wrappers | Generate OS/scheduler configuration |
 | Generate SWC skeletons (stubs only) | Generate application logic |
 | Validate ARXML reference integrity | Full AUTOSAR schema validation |
-| Multi-ECU, multi-bus support | GUI configurator |
+| Multi-ECU support (CAN today; bus-agnostic architecture) | GUI configurator |
+
+**Bus support:** v1.0 supports CAN only. The reader/model architecture is bus-agnostic —
+PDU routing, signal extraction, and frame triggering are abstracted behind the data model.
+Adding LIN, FlexRay, Ethernet/SOME-IP, or SDV service-oriented transports requires a new
+reader backend and transport-specific generator, not a rewrite. See §10 for the extensibility
+roadmap.
 
 ## 4. Component Architecture
 
@@ -319,8 +330,9 @@ The reader merges sidecar data into the model alongside ARXML-derived data.
 | `Swc_*.h` | ARXML | Generate-if-absent | `ecu/*/include/` |
 
 **Determinism guarantee:** Output files sort all arrays by a stable key (signal ID, PDU ID,
-or alphabetical name). No hash-dependent iteration. No timestamps in file body (only in
-the GENERATED header comment, using the config-specified date or `YYYY-MM-DD` from build).
+or alphabetical name). No hash-dependent iteration. No timestamps anywhere in output —
+the file header contains only the tool version string. Same input always produces
+byte-identical output, enabling `git diff --exit-code` as a CI staleness check.
 
 ## 8. Error Handling
 
@@ -350,27 +362,80 @@ the GENERATED header comment, using the config-specified date or `YYYY-MM-DD` fr
 
 ### Migration to Professional Tools
 
-arxmlgen-generated code is structurally identical to professional tool output.
-When migrating to DaVinci or tresos:
+arxmlgen output follows AUTOSAR naming conventions and module structure, but is **not
+byte-identical** to professional tool output. Key differences to expect:
+
+- **Signal/PDU ID numbering** — professional tools assign IDs via ECUC, not by sorted CAN ID.
+  Application code must use `#define` names, not raw numbers, to survive renumbering.
+- **Type aliases** — professional stacks may use `Std_ReturnType`, `PduIdType` etc. where
+  arxmlgen uses `uint8_t`, `uint16_t`. Minor typedef adjustments may be needed.
+- **ECUC parameters** — professional tools generate from full ECUC module configs. arxmlgen
+  covers only the subset modeled in `project.yaml` + sidecar. Missing ECUC parameters will
+  need to be configured in the professional tool's GUI.
+- **Additional BSW modules** — professional tools generate 50+ BSW modules; arxmlgen covers 7.
+
+Migration path:
 
 1. Import project ARXML into professional tool (fully portable, R22-11 schema)
 2. Configure ECUC modules in the GUI (replaces `project.yaml`)
-3. Generate — output will have same structure (Com_Cfg, Rte_Cfg, etc.)
-4. Diff professional output against arxmlgen output — differences are cosmetic (comment style, whitespace)
-5. Application SWC code (hand-written) works unchanged — it only depends on the RTE API
+3. Generate — output will have similar structure (Com_Cfg, Rte_Cfg, etc.) but not identical
+4. Diff and adapt — expect ID renumbering, type differences, and additional config parameters
+5. Application SWC code (hand-written) should largely work — it depends on the RTE API,
+   which follows the same AUTOSAR spec. Minor include path or type adjustments may be needed.
 
-## 10. Dependencies
+## 10. Extensibility Roadmap — SDV and Beyond
+
+arxmlgen's architecture is designed to evolve with the Software-Defined Vehicle (SDV) trend.
+The reader → model → generator pipeline is **transport-agnostic** — CAN is one binding, not
+the architecture.
+
+### 10.1 Planned Extension Points
+
+| Extension | Architecture Impact | Effort |
+|-----------|-------------------|--------|
+| **LIN bus** | New `LinFrameTriggering` reader + `LinIf_Cfg` generator | Medium — same PDU model, different framing |
+| **FlexRay** | New reader backend + `FrIf_Cfg` generator | Medium — static schedule adds complexity |
+| **Automotive Ethernet / SOME-IP** | New reader for `ETHERNET-CLUSTER`, `SERVICE-INTERFACE` | Large — service-oriented, not signal-based |
+| **AUTOSAR Adaptive (SOME/IP, DDS)** | Separate reader + generator track; shared model core | Large — fundamentally different middleware |
+| **Signal-to-service migration** | Model supports both signal-based and service-based ports | Planned — SDV transitional architecture |
+| **Container PDUs / PDU multiplexing** | Extend PDU model with container/multiplexed variants | Small — model change + template update |
+| **Secure onboard communication (SecOC)** | Add SecOC fields to PDU model, new `SecOC_Cfg` generator | Medium |
+
+### 10.2 Design Decisions for Future-Proofing
+
+- **Model is protocol-neutral.** `Signal`, `Pdu`, `Port` don't assume CAN. Transport binding
+  (CAN ID, DLC) is metadata on the PDU, not baked into the model structure.
+- **Reader is pluggable.** A future `EthernetReader` or `SomeIpReader` populates the same
+  `ProjectModel`. Generators don't care where the data came from.
+- **Generator registry is open.** Adding `someip`, `secoc`, or `frif` generators requires zero
+  changes to existing code — just a new file + registry entry.
+- **Template overrides per project.** SDV projects can swap signal-based templates for
+  service-oriented ones without forking the tool.
+- **No hardcoded protocol constants.** CAN-specific values (baud rate, CAN ID range) live in
+  config and reader, never in model or generators.
+
+### 10.3 What We Intentionally Don't Abstract (Yet)
+
+- **DBC routing** — v1.0 uses `cantools` for TX/RX routing. Future buses will need their own
+  routing source (FIBEX for FlexRay, service discovery for SOME/IP).
+- **Scheduling model** — bare-metal periodic runnables. AUTOSAR Adaptive uses event-driven
+  execution; this would need a model extension.
+- **Service discovery** — not applicable to Classic Platform. Future Adaptive support would add
+  a `ServiceInterface` model alongside `SenderReceiverInterface`.
+
+## 11. Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `autosar-data` | >= 0.14 | ARXML read/write with full R4.0+ support |
+| `cantools` | >= 39.0 | DBC parsing for TX/RX routing map |
 | `jinja2` | >= 3.1 | Template rendering |
-| `pyyaml` | >= 6.0 | Project config parsing |
+| `pyyaml` | >= 6.0 | Project config + sidecar parsing |
 | Python | >= 3.10 | Dataclasses, type hints, match statements |
 
 No C compiler, no Java, no Eclipse.
 
-## 11. Security Considerations
+## 12. Security Considerations
 
 - **No secrets in generated code.** Config headers contain only IDs and structural metadata.
 - **No network access.** arxmlgen reads local files only.

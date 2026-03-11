@@ -220,8 +220,9 @@ Consider migrating to a professional tool when:
 - Team grows beyond 5-10 engineers (GUI becomes valuable for non-CLI users)
 - Project requires full ECUC configuration (OS, NvM, Dcm, BswM)
 - Customer or OEM mandates specific tool qualification (ISO 26262 TCL3)
-- Multi-bus support needed (FlexRay, Ethernet) beyond arxmlgen's CAN scope
-- AUTOSAR Adaptive Platform support needed
+- Project moves to service-oriented communication (SOME/IP, DDS) beyond arxmlgen's current scope
+- AUTOSAR Adaptive Platform or SDV middleware integration needed
+- Multi-bus support needed (FlexRay, Automotive Ethernet) that arxmlgen doesn't yet cover
 
 ### 3.2 What Transfers Directly
 
@@ -285,15 +286,18 @@ Compare professional tool output against arxmlgen output:
 diff -r arxmlgen_output/ professional_output/
 ```
 
-Differences will be cosmetic:
-- Different comment style
-- Different header guard naming
-- Different array variable naming conventions
+Expect these differences:
+- Different comment style and header guards
+- **Signal/PDU ID renumbering** — professional tools use ECUC-assigned IDs, not sorted CAN ID
+- **Type differences** — `Std_ReturnType`, `PduIdType` vs `uint8_t`, `uint16_t`
 - Additional metadata (tool version, generation timestamp)
-- More comprehensive configs (full ECUC, OS integration)
+- More comprehensive configs (full ECUC, OS integration, NvM, Dcm, etc.)
+- Additional `#include` dependencies from the full BSW stack
 
-**Application SWC code should compile with either set of generated configs** because
-both produce the same RTE API (`Rte_Read`, `Rte_Write`, typed wrappers).
+**Application SWC code should largely compile** with professional tool output because both
+follow the AUTOSAR RTE API spec (`Rte_Read`, `Rte_Write`, typed wrappers). However, minor
+adjustments are expected — include paths, type aliases, and ID references may need updating.
+This is a controlled migration, not a drop-in swap.
 
 #### Step 5: Verify application code compiles
 
@@ -333,19 +337,25 @@ Once all ECUs compile and test with professional tool output:
 | License cost | Certain | — | Budget EUR 20-50k/seat/year |
 | Learning curve | Certain | Medium | 2-4 weeks for team to learn new tool GUI |
 
-### 3.5 Compatibility Guarantees
+### 3.5 Compatibility Design Decisions
 
-These design decisions in arxmlgen ensure smooth professional tool migration:
+These design decisions reduce migration friction, but do **not** guarantee drop-in
+compatibility with professional tool output:
 
 1. **Standard ARXML schema** — R22-11, no custom extensions. Any tool reads it.
-2. **Standard RTE API** — `Rte_Read`, `Rte_Write`, `Rte_<Ecu>.h` typed wrappers follow
-   AUTOSAR naming conventions. Professional tools generate the same API.
-3. **Standard BSW module API** — `Com_SendSignal`, `CanIf_Transmit`, etc. follow AUTOSAR
-   function signatures. Professional BSW stacks implement the same API.
-4. **No arxmlgen-specific code in SWCs** — Application code includes only standard
+2. **Standard RTE API naming** — `Rte_Read`, `Rte_Write`, `Rte_<Ecu>.h` follow AUTOSAR
+   naming conventions. Professional tools generate the same API shape, though exact type
+   signatures and include hierarchies may differ.
+3. **Standard BSW function names** — `Com_SendSignal`, `CanIf_Transmit`, etc. follow AUTOSAR
+   function naming. Parameter types and error handling may differ from full BSW stacks.
+4. **No arxmlgen-specific code in SWCs** — Application code includes only standard-style
    headers (`Rte.h`, `Rte_Cvc.h`, `Com.h`). No `#include "arxmlgen.h"`.
-5. **Sidecar data maps to ECUC** — Every sidecar field has a direct ECUC equivalent.
-   No data is lost in migration; it just moves from YAML to GUI.
+5. **Sidecar data maps to ECUC concepts** — Each sidecar field has a conceptual ECUC
+   equivalent, but the mapping is not 1:1 automatic. Manual ECUC configuration is needed.
+
+**What this means in practice:** migrating to a professional tool is a planned, testable
+process — not a zero-effort swap. Budget a sprint for ECUC configuration, diff review,
+and application code adjustments.
 
 ## 4. Reusing arxmlgen in a New Project
 

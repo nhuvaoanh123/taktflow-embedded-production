@@ -1,0 +1,70 @@
+{% include "common/file_header.j2" %}
+#ifndef {{ ecu.prefix }}_CFG_H
+#define {{ ecu.prefix }}_CFG_H
+
+/* ====================================================================
+ * RTE Signal IDs (offset 16 from BSW well-known)
+ * ==================================================================== */
+
+{% for sig_name, sig_id in ecu_app_signals %}
+#define {{ ecu.prefix }}_SIG_{{ sig_name | upper_snake }}  {{ "%4d"|format(sig_id) }}u
+{% endfor %}
+#define {{ ecu.prefix }}_SIG_COUNT  {{ "%4d"|format(sig_count) }}u
+
+/* ====================================================================
+ * Com TX PDU IDs
+ * ==================================================================== */
+
+{% for pdu in ecu.tx_pdus %}
+#define {{ ecu.prefix }}_COM_TX_{{ pdu.name | upper_snake }}  {{ "%4d"|format(pdu.pdu_id) }}u   /* CAN {{ pdu.can_id | hex3 }} */
+{% endfor %}
+
+/* ====================================================================
+ * Com RX PDU IDs
+ * ==================================================================== */
+
+{% for pdu in ecu.rx_pdus %}
+#define {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }}  {{ "%4d"|format(pdu.pdu_id) }}u   /* CAN {{ pdu.can_id | hex3 }} */
+{% endfor %}
+{% if ecu.dtc_events %}
+
+/* ====================================================================
+ * DTC Event IDs (Dem_EventIdType)
+ * ==================================================================== */
+
+{% for name, value in ecu.dtc_events.items() %}
+#define {{ name }}  {{ "%4d"|format(value) }}u
+{% endfor %}
+{% endif %}
+{% if ecu.e2e_data_ids %}
+
+/* ====================================================================
+ * E2E Data IDs
+ * ==================================================================== */
+
+{% for name, value in ecu.e2e_data_ids.items() %}
+#define {{ name }}  {{ value | hex2 }}u
+{% endfor %}
+{% endif %}
+{% if ecu.enums %}
+
+/* ====================================================================
+ * Enums
+ * ==================================================================== */
+
+{% for name, value in ecu.enums.items() %}
+#define {{ name }}  {{ "%4d"|format(value) }}u
+{% endfor %}
+{% endif %}
+{% if ecu.thresholds %}
+
+/* ====================================================================
+ * Thresholds
+ * ==================================================================== */
+
+{% for name, value in ecu.thresholds.items() %}
+#define {{ name }}  {{ "%4d"|format(value) }}u
+{% endfor %}
+{% endif %}
+
+#endif /* {{ ecu.prefix }}_CFG_H */

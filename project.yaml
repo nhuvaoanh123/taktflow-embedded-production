@@ -23,7 +23,7 @@ ecus:
   cvc: { prefix: "CVC" }
   fzc: { prefix: "FZC" }
   rzc: { prefix: "RZC" }
-  sc:  { prefix: "SC", include_in: ["canif"] }
+  sc:  { prefix: "SC", include_in: ["cfg", "canif", "e2e"] }
   bcm: { prefix: "BCM" }
   icu: { prefix: "ICU" }
   tcu: { prefix: "TCU" }

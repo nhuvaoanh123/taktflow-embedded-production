@@ -129,7 +129,7 @@ on IPdus. The reader checks both standard E2E elements and annotation markers.
 | **Dcm / UDS Configuration** | Diagnostic service config is hand-written due to complexity. |
 | **BswM Mode Management** | Mode arbitration rules too complex for template generation. |
 | **EcuM / Startup Sequence** | Boot sequence is platform-specific (STM32 vs TMS570 vs POSIX). |
-| **FlexRay / LIN / Ethernet** | Only CAN supported. Extension point exists for future buses. |
+| **FlexRay / LIN / Ethernet / SOME-IP** | v1.0 supports CAN only. Architecture is transport-agnostic — adding new bus types requires a reader backend + generator, not a rewrite. See architecture.md §10 for SDV extensibility roadmap. |
 | **Calibration (XCP/CCP)** | Not in scope for code generation. |
 | **Variant Handling (POST-BUILD, PRE-COMPILE)** | Single variant assumed. |
 

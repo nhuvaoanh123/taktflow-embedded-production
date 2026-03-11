@@ -6,22 +6,22 @@ ARG ECU_NAME=cvc
 FROM ubuntu:22.04 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc make can-utils libsocketcan-dev \
+    gcc make can-utils libsocketcan-dev libncurses-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 COPY firmware/ firmware/
 
 ARG ECU_NAME
-RUN make -f firmware/platform/posix/Makefile.posix ${ECU_NAME}
+RUN make -f firmware/platform/posix/Makefile.posix TARGET=${ECU_NAME} DIAG=1
 
 FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    can-utils iproute2 \
+    can-utils iproute2 libncurses6 \
     && rm -rf /var/lib/apt/lists/*
 
 ARG ECU_NAME
-COPY --from=builder /build/build/posix/${ECU_NAME} /app/${ECU_NAME}
+COPY --from=builder /build/build/${ECU_NAME}_posix /app/${ECU_NAME}
 
 COPY docker/ecu/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh

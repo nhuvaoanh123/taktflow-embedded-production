@@ -236,34 +236,34 @@ class Ecu:
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Core framework + ARXML reader | PENDING |
-| 2 | Com_Cfg + Rte_Cfg generators (parity with current codegen.py) | PENDING |
-| 3 | Typed RTE wrappers + per-ECU Rte_<Ecu>.h | PENDING |
-| 4 | CanIf_Cfg + PduR_Cfg generators | PENDING |
-| 5 | E2E_Cfg generator | PENDING |
-| 6 | SWC skeleton generator | PENDING |
+| 1 | Core framework + ARXML reader | DONE |
+| 2 | Com_Cfg + Rte_Cfg + Ecu_Cfg.h generators | DONE |
+| 3 | Per-SWC typed RTE wrappers (Rte_Swc_*.h) | DONE |
+| 4 | CanIf_Cfg + PduR_Cfg generators | DONE |
+| 5 | E2E_Cfg generator | DONE |
+| 6 | SWC skeleton generator | DONE |
 | 7 | CI integration + regression tests | PENDING |
 
 ## Phase 1: Core Framework + ARXML Reader
 
 ### Tasks
-- [ ] Create `tools/arxmlgen/` package structure
-- [ ] Implement `model.py` — dataclasses for ECU, SWC, Signal, PDU, Port, Runnable
-- [ ] Implement `config.py` — YAML loader with validation (required fields, ECU list, generator toggles)
-- [ ] Implement `reader.py` — read ARXML via `autosar-data`, populate data model
+- [x] Create `tools/arxmlgen/` package structure
+- [x] Implement `model.py` — dataclasses for ECU, SWC, Signal, PDU, Port, Runnable
+- [x] Implement `config.py` — YAML loader with validation (required fields, ECU list, generator toggles)
+- [x] Implement `reader.py` — read ARXML via `autosar-data`, populate data model
   - Parse ECU instances → `Ecu` objects
   - Parse ISignalIPdus → `Pdu` objects with `Signal` children
   - Parse CAN frames → CAN ID + DLC per PDU
   - Parse SWC types → `Swc` objects with `Port` and `Runnable` children
   - Parse E2E annotations → flag protected PDUs/signals
   - Build ECU-to-PDU routing (which ECU sends/receives which PDU)
-- [ ] Implement `engine.py` — Jinja2 environment with custom filters
+- [x] Implement `engine.py` — Jinja2 environment with custom filters
   - Filters: `upper_snake`, `pascal_case`, `hex_format`, `c_type_for`
   - Deterministic output (sorted iteration, no random, no timestamps in body)
   - File writer with "GENERATED -- DO NOT EDIT" header
-- [ ] Implement `generators/__init__.py` — generator registry (discover + enable/disable)
-- [ ] Implement `__main__.py` — CLI: `python -m tools.arxmlgen --config project.yaml`
-- [ ] Write `project.yaml` for Taktflow
+- [x] Implement `generators/__init__.py` — generator registry (discover + enable/disable)
+- [x] Implement `__main__.py` — CLI: `python -m tools.arxmlgen --config project.yaml`
+- [x] Write `project.yaml` for Taktflow
 
 ### Files Changed
 - `tools/arxmlgen/__main__.py` — NEW: CLI entry point
@@ -283,14 +283,14 @@ class Ecu:
 ## Phase 2: Com_Cfg + Rte_Cfg Generators
 
 ### Tasks
-- [ ] Create `templates/com/Com_Cfg.h.j2` — signal ID defines, PDU ID defines
-- [ ] Create `templates/com/Com_Cfg.c.j2` — shadow buffers, signal table, PDU tables, aggregate config
-- [ ] Create `templates/rte/Rte_Cfg.c.j2` — signal table, runnable table, aggregate config
-- [ ] Create `templates/cfg/Ecu_Cfg.h.j2` — per-ECU master config (RTE signals, Com PDUs, DTCs, E2E IDs, enums, thresholds)
-- [ ] Implement `generators/com_cfg.py` — feeds Com data model to templates
-- [ ] Implement `generators/rte_cfg.py` — feeds Rte data model to templates
-- [ ] Implement `generators/cfg_header.py` — feeds per-ECU defines to template
-- [ ] Validate: generated output matches current hand-written configs (diff test)
+- [x] Create `templates/com/Com_Cfg.h.j2` — signal ID defines, PDU ID defines
+- [x] Create `templates/com/Com_Cfg.c.j2` — shadow buffers, signal table, PDU tables, aggregate config
+- [x] Create `templates/rte/Rte_Cfg.c.j2` — signal table, runnable table, aggregate config
+- [x] Create `templates/cfg/Ecu_Cfg.h.j2` — per-ECU master config (RTE signals, Com PDUs, DTCs, E2E IDs, enums, thresholds)
+- [x] Implement `generators/com_cfg.py` — feeds Com data model to templates
+- [x] Implement `generators/rte_cfg.py` — feeds Rte data model to templates
+- [x] Implement `generators/cfg_header.py` — feeds per-ECU defines to template
+- [x] Validate: generated output matches current hand-written configs (diff test)
 
 ### Files Changed
 - `tools/arxmlgen/generators/com_cfg.py` — NEW
@@ -309,11 +309,11 @@ class Ecu:
 ## Phase 3: Typed RTE Wrappers
 
 ### Tasks
-- [ ] Create `templates/rte/Rte_Ecu.h.j2` — per-ECU typed wrapper header
-- [ ] Template generates: `Rte_Read_<Port>_<Signal>(ptr)` → `Rte_Read(ID, ptr)`
-- [ ] Template generates: `Rte_Write_<Port>_<Signal>(val)` → `Rte_Write(ID, val)`
-- [ ] Include correct C types based on signal bit size (uint8/uint16/uint32/sint types)
-- [ ] Implement `generators/rte_cfg.py` extension for typed wrapper generation
+- [x] Create `templates/rte/Rte_Swc.h.j2` — per-ECU typed wrapper header
+- [x] Template generates: `Rte_Read_<Signal>(ptr)` → `Rte_Read(ID, ptr)`
+- [x] Template generates: `Rte_Write_<Signal>(val)` → `Rte_Write(ID, val)`
+- [x] Include correct C types based on signal bit size (uint8/uint16/uint32/sint types)
+- [x] Implement `generators/rte_cfg.py` extension for typed wrapper generation
 
 ### Files Changed
 - `tools/arxmlgen/templates/rte/Rte_Ecu.h.j2` — NEW
@@ -327,12 +327,11 @@ class Ecu:
 ## Phase 4: CanIf_Cfg + PduR_Cfg Generators
 
 ### Tasks
-- [ ] Create `templates/canif/CanIf_Cfg.h.j2` — RX/TX PDU ID defines
-- [ ] Create `templates/canif/CanIf_Cfg.c.j2` — RX PDU config (CAN ID → PDU routing), TX PDU config
-- [ ] Create `templates/pdur/PduR_Cfg.h.j2` — routing path defines
-- [ ] Create `templates/pdur/PduR_Cfg.c.j2` — routing table (CanIf PDU ↔ Com PDU mapping)
-- [ ] Implement `generators/canif_cfg.py`
-- [ ] Implement `generators/pdur_cfg.py`
+- [x] Create `templates/canif/CanIf_Cfg.c.j2` — TX/RX PDU config (CAN ID → Com PDU routing)
+- [x] Create `templates/pdur/PduR_Cfg.c.j2` — routing table (CanIf PDU ↔ Com PDU mapping)
+- [x] Implement `generators/canif_cfg.py`
+- [x] Implement `generators/pdur_cfg.py`
+- [x] Write 44 TDD tests (23 CanIf + 21 PduR) — all passing
 
 ### Files Changed
 - `tools/arxmlgen/generators/canif_cfg.py` — NEW
@@ -348,9 +347,10 @@ class Ecu:
 ## Phase 5: E2E_Cfg Generator
 
 ### Tasks
-- [ ] Create `templates/e2e/E2E_Cfg.h.j2` — E2E data IDs, protection config per message
-- [ ] Implement `generators/e2e_cfg.py`
-- [ ] Generate per-ECU E2E config with data ID, counter position, CRC position
+- [x] Create `templates/e2e/E2E_Cfg.c.j2` — per-PDU E2E protection config tables
+- [x] Implement `generators/e2e_cfg.py`
+- [x] Generate per-ECU E2E config with data ID, counter position, CRC position
+- [x] Write 23 TDD tests — all passing
 
 ### Files Changed
 - `tools/arxmlgen/generators/e2e_cfg.py` — NEW
@@ -364,11 +364,12 @@ class Ecu:
 ## Phase 6: SWC Skeleton Generator
 
 ### Tasks
-- [ ] Create `templates/swc/Swc_Skeleton.c.j2` — SWC source skeleton with runnables
-- [ ] Create `templates/swc/Swc_Skeleton.h.j2` — SWC header with function declarations
-- [ ] Implement `generators/swc_skeleton.py` with **generate-if-absent** guard
-- [ ] Skeleton includes: `#include "Rte_<Ecu>.h"`, typed port access in function body comments
-- [ ] Never overwrite existing files — log "SKIP (exists): Swc_Steering.c"
+- [x] Create `templates/swc/Swc_Skeleton.c.j2` — SWC source skeleton with runnables
+- [x] Create `templates/swc/Swc_Skeleton.h.j2` — SWC header with function declarations
+- [x] Implement `generators/swc_skeleton.py` with **generate-if-absent** guard
+- [x] Skeleton includes: `#include "Rte_<Swc>.h"` typed wrapper + own header
+- [x] Generate-if-absent via `engine.write_file(overwrite=False)`
+- [x] Write 15 TDD tests — all passing
 
 ### Files Changed
 - `tools/arxmlgen/generators/swc_skeleton.py` — NEW

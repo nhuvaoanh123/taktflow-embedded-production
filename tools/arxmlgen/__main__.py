@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 from . import __version__
@@ -49,6 +50,13 @@ def main():
         help="Override output.base_dir from config",
     )
     parser.add_argument(
+        "--e2e-source",
+        choices=("dbc", "sidecar"),
+        help="E2E data ID source: 'dbc' (from DBC E2E_DataID attribute) "
+             "or 'sidecar' (from ecu_sidecar.yaml pdu_e2e_map). "
+             "Overrides input.e2e_source in project.yaml.",
+    )
+    parser.add_argument(
         "--verbose", action="store_true", help="Detailed output"
     )
     parser.add_argument(
@@ -77,6 +85,11 @@ def main():
     # Override output dir
     if args.output_dir:
         config.output.base_dir = args.output_dir
+
+    # Override E2E source
+    e2e_source_arg = getattr(args, "e2e_source", None)
+    if e2e_source_arg:
+        config.e2e_source = e2e_source_arg
 
     # Read ARXML
     if not args.quiet:

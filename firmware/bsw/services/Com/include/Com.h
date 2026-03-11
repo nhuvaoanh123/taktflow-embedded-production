@@ -1,49 +1,82 @@
 /**
  * @file    Com.h
- * @brief   Communication Service — signal-level CAN send/receive API
- * @date    2026-03-10
+ * @brief   Communication module — signal-based CAN communication
+ * @date    2026-02-21
  *
- * @standard AUTOSAR COM (simplified)
+ * @safety_req SWR-BSW-015, SWR-BSW-016
+ * @traces_to  TSR-022, TSR-023, TSR-024
+ *
+ * @standard AUTOSAR_SWS_COMModule, ISO 26262 Part 6
  * @copyright Taktflow Systems 2026
  */
 #ifndef COM_H
 #define COM_H
 
-#include <stdint.h>
+#include "Std_Types.h"
+#include "ComStack_Types.h"
 
-typedef uint16_t Com_SignalIdType;
-typedef uint8_t  Com_PduIdType;
+/* ---- Constants ---- */
+
+#define COM_MAX_PDUS     16u
+#define COM_MAX_SIGNALS  32u
+#define COM_PDU_SIZE      8u  /**< CAN 2.0B fixed 8 bytes */
+
+/* ---- Types ---- */
+
+typedef uint8 Com_SignalIdType;
 
 typedef enum {
-    COM_E_OK = 0u,
-    COM_E_PARAM,
-    COM_E_NOT_OK
-} Com_StatusType;
+    COM_UINT8  = 0u,
+    COM_UINT16 = 1u,
+    COM_SINT16 = 2u,
+    COM_BOOL   = 3u,
+    COM_UINT32 = 4u
+} Com_SignalType;
 
-/**
- * @brief   Send a signal value via COM (queued for next TX cycle).
- * @param   signal_id  Signal identifier
- * @param   data       Pointer to signal data
- * @return  COM_E_OK on success
- */
-Com_StatusType Com_SendSignal(Com_SignalIdType signal_id, const void *data);
+/** Signal configuration (compile-time) */
+typedef struct {
+    Com_SignalIdType SignalId;
+    uint8            BitPosition;   /**< Start bit in PDU          */
+    uint8            BitSize;       /**< Signal width in bits      */
+    Com_SignalType   Type;          /**< Data type                 */
+    PduIdType        PduId;         /**< Parent PDU                */
+    void*            ShadowBuffer;  /**< RAM buffer for signal     */
+} Com_SignalConfigType;
 
-/**
- * @brief   Receive a signal value from COM shadow buffer.
- * @param   signal_id  Signal identifier
- * @param   data       Pointer to receive signal data
- * @return  COM_E_OK on success
- */
-Com_StatusType Com_ReceiveSignal(Com_SignalIdType signal_id, void *data);
+/** TX PDU configuration */
+typedef struct {
+    PduIdType  PduId;
+    uint8      Dlc;
+    uint16     CycleTimeMs;         /**< TX cycle time in ms       */
+} Com_TxPduConfigType;
 
-/**
- * @brief   Initialize COM module with ECU-specific config.
- */
-void Com_Init(void);
+/** RX PDU configuration */
+typedef struct {
+    PduIdType  PduId;
+    uint8      Dlc;
+    uint16     TimeoutMs;           /**< RX timeout in ms          */
+} Com_RxPduConfigType;
 
-/**
- * @brief   COM main function — process TX and RX PDUs.
- */
-void Com_MainFunction(void);
+/** Com module configuration */
+typedef struct {
+    const Com_SignalConfigType*  signalConfig;
+    uint8                        signalCount;
+    const Com_TxPduConfigType*   txPduConfig;
+    uint8                        txPduCount;
+    const Com_RxPduConfigType*   rxPduConfig;
+    uint8                        rxPduCount;
+} Com_ConfigType;
+
+/* ---- External dependencies ---- */
+extern Std_ReturnType PduR_Transmit(PduIdType TxPduId, const PduInfoType* PduInfoPtr);
+
+/* ---- API Functions ---- */
+
+void           Com_Init(const Com_ConfigType* ConfigPtr);
+Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataPtr);
+Std_ReturnType Com_ReceiveSignal(Com_SignalIdType SignalId, void* SignalDataPtr);
+void           Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr);
+void           Com_MainFunction_Tx(void);
+void           Com_MainFunction_Rx(void);
 
 #endif /* COM_H */

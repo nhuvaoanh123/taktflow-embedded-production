@@ -39,6 +39,7 @@ class ArxmlReader:
         self._pdu_to_dlc: dict[str, int] = {}           # pdu_path → DLC
         self._dbc_tx_map: dict[str, str] = {}           # message_name → sender_ecu (uppercase)
         self._dbc_rx_map: dict[str, list[str]] = {}     # message_name → list of receiver ECUs
+        self._dbc_e2e_map: dict[str, int] = {}          # message_name → E2E data ID (from DBC attr)
 
     def read(self) -> ProjectModel:
         """Read all ARXML files and build the project model."""
@@ -68,6 +69,9 @@ class ArxmlReader:
         # Extract SWCs and assign to ECUs
         self._extract_swcs(ecus)
 
+        # Resolve port data types from matching signals
+        self._resolve_port_types(ecus)
+
         # Assign signal IDs
         bsw_reserved = self.config.generators.get("com", None)
         bsw_count = 16
@@ -75,9 +79,17 @@ class ArxmlReader:
             bsw_count = int(bsw_reserved.settings["bsw_reserved_signals"])
         self._assign_signal_ids(ecus, bsw_reserved=bsw_count)
 
-        # Load sidecar data
+        # Load sidecar data (always load for DTC, enums, thresholds, runnables)
         if self.config.sidecar_path:
             self._read_sidecar(ecus)
+
+        # Apply E2E data IDs based on configured source
+        if self.config.e2e_source == "dbc":
+            self._apply_dbc_e2e(ecus)
+            _info(f"  E2E source: DBC attributes ({len(self._dbc_e2e_map)} messages)")
+        else:
+            # sidecar E2E is already applied in _read_sidecar via _apply_pdu_e2e_map
+            _info(f"  E2E source: sidecar pdu_e2e_map")
 
         # Build project model
         total_signals = 0
@@ -132,7 +144,18 @@ class ArxmlReader:
             receivers = all_nodes - {senders[0].upper()} if senders else all_nodes
             self._dbc_rx_map[msg.name] = list(receivers)
 
-        _info(f"  DBC routing: {len(db.messages)} messages, {len(db.nodes)} nodes")
+            # Extract E2E_DataID attribute if present (cantools: msg.dbc.attributes)
+            try:
+                e2e_attr = msg.dbc.attributes.get("E2E_DataID")
+                if e2e_attr is not None:
+                    e2e_val = int(e2e_attr.value if hasattr(e2e_attr, 'value') else e2e_attr)
+                    if e2e_val >= 0:
+                        self._dbc_e2e_map[msg.name] = e2e_val
+            except (AttributeError, TypeError, ValueError):
+                pass
+
+        e2e_count = len(self._dbc_e2e_map)
+        _info(f"  DBC routing: {len(db.messages)} messages, {len(db.nodes)} nodes, {e2e_count} E2E data IDs")
 
     # ------------------------------------------------------------------
     # Platform types
@@ -580,6 +603,11 @@ class ArxmlReader:
             return
 
         sidecar_ecus = sidecar.get("ecus", {})
+
+        # Collect all pdu_e2e_map entries into a global map first,
+        # so broadcast CAN RX PDUs on other ECUs also get their data IDs.
+        global_pdu_e2e_map: dict[str, int] = {}
+
         for ecu_name, ecu_data in sidecar_ecus.items():
             if ecu_name not in ecus:
                 self._warn(f"Sidecar ECU '{ecu_name}' not in config — skipped")
@@ -591,9 +619,13 @@ class ArxmlReader:
             if "dtc_events" in ecu_data:
                 ecu.dtc_events.update(ecu_data["dtc_events"])
 
-            # E2E data IDs
+            # E2E data IDs — store named constants in ECU dict
             if "e2e_data_ids" in ecu_data:
                 ecu.e2e_data_ids.update(ecu_data["e2e_data_ids"])
+
+            # Collect PDU → E2E data ID mappings into global map
+            if "pdu_e2e_map" in ecu_data:
+                global_pdu_e2e_map.update(ecu_data["pdu_e2e_map"])
 
             # Enums
             if "enums" in ecu_data:
@@ -614,6 +646,76 @@ class ArxmlReader:
                                 r.priority = override["priority"]
                             if "wdgm_se_id" in override:
                                 r.wdgm_se_id = override["wdgm_se_id"]
+
+        # Apply the global E2E map across ALL ECUs (handles broadcast CAN)
+        # Only when e2e_source is "sidecar" — DBC mode uses _apply_dbc_e2e instead
+        if global_pdu_e2e_map and self.config.e2e_source == "sidecar":
+            for ecu in ecus.values():
+                self._apply_pdu_e2e_map(ecu, global_pdu_e2e_map)
+
+    # ------------------------------------------------------------------
+    # E2E data ID mapping
+    # ------------------------------------------------------------------
+
+    def _apply_pdu_e2e_map(self, ecu, pdu_map: dict):
+        """Apply explicit PDU name → E2E data ID mapping from sidecar.
+
+        The pdu_e2e_map section maps PDU names directly to data IDs:
+          pdu_e2e_map:
+            EStop_Broadcast: 0x01
+            CVC_Heartbeat: 0x04
+        """
+        for pdu in ecu.tx_pdus + ecu.rx_pdus:
+            if pdu.name in pdu_map:
+                pdu.e2e_data_id = pdu_map[pdu.name]
+            elif pdu.e2e_protected and pdu.e2e_data_id is None:
+                self._warn(f"E2E PDU '{pdu.name}' has no data ID in sidecar pdu_e2e_map")
+
+    def _apply_dbc_e2e(self, ecus: dict[str, Ecu]):
+        """Apply E2E data IDs from DBC E2E_DataID attribute.
+
+        Uses the _dbc_e2e_map populated during _load_dbc_routing().
+        Only messages with an explicit E2E_DataID >= 0 get a data ID.
+        This is the OEM-aligned approach: CAN matrix → DBC → codegen.
+        """
+        for ecu in ecus.values():
+            for pdu in ecu.tx_pdus + ecu.rx_pdus:
+                if pdu.name in self._dbc_e2e_map:
+                    pdu.e2e_data_id = self._dbc_e2e_map[pdu.name]
+                elif pdu.e2e_protected and pdu.e2e_data_id is None:
+                    self._warn(
+                        f"E2E PDU '{pdu.name}' has no E2E_DataID in DBC — "
+                        f"add BA_ \"E2E_DataID\" BO_ {pdu.can_id} <id>;"
+                    )
+
+    # ------------------------------------------------------------------
+    # Port type resolution
+    # ------------------------------------------------------------------
+
+    def _resolve_port_types(self, ecus: dict[str, Ecu]):
+        """Resolve Port.data_type from the matching CAN signal's type.
+
+        Port signal_name comes from the S/R interface (e.g., "VehicleState").
+        CAN signal names are PDU-prefixed (e.g., "Vehicle_State_VehicleState").
+        Match by stripping the PDU name prefix from signal names.
+        """
+        for ecu in ecus.values():
+            # Two lookups: exact match and suffix match (strip PDU prefix)
+            exact_types: dict[str, str] = {}
+            suffix_types: dict[str, str] = {}
+            for pdu in ecu.tx_pdus + ecu.rx_pdus:
+                for sig in pdu.signals:
+                    exact_types[sig.name] = sig.data_type
+                    if sig.name.startswith(pdu.name + "_"):
+                        suffix = sig.name[len(pdu.name) + 1:]
+                        suffix_types[suffix] = sig.data_type
+
+            for swc in ecu.swcs:
+                for port in swc.ports:
+                    if port.signal_name in exact_types:
+                        port.data_type = exact_types[port.signal_name]
+                    elif port.signal_name in suffix_types:
+                        port.data_type = suffix_types[port.signal_name]
 
     # ------------------------------------------------------------------
     # Helpers

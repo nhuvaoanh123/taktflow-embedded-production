@@ -1,0 +1,40 @@
+{% include "common/file_header.j2" %}
+#include "PduR.h"
+#include "{{ ecu.prefix | pascal_case }}_Cfg.h"
+
+/* ==================================================================
+ * RX Routing Table — CanIf RX PDU → Com RX PDU
+ * ================================================================== */
+
+static const PduR_RoutingPathType {{ ecu.name }}_rx_routing[] = {
+    /* srcPduId (CanIf),                          dstPduId (Com),                            srcModule,        dstModule */
+{% for pdu in ecu.rx_pdus %}
+    { {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }},  {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }},  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* {{ pdu.can_id | hex3 }} {{ pdu.name }} */
+{% endfor %}
+};
+
+#define {{ ecu.prefix }}_PDUR_RX_ROUTE_COUNT  (sizeof({{ ecu.name }}_rx_routing) / sizeof({{ ecu.name }}_rx_routing[0]))
+
+/* ==================================================================
+ * TX Routing Table — Com TX PDU → CanIf TX PDU
+ * ================================================================== */
+
+static const PduR_RoutingPathType {{ ecu.name }}_tx_routing[] = {
+    /* srcPduId (Com),                            dstPduId (CanIf),                          srcModule,        dstModule */
+{% for pdu in ecu.tx_pdus %}
+    { {{ ecu.prefix }}_COM_TX_{{ pdu.name | upper_snake }},  {{ ecu.prefix }}_COM_TX_{{ pdu.name | upper_snake }},  PDUR_MOD_COM,  PDUR_MOD_CANIF },   /* {{ pdu.can_id | hex3 }} {{ pdu.name }} */
+{% endfor %}
+};
+
+#define {{ ecu.prefix }}_PDUR_TX_ROUTE_COUNT  (sizeof({{ ecu.name }}_tx_routing) / sizeof({{ ecu.name }}_tx_routing[0]))
+
+/* ==================================================================
+ * Aggregate PduR Configuration
+ * ================================================================== */
+
+const PduR_ConfigType {{ ecu.name }}_pdur_config = {
+    .rxRouting    = {{ ecu.name }}_rx_routing,
+    .rxRouteCount = (uint8_t){{ ecu.prefix }}_PDUR_RX_ROUTE_COUNT,
+    .txRouting    = {{ ecu.name }}_tx_routing,
+    .txRouteCount = (uint8_t){{ ecu.prefix }}_PDUR_TX_ROUTE_COUNT,
+};

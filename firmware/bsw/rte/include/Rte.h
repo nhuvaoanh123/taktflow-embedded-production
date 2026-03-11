@@ -1,55 +1,108 @@
 /**
  * @file    Rte.h
- * @brief   Runtime Environment — signal exchange and runnable scheduling API
- * @date    2026-03-10
+ * @brief   Runtime Environment — signal buffering and runnable scheduling
+ * @date    2026-02-21
  *
- * @details Provides typed signal read/write and cyclic runnable dispatch.
- *          All SWCs communicate exclusively through the RTE.
+ * @safety_req SWR-BSW-026, SWR-BSW-027
+ * @traces_to  TSR-035, TSR-046, TSR-047
  *
- * @standard AUTOSAR R22-11 (simplified)
+ * @standard AUTOSAR_SWS_RTE, ISO 26262 Part 6
  * @copyright Taktflow Systems 2026
  */
 #ifndef RTE_H
 #define RTE_H
 
-#include <stdint.h>
+#include "Std_Types.h"
+#include "WdgM.h"
 
-/* Signal value type (all signals stored as uint32_t internally) */
-typedef uint32_t Rte_SignalValueType;
+/* ---- Constants ---- */
 
-/* Status return */
-typedef enum {
-    RTE_E_OK = 0u,
-    RTE_E_INVALID,
-    RTE_E_LIMIT,
-    RTE_E_NOT_CONNECTED
-} Rte_StatusType;
+#define RTE_MAX_SIGNALS     48u  /**< Max number of RTE signals */
+#define RTE_MAX_RUNNABLES   16u  /**< Max number of scheduled runnables */
+
+/* ---- Well-Known Signal IDs ---- */
+
+#define RTE_SIG_TORQUE_REQUEST    0u
+#define RTE_SIG_STEERING_ANGLE    1u
+#define RTE_SIG_VEHICLE_SPEED     2u
+#define RTE_SIG_BRAKE_PRESSURE    3u
+#define RTE_SIG_MOTOR_STATUS      4u
+#define RTE_SIG_BATTERY_VOLTAGE   5u
+#define RTE_SIG_BATTERY_CURRENT   6u
+#define RTE_SIG_MOTOR_TEMP        7u
+#define RTE_SIG_ESTOP_STATUS      8u
+#define RTE_SIG_HEARTBEAT         9u
+
+/* ---- Types ---- */
+/** RTE return type — alias for ARXML-generated typed wrappers */
+typedef Std_ReturnType Rte_StatusType;
+
+#define RTE_E_OK        E_OK
+#define RTE_E_NOT_OK    E_NOT_OK
+
+typedef uint16 Rte_SignalIdType;
+
+/** Function pointer for SWC runnable */
+typedef void (*Rte_RunnableFuncType)(void);
+
+/** Per-signal configuration */
+typedef struct {
+    Rte_SignalIdType    signalId;       /**< Signal identifier */
+    uint32              initialValue;   /**< Value at init */
+} Rte_SignalConfigType;
+
+/** Per-runnable configuration */
+typedef struct {
+    Rte_RunnableFuncType    func;       /**< Runnable function pointer */
+    uint16                  periodMs;   /**< Execution period in ms */
+    uint8                   priority;   /**< Priority (higher = runs first) */
+    uint8                   seId;       /**< Supervised entity ID for WdgM */
+} Rte_RunnableConfigType;
+
+/** RTE module configuration */
+typedef struct {
+    const Rte_SignalConfigType*     signalConfig;   /**< Signal config array */
+    uint8                           signalCount;    /**< Number of signals */
+    const Rte_RunnableConfigType*   runnableConfig; /**< Runnable config array */
+    uint8                           runnableCount;  /**< Number of runnables */
+} Rte_ConfigType;
+
+/* ---- API Functions ---- */
 
 /**
- * @brief   Write a signal value to the RTE buffer.
- * @param   signal_id  Signal identifier (from *_Cfg.h)
- * @param   value      Signal value to write
- * @return  RTE_E_OK on success
+ * @brief  Initialize the RTE module
+ * @param  ConfigPtr  Pointer to RTE configuration (must not be NULL)
+ * @note   Sets all signal buffers to their configured initial values.
+ *         If ConfigPtr is NULL, the module enters a failed state where
+ *         all API calls return E_NOT_OK.
  */
-Rte_StatusType Rte_Write(uint16_t signal_id, Rte_SignalValueType value);
+void Rte_Init(const Rte_ConfigType* ConfigPtr);
 
 /**
- * @brief   Read a signal value from the RTE buffer.
- * @param   signal_id  Signal identifier (from *_Cfg.h)
- * @param   value      Pointer to receive signal value
- * @return  RTE_E_OK on success, RTE_E_INVALID if never written
+ * @brief  Write a signal value into the RTE buffer
+ * @param  SignalId  Signal identifier (must be < signalCount)
+ * @param  Data      Value to write (copy semantics, up to 32 bits)
+ * @return E_OK on success, E_NOT_OK if not initialized or SignalId invalid
  */
-Rte_StatusType Rte_Read(uint16_t signal_id, Rte_SignalValueType *value);
+Std_ReturnType Rte_Write(Rte_SignalIdType SignalId, uint32 Data);
 
 /**
- * @brief   Initialize the RTE (clear all signal buffers, register runnables).
+ * @brief  Read a signal value from the RTE buffer
+ * @param  SignalId  Signal identifier (must be < signalCount)
+ * @param  DataPtr   Pointer to receive the signal value (must not be NULL)
+ * @return E_OK on success, E_NOT_OK if not initialized, SignalId invalid,
+ *         or DataPtr is NULL
  */
-void Rte_Init(void);
+Std_ReturnType Rte_Read(Rte_SignalIdType SignalId, uint32* DataPtr);
 
 /**
- * @brief   Dispatch all due runnables based on elapsed ticks.
- * @param   tick_ms  Current tick count in milliseconds
+ * @brief  RTE main function — call every 1 ms from system tick
+ * @note   Increments internal tick counter and fires runnables whose
+ *         period divides the current tick. Runnables at the same period
+ *         execute in priority order (highest first). After each period
+ *         group fires, WdgM_CheckpointReached is called for each
+ *         supervised entity that had a runnable execute.
  */
-void Rte_MainFunction(uint32_t tick_ms);
+void Rte_MainFunction(void);
 
 #endif /* RTE_H */

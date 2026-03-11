@@ -1,4 +1,6 @@
-# Process Playbook — Taktflow Embedded Production
+# Process Playbook — Carried from Taktflow Systems
+
+Web project patterns applied to embedded.
 
 ## Planning Discipline
 Plan → approve → implement. Update plan before next phase. Ask before coding.
@@ -9,14 +11,11 @@ Numbered phases with DONE criteria. Status table: PENDING → IN PROGRESS → DO
 ## Security-First Mindset
 Fail-closed. Generic errors. Validate at boundaries. Graceful degradation. No hardcoded secrets.
 
-## DBC-First Workflow
-1. Edit `gateway/taktflow.dbc` (add/modify CAN messages and signals)
-2. Run `tools/arxml/dbc2arxml.py` to regenerate ARXML
-3. Run `tools/arxml/codegen.py` to regenerate ECU configs
-4. Build and test — configs are always consistent with DBC
-
-## Vendor Independence
-Prefer generic protocols over vendor SDKs. Wrap unavoidable SDKs in abstraction.
+## Claim Accuracy
+Audit claims against code. Use qualifiers. Release gate.
 
 ## TODO Markers
-Greppable: `TODO:SCALE`, `TODO:POST-BETA`, `TODO:HARDWARE`, `TODO:SECURITY`, `TODO:ISO`, `TODO:TEST`.
+Greppable: `TODO:SCALE`, `TODO:POST-BETA`, `TODO:HARDWARE`. Full list in `workflow.md`.
+
+## Vendor Independence
+Prefer generic protocols over vendor SDKs. Wrap unavoidable SDKs in abstraction — swap = 1-file change.

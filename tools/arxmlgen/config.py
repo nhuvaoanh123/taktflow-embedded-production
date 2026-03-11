@@ -36,6 +36,9 @@ class GenConfig:
     settings: dict = field(default_factory=dict)
 
 
+E2E_SOURCES = ("dbc", "sidecar")
+
+
 @dataclass
 class ProjectConfig:
     name: str = ""
@@ -44,6 +47,7 @@ class ProjectConfig:
     arxml_paths: list[str] = field(default_factory=list)
     dbc_path: str | None = None
     sidecar_path: str | None = None
+    e2e_source: str = "sidecar"  # "dbc" or "sidecar"
     output: OutputConfig = field(default_factory=OutputConfig)
     ecus: dict[str, EcuConfig] = field(default_factory=dict)
     generators: dict[str, GenConfig] = field(default_factory=dict)
@@ -110,6 +114,12 @@ def load_config(path: str) -> ProjectConfig:
         if not os.path.isfile(resolved):
             raise ConfigError(f"Sidecar file not found: {sidecar}")
         cfg.sidecar_path = resolved
+
+    # E2E source
+    e2e_src = inp.get("e2e_source", "sidecar")
+    if e2e_src not in E2E_SOURCES:
+        raise ConfigError(f"input.e2e_source must be one of {E2E_SOURCES}, got '{e2e_src}'")
+    cfg.e2e_source = e2e_src
 
     # Output section
     out = raw.get("output", {})

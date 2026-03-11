@@ -12,14 +12,13 @@ from __future__ import annotations
 # Registry: generator name → (module_path, class_name)
 # Modules are imported lazily to avoid circular imports and allow extension.
 REGISTRY: dict[str, tuple[str, str]] = {
-    # Phase 2 generators (to be implemented):
-    # "com":    ("tools.arxmlgen.generators.com_cfg",     "ComCfgGenerator"),
-    # "rte":    ("tools.arxmlgen.generators.rte_cfg",     "RteCfgGenerator"),
-    # "canif":  ("tools.arxmlgen.generators.canif_cfg",   "CanIfCfgGenerator"),
-    # "pdur":   ("tools.arxmlgen.generators.pdur_cfg",    "PduRCfgGenerator"),
-    # "e2e":    ("tools.arxmlgen.generators.e2e_cfg",     "E2ECfgGenerator"),
-    # "swc":    ("tools.arxmlgen.generators.swc_skeleton", "SwcSkeletonGenerator"),
-    # "cfg":    ("tools.arxmlgen.generators.cfg_header",  "CfgHeaderGenerator"),
+    "com":    ("tools.arxmlgen.generators.com_cfg",     "ComCfgGenerator"),
+    "rte":    ("tools.arxmlgen.generators.rte_cfg",     "RteCfgGenerator"),
+    "cfg":    ("tools.arxmlgen.generators.cfg_header",  "CfgHeaderGenerator"),
+    "canif":  ("tools.arxmlgen.generators.canif_cfg",   "CanIfCfgGenerator"),
+    "pdur":   ("tools.arxmlgen.generators.pdur_cfg",    "PduRCfgGenerator"),
+    "e2e":    ("tools.arxmlgen.generators.e2e_cfg",     "E2ECfgGenerator"),
+    "swc":    ("tools.arxmlgen.generators.swc_skeleton", "SwcSkeletonGenerator"),
 }
 
 

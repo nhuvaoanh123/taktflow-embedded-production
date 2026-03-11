@@ -30,6 +30,17 @@ ecus:
       CVC_E2E_VEHICLE_STATE_DATA_ID: 0x02
       CVC_E2E_TORQUE_DATA_ID: 0x03
       CVC_E2E_HEARTBEAT_DATA_ID: 0x04
+      CVC_E2E_STEER_CMD_DATA_ID: 0x05
+      CVC_E2E_BRAKE_CMD_DATA_ID: 0x06
+
+    # Explicit PDU name → E2E data ID mapping (used by reader)
+    pdu_e2e_map:
+      EStop_Broadcast: 0x01
+      Vehicle_State: 0x02
+      Torque_Request: 0x03
+      CVC_Heartbeat: 0x04
+      Steer_Command: 0x05
+      Brake_Command: 0x06
 
     enums:
       CVC_STATE_INIT: 0
@@ -115,6 +126,16 @@ ecus:
       FZC_E2E_MOTOR_CUTOFF_DATA_ID: 0x17
       FZC_E2E_LIDAR_DATA_ID: 0x18
 
+    pdu_e2e_map:
+      FZC_Heartbeat: 0x11
+      Steering_Status: 0x12
+      Brake_Status: 0x13
+      Steer_Command: 0x14
+      Brake_Command: 0x15
+      Brake_Fault: 0x16
+      Motor_Cutoff_Req: 0x17
+      Lidar_Distance: 0x18
+
     enums:
       FZC_STATE_INIT: 0
       FZC_STATE_RUN: 1
@@ -154,6 +175,15 @@ ecus:
       RZC_E2E_BATTERY_DATA_ID: 0x26
       RZC_E2E_ENCODER_DATA_ID: 0x27
 
+    pdu_e2e_map:
+      RZC_Heartbeat: 0x21
+      Motor_Status: 0x22
+      Motor_Current: 0x23
+      Torque_Request: 0x24
+      Motor_Temperature: 0x25
+      Battery_Status: 0x26
+      Encoder_Status: 0x27
+
     enums:
       RZC_STATE_INIT: 0
       RZC_STATE_RUN: 1
@@ -178,6 +208,12 @@ ecus:
       BCM_DOOR_LOCK_TIMEOUT: 3000
 
   icu:
+    e2e_data_ids:
+      ICU_E2E_HEARTBEAT_DATA_ID: 0x31
+
+    pdu_e2e_map:
+      ICU_Heartbeat: 0x31
+
     thresholds:
       ICU_RTE_PERIOD_MS: 50
       ICU_COMM_TIMEOUT: 200
@@ -187,6 +223,12 @@ ecus:
   tcu:
     dtc_events:
       TCU_DTC_AGING_CLEAR_CYCLES: 0
+
+    e2e_data_ids:
+      TCU_E2E_HEARTBEAT_DATA_ID: 0x41
+
+    pdu_e2e_map:
+      TCU_Heartbeat: 0x41
 
     thresholds:
       TCU_RTE_PERIOD_MS: 10

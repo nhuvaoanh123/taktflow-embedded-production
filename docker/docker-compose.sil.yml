@@ -82,9 +82,7 @@ services:
   plant-sim:
     build:
       context: ..
-      dockerfile: docker/gateway/Dockerfile.gateway
-      args:
-        SERVICE: plant_sim
+      dockerfile: gateway/plant_sim_py/Dockerfile
     networks: [canbus]
     cap_add: [NET_ADMIN]
 
@@ -92,9 +90,7 @@ services:
   gateway:
     build:
       context: ..
-      dockerfile: docker/gateway/Dockerfile.gateway
-      args:
-        SERVICE: can_gateway
+      dockerfile: gateway/can_gateway/Dockerfile
     networks: [canbus]
     cap_add: [NET_ADMIN]
     ports:

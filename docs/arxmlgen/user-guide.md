@@ -102,6 +102,8 @@ input:
     - "arxml/System.arxml"
     - "arxml/PlatformTypes.arxml"   # Multiple files merged automatically
   sidecar: "model/sidecar.yaml"    # Optional. Non-ARXML data (DTCs, enums, etc.)
+  dbc: "gateway/taktflow.dbc"      # Optional. DBC for TX/RX routing + E2E data IDs.
+  e2e_source: "sidecar"            # "dbc" or "sidecar" (default). See section below.
 
 # ============================================================
 # Output directories
@@ -130,7 +132,7 @@ ecus:
       - "cfg"
   sc:
     prefix: "SC"
-    include_in: ["canif"]       # Safety controller — minimal generation only.
+    include_in: ["cfg", "canif", "e2e"]  # Safety controller — cfg (PDU defines), canif (CAN routing), e2e (verify incoming).
 
 # ============================================================
 # Generator settings
@@ -202,7 +204,39 @@ Options:
   --verbose             Print detailed progress (template rendering, etc.)
   --quiet               Print only errors and summary
   --version             Show version and exit
+  --e2e-source MODE     E2E data ID source: "dbc" or "sidecar" (overrides config)
   --help                Show this help and exit
+```
+
+### E2E Data ID Source (`--e2e-source`)
+
+Controls where E2E data IDs come from. Two modes:
+
+| | `--e2e-source dbc` | `--e2e-source sidecar` |
+|---|---|---|
+| **Source** | `BA_ "E2E_DataID"` in DBC file | `pdu_e2e_map` in `ecu_sidecar.yaml` |
+| **Document chain** | CAN Matrix -> DBC -> codegen | CAN Matrix -> sidecar YAML -> codegen |
+| **OEM alignment** | Matches OEM toolchain (Vector, EB) | Project-specific |
+| **Single source** | DBC is single source for CAN + E2E | E2E config split across DBC + YAML |
+| **Tooling support** | cantools, CANdb++, Vector tools | Any text editor |
+| **Traceability** | SYS.3 CAN matrix -> DBC attribute (1 hop) | SYS.3 -> YAML (manual sync) |
+| **Flexibility** | Constrained by DBC attribute syntax | Free-form YAML, ECU-prefixed schemes |
+| **Risk** | DBC corruption affects routing + E2E | YAML desync from CAN matrix |
+
+**Recommendation:** Use `dbc` for production (OEM-aligned, single source of truth). Use `sidecar` for prototyping or when DBC tooling is unavailable.
+
+```bash
+# OEM-aligned: E2E data IDs from DBC attributes
+python -m tools.arxmlgen --config project.yaml --e2e-source dbc
+
+# Prototyping: E2E data IDs from sidecar YAML (default)
+python -m tools.arxmlgen --config project.yaml --e2e-source sidecar
+```
+
+Or set permanently in `project.yaml`:
+```yaml
+input:
+  e2e_source: "dbc"   # or "sidecar" (default)
 ```
 
 ### Examples

@@ -60,6 +60,13 @@ BO_ 21 TCU_Heartbeat: 4 TCU
  SG_ AliveCounter : 16|8@1+ (1,0) [0|255] "" CVC
  SG_ ECU_ID : 24|8@1+ (1,0) [0|7] "" CVC
 
+BO_ 22 BCM_Heartbeat: 4 BCM
+ SG_ E2E_DataID : 0|4@1+ (1,0) [0|15] "" CVC,ICU
+ SG_ E2E_AliveCounter : 4|4@1+ (1,0) [0|15] "" CVC,ICU
+ SG_ E2E_CRC8 : 8|8@1+ (1,0) [0|255] "" CVC,ICU
+ SG_ AliveCounter : 16|8@1+ (1,0) [0|255] "" CVC,ICU
+ SG_ ECU_ID : 24|8@1+ (1,0) [0|7] "" CVC,ICU
+
 BO_ 256 Vehicle_State: 6 CVC
  SG_ E2E_DataID : 0|4@1+ (1,0) [0|15] "" FZC,RZC,BCM,ICU,SC
  SG_ E2E_AliveCounter : 4|4@1+ (1,0) [0|15] "" FZC,RZC,BCM,ICU,SC
@@ -295,6 +302,7 @@ VAL_ 1280 ECU_Source 1 "CVC" 2 "FZC" 3 "RZC" 4 "SC" 5 "BCM" 6 "ICU" 7 "TCU" ;
 BA_DEF_ BO_ "GenMsgCycleTime" INT 0 10000;
 BA_DEF_ BO_ "GenMsgSendType" STRING;
 BA_DEF_ BO_ "ASIL" STRING;
+BA_DEF_ BO_ "E2E_DataID" INT -1 255;
 
 BA_ "GenMsgCycleTime" BO_ 1 10;
 BA_ "GenMsgCycleTime" BO_ 16 50;
@@ -373,4 +381,21 @@ BA_ "ASIL" BO_ 1024 "QM";
 BA_ "ASIL" BO_ 1025 "QM";
 BA_ "ASIL" BO_ 1026 "QM";
 BA_ "ASIL" BO_ 1280 "QM";
+
+BA_ "E2E_DataID" BO_ 1 1;
+BA_ "E2E_DataID" BO_ 16 2;
+BA_ "E2E_DataID" BO_ 17 3;
+BA_ "E2E_DataID" BO_ 18 4;
+BA_ "E2E_DataID" BO_ 256 5;
+BA_ "E2E_DataID" BO_ 257 6;
+BA_ "E2E_DataID" BO_ 258 7;
+BA_ "E2E_DataID" BO_ 259 8;
+BA_ "E2E_DataID" BO_ 512 9;
+BA_ "E2E_DataID" BO_ 513 10;
+BA_ "E2E_DataID" BO_ 528 11;
+BA_ "E2E_DataID" BO_ 529 12;
+BA_ "E2E_DataID" BO_ 544 13;
+BA_ "E2E_DataID" BO_ 768 14;
+BA_ "E2E_DataID" BO_ 769 15;
+BA_ "E2E_DataID" BO_ 770 0;
 
