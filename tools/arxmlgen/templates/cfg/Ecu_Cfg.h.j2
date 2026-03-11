@@ -26,6 +26,26 @@
 {% for pdu in ecu.rx_pdus %}
 #define {{ ecu.prefix }}_COM_RX_{{ pdu.name | upper_snake }}  {{ "%4d"|format(pdu.pdu_id) }}u   /* CAN {{ pdu.can_id | hex3 }} */
 {% endfor %}
+
+/* ====================================================================
+ * Com Signal IDs (index into Com signal config table)
+ * Use these instead of hardcoded numbers in Com_SendSignal/Com_ReceiveSignal
+ * ==================================================================== */
+
+{% set ns = namespace(com_id=0) %}
+{% for pdu in ecu.tx_pdus %}
+{% for sig in pdu.signals %}
+#define {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }}  {{ "%4d"|format(ns.com_id) }}u   /* TX {{ pdu.name }} */
+{% set ns.com_id = ns.com_id + 1 %}
+{% endfor %}
+{% endfor %}
+{% for pdu in ecu.rx_pdus %}
+{% for sig in pdu.signals %}
+#define {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }}  {{ "%4d"|format(ns.com_id) }}u   /* RX {{ pdu.name }} */
+{% set ns.com_id = ns.com_id + 1 %}
+{% endfor %}
+{% endfor %}
+#define {{ ecu.prefix }}_COM_SIG_COUNT  {{ "%4d"|format(ns.com_id) }}u
 {% if ecu.dtc_events %}
 
 /* ====================================================================

@@ -69,57 +69,49 @@ void Bcm_ComBridge_10ms(void)
         uint32 rte_val;
         uint8  sig_u8;
 
-        /* Signal 0: headlamp → CAN 0x400 byte 2 */
-        (void)Rte_Read(BCM_SIG_LIGHT_HEADLAMP, &rte_val);
+        /* Light_Status signals → CAN 0x400 */
+        (void)Rte_Read(BCM_SIG_LIGHT_STATUS_HEADLIGHT_ON, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(0u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_LIGHT_STATUS_HEADLIGHT_ON, &sig_u8);
 
-        /* Signal 1: tail light → CAN 0x400 byte 3 */
-        (void)Rte_Read(BCM_SIG_LIGHT_TAIL, &rte_val);
+        (void)Rte_Read(BCM_SIG_LIGHT_STATUS_TAIL_LIGHT_ON, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(1u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_LIGHT_STATUS_TAIL_LIGHT_ON, &sig_u8);
 
-        /* Signal 2: indicator left → CAN 0x401 byte 2 */
-        (void)Rte_Read(BCM_SIG_INDICATOR_LEFT, &rte_val);
+        /* Indicator_State signals → CAN 0x401 */
+        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_LEFT_INDICATOR, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(2u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_LEFT_INDICATOR, &sig_u8);
 
-        /* Signal 3: indicator right → CAN 0x401 byte 3 */
-        (void)Rte_Read(BCM_SIG_INDICATOR_RIGHT, &rte_val);
+        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_RIGHT_INDICATOR, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(3u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_RIGHT_INDICATOR, &sig_u8);
 
-        /* Signal 4: hazard active → CAN 0x401 byte 4 */
-        (void)Rte_Read(BCM_SIG_HAZARD_ACTIVE, &rte_val);
+        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_HAZARD_ACTIVE, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(4u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_HAZARD_ACTIVE, &sig_u8);
 
-        /* Signal 5: door lock state → CAN 0x402 byte 2 */
-        (void)Rte_Read(BCM_SIG_DOOR_LOCK_STATE, &rte_val);
+        /* Door_Lock_Status signals → CAN 0x402 */
+        (void)Rte_Read(BCM_SIG_DOOR_LOCK_STATUS_FRONT_LEFT_LOCK, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(5u, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_DOOR_LOCK_STATUS_FRONT_LEFT_LOCK, &sig_u8);
     }
 
     /* ---- RX bridge: Com RX → RTE inputs ---- */
     {
         uint8  rx_u8;
-        uint16 rx_u16;
 
-        /* Signal 6: vehicle state (CAN 0x100) → RTE */
-        (void)Com_ReceiveSignal(6u, &rx_u8);
-        (void)Rte_Write(BCM_SIG_VEHICLE_STATE, (uint32)rx_u8);
+        /* Vehicle_State (CAN 0x100) → RTE */
+        (void)Com_ReceiveSignal(BCM_COM_SIG_VEHICLE_STATE_VEHICLE_STATE, &rx_u8);
+        (void)Rte_Write(BCM_SIG_VEHICLE_STATE_VEHICLE_STATE, (uint32)rx_u8);
 
-        /* Signal 7: vehicle speed (CAN 0x100) → RTE */
-        (void)Com_ReceiveSignal(7u, &rx_u16);
-        (void)Rte_Write(BCM_SIG_VEHICLE_SPEED, (uint32)rx_u16);
+        /* Body_Control_Cmd (CAN 0x350) → RTE */
+        (void)Com_ReceiveSignal(BCM_COM_SIG_BODY_CONTROL_CMD_HEADLIGHT_CMD, &rx_u8);
+        (void)Rte_Write(BCM_SIG_BODY_CONTROL_CMD_HEADLIGHT_CMD, (uint32)rx_u8);
 
-        /* Signal 8: body cmd byte0 (CAN 0x350) → RTE */
-        (void)Com_ReceiveSignal(8u, &rx_u8);
-        (void)Rte_Write(BCM_SIG_BODY_CONTROL_CMD, (uint32)rx_u8);
-
-        /* Signal 10: e-stop active (CAN 0x350) → RTE */
-        (void)Com_ReceiveSignal(10u, &rx_u8);
-        (void)Rte_Write(BCM_SIG_ESTOP_ACTIVE, (uint32)rx_u8);
+        /* EStop_Broadcast (CAN 0x001) → RTE */
+        (void)Com_ReceiveSignal(BCM_COM_SIG_ESTOP_BROADCAST_ESTOP_ACTIVE, &rx_u8);
+        (void)Rte_Write(BCM_SIG_ESTOP_BROADCAST_ESTOP_ACTIVE, (uint32)rx_u8);
     }
 }
 
@@ -140,12 +132,13 @@ static const Can_ConfigType can_config = {
     .controllerId = 0u,
 };
 
-/** CanIf TX PDU routing: Com TX PDU -> CAN ID */
+/** CanIf TX PDU routing: Com TX PDU -> CAN ID (array index == TxPduId) */
 static const CanIf_TxPduConfigType canif_tx_config[] = {
-    /* canId,  upperPduId,                dlc, hth */
-    { 0x400u, BCM_COM_TX_LIGHT_STATUS,     8u, 0u },  /* Light status       */
-    { 0x401u, BCM_COM_TX_INDICATOR_STATE,  8u, 0u },  /* Indicator state    */
-    { 0x402u, BCM_COM_TX_DOOR_LOCK,        8u, 0u },  /* Door lock state    */
+    /* canId,  upperPduId,                    dlc, hth */
+    { 0x016u, BCM_COM_TX_BCM_HEARTBEAT,       4u, 0u },  /* PDU 0: BCM heartbeat   */
+    { 0x400u, BCM_COM_TX_LIGHT_STATUS,        8u, 0u },  /* PDU 1: Light status     */
+    { 0x401u, BCM_COM_TX_INDICATOR_STATE,     8u, 0u },  /* PDU 2: Indicator state  */
+    { 0x402u, BCM_COM_TX_DOOR_LOCK_STATUS,    8u, 0u },  /* PDU 3: Door lock state  */
 };
 
 /** CanIf RX PDU routing: CAN ID -> Com RX PDU */
@@ -153,7 +146,7 @@ static const CanIf_RxPduConfigType canif_rx_config[] = {
     /* canId,  upperPduId,              dlc, isExtended */
     { 0x100u, BCM_COM_RX_VEHICLE_STATE,  8u, FALSE },  /* Vehicle state from CVC */
     { 0x301u, BCM_COM_RX_MOTOR_CURRENT,  8u, FALSE },  /* Speed from RZC         */
-    { 0x350u, BCM_COM_RX_BODY_CMD,       8u, FALSE },  /* Body cmd from CVC      */
+    { 0x350u, BCM_COM_RX_BODY_CONTROL_CMD,       8u, FALSE },  /* Body cmd from CVC      */
 };
 
 static const CanIf_ConfigType canif_config = {
@@ -168,7 +161,7 @@ static const CanIf_ConfigType canif_config = {
 static const PduR_RoutingTableType bcm_pdur_routing[] = {
     { BCM_COM_RX_VEHICLE_STATE,  PDUR_DEST_COM, BCM_COM_RX_VEHICLE_STATE },
     { BCM_COM_RX_MOTOR_CURRENT,  PDUR_DEST_COM, BCM_COM_RX_MOTOR_CURRENT },
-    { BCM_COM_RX_BODY_CMD,       PDUR_DEST_COM, BCM_COM_RX_BODY_CMD      },
+    { BCM_COM_RX_BODY_CONTROL_CMD,       PDUR_DEST_COM, BCM_COM_RX_BODY_CONTROL_CMD      },
 };
 
 static const PduR_ConfigType bcm_pdur_config = {
@@ -179,6 +172,25 @@ static const PduR_ConfigType bcm_pdur_config = {
 /* ==================================================================
  * Graceful Shutdown
  * ================================================================== */
+
+/* ==================================================================
+ * BCM Heartbeat (500ms period, CAN 0x016)
+ * ================================================================== */
+
+static uint8 bcm_hb_alive_counter;
+
+/**
+ * @brief  Transmit BCM heartbeat via Com
+ * @note   Called every 500ms from main loop (50 ticks × 10ms)
+ */
+static void Bcm_Heartbeat_500ms(void)
+{
+    uint8 alive  = bcm_hb_alive_counter;
+    uint8 ecu_id = 0x06u;  /* BCM = ECU 6 */
+    (void)Com_SendSignal(BCM_COM_SIG_BCM_HEARTBEAT_ALIVE_COUNTER, &alive);
+    (void)Com_SendSignal(BCM_COM_SIG_BCM_HEARTBEAT_ECU_ID, &ecu_id);
+    bcm_hb_alive_counter++;
+}
 
 static volatile uint8 shutdown_requested;
 
@@ -224,6 +236,9 @@ int main(void)
     (void)Can_SetControllerMode(0u, CAN_CS_STARTED);
 
     /* ---- Step 5: Main loop — 10ms tick via usleep ---- */
+    bcm_hb_alive_counter = 0u;
+    {
+    uint8 hb_tick = 0u;
     while (shutdown_requested == 0u) {
         /* Sleep 10ms (10000 microseconds) */
         Sil_Time_Sleep(10000u); /* 10ms virtual tick */
@@ -241,8 +256,16 @@ int main(void)
         /* Bridge again after RTE: push SWC outputs to Com */
         Bcm_ComBridge_10ms();
 
+        /* Heartbeat every 500ms (50 × 10ms ticks) */
+        hb_tick++;
+        if (hb_tick >= 50u) {
+            hb_tick = 0u;
+            Bcm_Heartbeat_500ms();
+        }
+
         /* BSW CAN processing: transmit queued frames */
         Com_MainFunction_Tx();
+    }
     }
 
     /* ---- Step 6: Graceful shutdown ---- */

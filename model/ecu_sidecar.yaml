@@ -201,6 +201,12 @@ ecus:
       RZC_ENCODER_TIMEOUT: 50
 
   bcm:
+    e2e_data_ids:
+      BCM_E2E_HEARTBEAT_DATA_ID: 0x51
+
+    pdu_e2e_map:
+      BCM_Heartbeat: 0x51
+
     thresholds:
       BCM_RTE_PERIOD_MS: 50
       BCM_COMM_TIMEOUT: 200
