@@ -19,10 +19,10 @@
  * ================================================================== */
 
 typedef struct {
-    uint8_t pdu_id;         /* Com PDU ID (TX or RX) */
-    uint8_t data_id;        /* E2E data ID (4-bit) */
-    uint8_t counter_bit;    /* Bit position of alive counter in PDU */
-    uint8_t crc_bit;        /* Bit position of CRC8 in PDU */
+    uint8 pdu_id;         /* Com PDU ID (TX or RX) */
+    uint8 data_id;        /* E2E data ID (4-bit) */
+    uint8 counter_bit;    /* Bit position of alive counter in PDU */
+    uint8 crc_bit;        /* Bit position of CRC8 in PDU */
 } E2E_PduProtectCfgType;
 
 /* ==================================================================
@@ -48,6 +48,7 @@ static const E2E_PduProtectCfgType sc_e2e_rx_config[] = {
     { SC_COM_RX_RZC_HEARTBEAT,  0x21u,  4u,  8u },   /* RZC_Heartbeat */
     { SC_COM_RX_ICU_HEARTBEAT,  0x31u,  4u,  8u },   /* ICU_Heartbeat */
     { SC_COM_RX_TCU_HEARTBEAT,  0x41u,  4u,  8u },   /* TCU_Heartbeat */
+    { SC_COM_RX_BCM_HEARTBEAT,  0x51u,  4u,  8u },   /* BCM_Heartbeat */
     { SC_COM_RX_VEHICLE_STATE,  0x02u,  4u,  8u },   /* Vehicle_State */
     { SC_COM_RX_TORQUE_REQUEST,  0x24u,  4u,  8u },   /* Torque_Request */
     { SC_COM_RX_STEER_COMMAND,  0x14u,  4u,  8u },   /* Steer_Command */
@@ -63,7 +64,7 @@ static const E2E_PduProtectCfgType sc_e2e_rx_config[] = {
     { SC_COM_RX_BATTERY_STATUS,  0x26u,  4u,  8u },   /* Battery_Status */
 };
 
-#define SC_E2E_RX_PROTECT_COUNT  19u
+#define SC_E2E_RX_PROTECT_COUNT  20u
 
 /* ==================================================================
  * Aggregate E2E Configuration
@@ -71,12 +72,12 @@ static const E2E_PduProtectCfgType sc_e2e_rx_config[] = {
 
 typedef struct {
     const E2E_PduProtectCfgType *txConfig;
-    uint8_t                      txCount;
+    uint8                        txCount;
     const E2E_PduProtectCfgType *rxConfig;
-    uint8_t                      rxCount;
-} E2E_ConfigType;
+    uint8                        rxCount;
+} E2E_ProtectConfigType;
 
-const E2E_ConfigType sc_e2e_config = {
+const E2E_ProtectConfigType sc_e2e_config = {
     .txConfig = sc_e2e_tx_config,
     .txCount  = SC_E2E_TX_PROTECT_COUNT,
     .rxConfig = sc_e2e_rx_config,
