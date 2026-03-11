@@ -15,64 +15,46 @@
  * RX Routing Table — CanIf RX PDU → Com RX PDU
  * ================================================================== */
 
-static const PduR_RoutingPathType bcm_rx_routing[] = {
-    /* srcPduId (CanIf),                          dstPduId (Com),                            srcModule,        dstModule */
-    { BCM_COM_RX_ESTOP_BROADCAST,  BCM_COM_RX_ESTOP_BROADCAST,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x001 EStop_Broadcast */
-    { BCM_COM_RX_CVC_HEARTBEAT,  BCM_COM_RX_CVC_HEARTBEAT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x010 CVC_Heartbeat */
-    { BCM_COM_RX_FZC_HEARTBEAT,  BCM_COM_RX_FZC_HEARTBEAT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x011 FZC_Heartbeat */
-    { BCM_COM_RX_RZC_HEARTBEAT,  BCM_COM_RX_RZC_HEARTBEAT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x012 RZC_Heartbeat */
-    { BCM_COM_RX_SC_STATUS,  BCM_COM_RX_SC_STATUS,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x013 SC_Status */
-    { BCM_COM_RX_ICU_HEARTBEAT,  BCM_COM_RX_ICU_HEARTBEAT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x014 ICU_Heartbeat */
-    { BCM_COM_RX_TCU_HEARTBEAT,  BCM_COM_RX_TCU_HEARTBEAT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x015 TCU_Heartbeat */
-    { BCM_COM_RX_VEHICLE_STATE,  BCM_COM_RX_VEHICLE_STATE,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x100 Vehicle_State */
-    { BCM_COM_RX_TORQUE_REQUEST,  BCM_COM_RX_TORQUE_REQUEST,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x101 Torque_Request */
-    { BCM_COM_RX_STEER_COMMAND,  BCM_COM_RX_STEER_COMMAND,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x102 Steer_Command */
-    { BCM_COM_RX_BRAKE_COMMAND,  BCM_COM_RX_BRAKE_COMMAND,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x103 Brake_Command */
-    { BCM_COM_RX_STEERING_STATUS,  BCM_COM_RX_STEERING_STATUS,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x200 Steering_Status */
-    { BCM_COM_RX_BRAKE_STATUS,  BCM_COM_RX_BRAKE_STATUS,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x201 Brake_Status */
-    { BCM_COM_RX_BRAKE_FAULT,  BCM_COM_RX_BRAKE_FAULT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x210 Brake_Fault */
-    { BCM_COM_RX_MOTOR_CUTOFF_REQ,  BCM_COM_RX_MOTOR_CUTOFF_REQ,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x211 Motor_Cutoff_Req */
-    { BCM_COM_RX_LIDAR_DISTANCE,  BCM_COM_RX_LIDAR_DISTANCE,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x220 Lidar_Distance */
-    { BCM_COM_RX_MOTOR_STATUS,  BCM_COM_RX_MOTOR_STATUS,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x300 Motor_Status */
-    { BCM_COM_RX_MOTOR_CURRENT,  BCM_COM_RX_MOTOR_CURRENT,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x301 Motor_Current */
-    { BCM_COM_RX_MOTOR_TEMPERATURE,  BCM_COM_RX_MOTOR_TEMPERATURE,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x302 Motor_Temperature */
-    { BCM_COM_RX_BATTERY_STATUS,  BCM_COM_RX_BATTERY_STATUS,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x303 Battery_Status */
-    { BCM_COM_RX_BODY_CONTROL_CMD,  BCM_COM_RX_BODY_CONTROL_CMD,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x350 Body_Control_Cmd */
-    { BCM_COM_RX_DTC_BROADCAST,  BCM_COM_RX_DTC_BROADCAST,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x500 DTC_Broadcast */
-    { BCM_COM_RX_UDS_RESP_TCU,  BCM_COM_RX_UDS_RESP_TCU,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x644 UDS_Resp_TCU */
-    { BCM_COM_RX_UDS_FUNC_REQUEST,  BCM_COM_RX_UDS_FUNC_REQUEST,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7DF UDS_Func_Request */
-    { BCM_COM_RX_UDS_PHYS_REQ_CVC,  BCM_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E0 UDS_Phys_Req_CVC */
-    { BCM_COM_RX_UDS_PHYS_REQ_FZC,  BCM_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E1 UDS_Phys_Req_FZC */
-    { BCM_COM_RX_UDS_PHYS_REQ_RZC,  BCM_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E2 UDS_Phys_Req_RZC */
-    { BCM_COM_RX_UDS_PHYS_REQ_TCU,  BCM_COM_RX_UDS_PHYS_REQ_TCU,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E3 UDS_Phys_Req_TCU */
-    { BCM_COM_RX_UDS_RESP_CVC,  BCM_COM_RX_UDS_RESP_CVC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E8 UDS_Resp_CVC */
-    { BCM_COM_RX_UDS_RESP_FZC,  BCM_COM_RX_UDS_RESP_FZC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7E9 UDS_Resp_FZC */
-    { BCM_COM_RX_UDS_RESP_RZC,  BCM_COM_RX_UDS_RESP_RZC,  PDUR_MOD_CANIF,  PDUR_MOD_COM },   /* 0x7EA UDS_Resp_RZC */
+static const PduR_RoutingTableType bcm_pdur_routing[] = {
+    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com) */
+    { BCM_COM_RX_ESTOP_BROADCAST,  PDUR_DEST_COM,  BCM_COM_RX_ESTOP_BROADCAST },   /* 0x001 EStop_Broadcast */
+    { BCM_COM_RX_CVC_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_CVC_HEARTBEAT },   /* 0x010 CVC_Heartbeat */
+    { BCM_COM_RX_FZC_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_FZC_HEARTBEAT },   /* 0x011 FZC_Heartbeat */
+    { BCM_COM_RX_RZC_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_RZC_HEARTBEAT },   /* 0x012 RZC_Heartbeat */
+    { BCM_COM_RX_SC_STATUS,  PDUR_DEST_COM,  BCM_COM_RX_SC_STATUS },   /* 0x013 SC_Status */
+    { BCM_COM_RX_ICU_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_ICU_HEARTBEAT },   /* 0x014 ICU_Heartbeat */
+    { BCM_COM_RX_TCU_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_TCU_HEARTBEAT },   /* 0x015 TCU_Heartbeat */
+    { BCM_COM_RX_VEHICLE_STATE,  PDUR_DEST_COM,  BCM_COM_RX_VEHICLE_STATE },   /* 0x100 Vehicle_State */
+    { BCM_COM_RX_TORQUE_REQUEST,  PDUR_DEST_COM,  BCM_COM_RX_TORQUE_REQUEST },   /* 0x101 Torque_Request */
+    { BCM_COM_RX_STEER_COMMAND,  PDUR_DEST_COM,  BCM_COM_RX_STEER_COMMAND },   /* 0x102 Steer_Command */
+    { BCM_COM_RX_BRAKE_COMMAND,  PDUR_DEST_COM,  BCM_COM_RX_BRAKE_COMMAND },   /* 0x103 Brake_Command */
+    { BCM_COM_RX_STEERING_STATUS,  PDUR_DEST_COM,  BCM_COM_RX_STEERING_STATUS },   /* 0x200 Steering_Status */
+    { BCM_COM_RX_BRAKE_STATUS,  PDUR_DEST_COM,  BCM_COM_RX_BRAKE_STATUS },   /* 0x201 Brake_Status */
+    { BCM_COM_RX_BRAKE_FAULT,  PDUR_DEST_COM,  BCM_COM_RX_BRAKE_FAULT },   /* 0x210 Brake_Fault */
+    { BCM_COM_RX_MOTOR_CUTOFF_REQ,  PDUR_DEST_COM,  BCM_COM_RX_MOTOR_CUTOFF_REQ },   /* 0x211 Motor_Cutoff_Req */
+    { BCM_COM_RX_LIDAR_DISTANCE,  PDUR_DEST_COM,  BCM_COM_RX_LIDAR_DISTANCE },   /* 0x220 Lidar_Distance */
+    { BCM_COM_RX_MOTOR_STATUS,  PDUR_DEST_COM,  BCM_COM_RX_MOTOR_STATUS },   /* 0x300 Motor_Status */
+    { BCM_COM_RX_MOTOR_CURRENT,  PDUR_DEST_COM,  BCM_COM_RX_MOTOR_CURRENT },   /* 0x301 Motor_Current */
+    { BCM_COM_RX_MOTOR_TEMPERATURE,  PDUR_DEST_COM,  BCM_COM_RX_MOTOR_TEMPERATURE },   /* 0x302 Motor_Temperature */
+    { BCM_COM_RX_BATTERY_STATUS,  PDUR_DEST_COM,  BCM_COM_RX_BATTERY_STATUS },   /* 0x303 Battery_Status */
+    { BCM_COM_RX_BODY_CONTROL_CMD,  PDUR_DEST_COM,  BCM_COM_RX_BODY_CONTROL_CMD },   /* 0x350 Body_Control_Cmd */
+    { BCM_COM_RX_DTC_BROADCAST,  PDUR_DEST_COM,  BCM_COM_RX_DTC_BROADCAST },   /* 0x500 DTC_Broadcast */
+    { BCM_COM_RX_UDS_RESP_TCU,  PDUR_DEST_COM,  BCM_COM_RX_UDS_RESP_TCU },   /* 0x644 UDS_Resp_TCU */
+    { BCM_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_COM,  BCM_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request */
+    { BCM_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC */
+    { BCM_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_FZC },   /* 0x7E1 UDS_Phys_Req_FZC */
+    { BCM_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_RZC },   /* 0x7E2 UDS_Phys_Req_RZC */
+    { BCM_COM_RX_UDS_PHYS_REQ_TCU,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_TCU },   /* 0x7E3 UDS_Phys_Req_TCU */
+    { BCM_COM_RX_UDS_RESP_CVC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_RESP_CVC },   /* 0x7E8 UDS_Resp_CVC */
+    { BCM_COM_RX_UDS_RESP_FZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_RESP_FZC },   /* 0x7E9 UDS_Resp_FZC */
+    { BCM_COM_RX_UDS_RESP_RZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_RESP_RZC },   /* 0x7EA UDS_Resp_RZC */
 };
-
-#define BCM_PDUR_RX_ROUTE_COUNT  (sizeof(bcm_rx_routing) / sizeof(bcm_rx_routing[0]))
-
-/* ==================================================================
- * TX Routing Table — Com TX PDU → CanIf TX PDU
- * ================================================================== */
-
-static const PduR_RoutingPathType bcm_tx_routing[] = {
-    /* srcPduId (Com),                            dstPduId (CanIf),                          srcModule,        dstModule */
-    { BCM_COM_TX_BCM_HEARTBEAT,  BCM_COM_TX_BCM_HEARTBEAT,  PDUR_MOD_COM,  PDUR_MOD_CANIF },   /* 0x016 BCM_Heartbeat */
-    { BCM_COM_TX_LIGHT_STATUS,  BCM_COM_TX_LIGHT_STATUS,  PDUR_MOD_COM,  PDUR_MOD_CANIF },   /* 0x400 Light_Status */
-    { BCM_COM_TX_INDICATOR_STATE,  BCM_COM_TX_INDICATOR_STATE,  PDUR_MOD_COM,  PDUR_MOD_CANIF },   /* 0x401 Indicator_State */
-    { BCM_COM_TX_DOOR_LOCK_STATUS,  BCM_COM_TX_DOOR_LOCK_STATUS,  PDUR_MOD_COM,  PDUR_MOD_CANIF },   /* 0x402 Door_Lock_Status */
-};
-
-#define BCM_PDUR_TX_ROUTE_COUNT  (sizeof(bcm_tx_routing) / sizeof(bcm_tx_routing[0]))
 
 /* ==================================================================
  * Aggregate PduR Configuration
  * ================================================================== */
 
 const PduR_ConfigType bcm_pdur_config = {
-    .rxRouting    = bcm_rx_routing,
-    .rxRouteCount = (uint8_t)BCM_PDUR_RX_ROUTE_COUNT,
-    .txRouting    = bcm_tx_routing,
-    .txRouteCount = (uint8_t)BCM_PDUR_TX_ROUTE_COUNT,
+    .routingTable = bcm_pdur_routing,
+    .routingCount = (uint8)(sizeof(bcm_pdur_routing) / sizeof(bcm_pdur_routing[0])),
 };
