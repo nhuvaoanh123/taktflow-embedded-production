@@ -410,6 +410,17 @@
 #define BCM_E2E_HEARTBEAT_DATA_ID  0x51u
 
 /* ====================================================================
+ * Enums
+ * ==================================================================== */
+
+#define BCM_VSTATE_INIT     0u
+#define BCM_VSTATE_READY     1u
+#define BCM_VSTATE_DRIVING     2u
+#define BCM_VSTATE_DEGRADED     3u
+#define BCM_VSTATE_ESTOP     4u
+#define BCM_VSTATE_FAULT     5u
+
+/* ====================================================================
  * Thresholds
  * ==================================================================== */
 

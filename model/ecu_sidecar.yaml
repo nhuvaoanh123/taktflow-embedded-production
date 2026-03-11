@@ -207,6 +207,14 @@ ecus:
     pdu_e2e_map:
       BCM_Heartbeat: 0x51
 
+    enums:
+      BCM_VSTATE_INIT: 0
+      BCM_VSTATE_READY: 1
+      BCM_VSTATE_DRIVING: 2
+      BCM_VSTATE_DEGRADED: 3
+      BCM_VSTATE_ESTOP: 4
+      BCM_VSTATE_FAULT: 5
+
     thresholds:
       BCM_RTE_PERIOD_MS: 50
       BCM_COMM_TIMEOUT: 200
