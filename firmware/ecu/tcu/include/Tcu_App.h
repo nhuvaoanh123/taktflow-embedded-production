@@ -22,4 +22,8 @@
 #undef  TCU_DTC_AGING_CLEAR_CYCLES
 #define TCU_DTC_AGING_CLEAR_CYCLES  40u
 
+/* --- VIN constants --- */
+#define TCU_VIN_LENGTH             17u
+#define TCU_VIN_DEFAULT            "TAKTFLOW000000001"
+
 #endif /* TCU_APP_H */

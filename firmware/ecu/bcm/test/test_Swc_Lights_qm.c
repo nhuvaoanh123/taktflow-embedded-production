@@ -50,6 +50,13 @@ typedef uint8          boolean;
 #define BCM_SIG_LIGHT_HEADLAMP      19u
 #define BCM_SIG_LIGHT_TAIL          20u
 
+/* ARXML-generated signal IDs (fully-qualified names used by SWC source) */
+#define BCM_SIG_MOTOR_STATUS_MOTOR_SPEED_RPM       119u
+#define BCM_SIG_VEHICLE_STATE_VEHICLE_STATE        182u
+#define BCM_SIG_BODY_CONTROL_CMD_HEADLIGHT_CMD      28u
+#define BCM_SIG_LIGHT_STATUS_HEADLIGHT_ON           98u
+#define BCM_SIG_LIGHT_STATUS_TAIL_LIGHT_ON          99u
+
 /* Vehicle state values */
 #define BCM_VSTATE_INIT             0u
 #define BCM_VSTATE_READY            1u

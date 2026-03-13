@@ -118,6 +118,11 @@ typedef uint8 Std_ReturnType;
 #define CVC_DTC_MOTOR_OVERCURRENT  7u
 #define CVC_DTC_CREEP_FAULT       18u
 
+/* Com Signal IDs used by Swc_VehicleState.c (mirrors Cvc_Cfg.h) */
+#define CVC_COM_SIG_BRAKE_FAULT_FAULT_TYPE           103u
+#define CVC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE    109u
+#define CVC_COM_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS  125u
+
 /* Creep guard constants — must match Cvc_Cfg.h */
 #define CVC_CREEP_SPEED_THRESH     50u
 #define CVC_CREEP_TORQUE_THRESH    50u

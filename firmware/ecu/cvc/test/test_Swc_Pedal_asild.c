@@ -41,6 +41,9 @@ typedef uint8           Std_ReturnType;
 #define CVC_SIG_VEHICLE_STATE     20u
 #define CVC_SIG_TORQUE_REQUEST    21u
 
+/* Com Signal IDs used by Swc_Pedal.c (mirrors Cvc_Cfg.h) */
+#define CVC_COM_SIG_TORQUE_REQUEST_TORQUE_REQUEST    21u
+
 /* Vehicle states */
 #define CVC_STATE_INIT             0u
 #define CVC_STATE_RUN              1u

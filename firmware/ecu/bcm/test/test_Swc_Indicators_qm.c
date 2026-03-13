@@ -53,6 +53,14 @@ typedef uint8          boolean;
 #define BCM_SIG_HAZARD_ACTIVE       23u
 #define BCM_SIG_ESTOP_ACTIVE        25u
 
+/* ARXML-generated signal IDs used by Swc_Indicators.c (mirrors Bcm_Cfg.h) */
+#define BCM_SIG_BODY_CONTROL_CMD_TURN_SIGNAL_CMD    30u
+#define BCM_SIG_BODY_CONTROL_CMD_HAZARD_CMD         27u
+#define BCM_SIG_ESTOP_BROADCAST_ESTOP_ACTIVE        71u
+#define BCM_SIG_INDICATOR_STATE_LEFT_INDICATOR       86u
+#define BCM_SIG_INDICATOR_STATE_RIGHT_INDICATOR      87u
+#define BCM_SIG_INDICATOR_STATE_HAZARD_ACTIVE        85u
+
 /* Indicator flash period (ticks at 10ms) */
 #define BCM_INDICATOR_FLASH_ON      33u
 #define BCM_INDICATOR_FLASH_OFF     33u
