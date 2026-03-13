@@ -15,6 +15,8 @@
  * Forward declarations for SWC runnables
  * ================================================================== */
 
+extern void Swc_UdsServer_10ms(void);
+extern void Swc_DtcStore_10ms(void);
 extern void Swc_DtcStore_Init(void);
 extern void Swc_Obd2Pids_Init(void);
 extern void Swc_UdsServer_Init(void);
@@ -219,6 +221,8 @@ static const Rte_SignalConfigType tcu_signal_config[TCU_SIG_COUNT] = {
 
 static const Rte_RunnableConfigType tcu_runnable_config[] = {
     /* func,                        periodMs, priority, seId */
+    { Swc_UdsServer_10ms,                         10u,     7u, 0xFFu },
+    { Swc_DtcStore_10ms,                          10u,     6u, 0xFFu },
 };
 
 #define TCU_RUNNABLE_COUNT  (sizeof(tcu_runnable_config) / sizeof(tcu_runnable_config[0]))
