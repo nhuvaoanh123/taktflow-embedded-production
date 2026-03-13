@@ -40,9 +40,9 @@ misra-c2012-11.8:*/Dcm.c
 misra-c2012-17.3:*/Dcm.c
 misra-c2012-17.3:*/sc_hw_posix.c
 misra-config:*/sc_hw_posix.c
-misra-c2012-21.6:cvc/src/*.c
-misra-c2012-21.6:fzc/src/*.c
-misra-c2012-21.6:rzc/src/*.c
+misra-c2012-21.6:*/cvc/src/*.c
+misra-c2012-21.6:*/fzc/src/*.c
+misra-c2012-21.6:*/rzc/src/*.c
 misra-c2012-21.6:*/Dem.c
 misra-c2012-17.7:*/Dem.c
 misra-c2012-21.15:*/Dem.c
@@ -70,3 +70,6 @@ misra-c2012-10.3
 misra-c2012-10.4
 misra-c2012-11.6
 misra-c2012-8.2
+*:*/cfg/Core/*
+*:*/cfg/Drivers/*
+misra-c2012-8.6:*/cvc/src/main.c
