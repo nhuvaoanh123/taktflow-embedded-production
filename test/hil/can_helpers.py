@@ -144,63 +144,70 @@ def check_heartbeat(
 # E2E Protection Validation
 # ---------------------------------------------------------------------------
 
+_E2E_CRC8_POLY = 0x1D
+_E2E_CRC8_INIT = 0xFF
+_E2E_CRC8_XOR_OUT = 0xFF
+_E2E_PAYLOAD_OFFSET = 2  # CRC covers bytes [2..N-1] + DataID
+
 CRC8_TABLE: list[int] = []
-_CRC8_POLY = 0x07
 
 for _i in range(256):
     _crc = _i
     for _ in range(8):
         if _crc & 0x80:
-            _crc = ((_crc << 1) ^ _CRC8_POLY) & 0xFF
+            _crc = ((_crc << 1) ^ _E2E_CRC8_POLY) & 0xFF
         else:
             _crc = (_crc << 1) & 0xFF
     CRC8_TABLE.append(_crc)
 
 
-def crc8(data: bytes, poly: int = 0x07) -> int:
-    """Compute CRC-8 over data bytes.
+def crc8(data: bytes, init: int = _E2E_CRC8_INIT) -> int:
+    """Compute CRC-8 SAE J1850 (poly 0x1D) matching firmware E2E.
 
     @param data  Input bytes.
-    @param poly  CRC polynomial (default 0x07 = SAE J1850).
+    @param init  Initial CRC value (default 0xFF).
     @return      CRC-8 value (0-255).
     """
-    crc = 0x00
+    crc = init
     for b in data:
         crc = CRC8_TABLE[crc ^ b]
     return crc
 
 
-def check_e2e(
-    msg: can.Message,
-    crc_byte: int = 0,
-    alive_byte: int = 1,
-    alive_bits: int = 4,
-) -> dict[str, Any]:
+def check_e2e(msg: can.Message) -> dict[str, Any]:
     """Validate E2E CRC-8 and alive counter on a CAN message.
 
-    @param msg         CAN message to validate.
-    @param crc_byte    Byte index of CRC field (default 0).
-    @param alive_byte  Byte index of alive counter (default 1).
-    @param alive_bits  Number of bits for alive counter (default 4 = 0-15).
-    @return  Dict with keys: crc_valid, crc_expected, crc_actual,
-             alive_counter, passed.
+    Frame layout (matches firmware E2E_Protect / plant-sim _encode_with_e2e):
+      byte[0]: AliveCounter[7:4] | DataID[3:0]
+      byte[1]: CRC-8 (SAE J1850, poly=0x1D, init=0xFF, xor=0xFF)
+      byte[2..N]: payload data
+
+    CRC is computed over payload[2:] then DataID, result XORed with 0xFF.
+
+    @param msg  CAN message to validate.
+    @return     Dict with keys: crc_valid, crc_expected, crc_actual,
+                alive_counter, data_id, passed.
     """
-    if len(msg.data) < max(crc_byte, alive_byte) + 1:
+    if len(msg.data) < 2:
         return {"passed": False, "error": "Message too short"}
 
-    received_crc = msg.data[crc_byte]
-    alive_counter = msg.data[alive_byte] & ((1 << alive_bits) - 1)
+    alive_counter = (msg.data[0] >> 4) & 0x0F
+    data_id = msg.data[0] & 0x0F
+    received_crc = msg.data[1]
 
-    # CRC is computed over all bytes except the CRC byte itself
-    payload = bytearray(msg.data)
-    payload[crc_byte] = 0x00
-    expected_crc = crc8(bytes(payload))
+    # CRC over payload bytes [2:] then DataID, matching firmware E2E_ComputePduCrc
+    crc = _E2E_CRC8_INIT
+    for b in msg.data[_E2E_PAYLOAD_OFFSET:]:
+        crc = CRC8_TABLE[crc ^ b]
+    crc = CRC8_TABLE[crc ^ data_id]
+    expected_crc = crc ^ _E2E_CRC8_XOR_OUT
 
     return {
         "crc_valid": received_crc == expected_crc,
         "crc_expected": expected_crc,
         "crc_actual": received_crc,
         "alive_counter": alive_counter,
+        "data_id": data_id,
         "passed": received_crc == expected_crc,
     }
 
