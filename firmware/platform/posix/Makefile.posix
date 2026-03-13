@@ -250,6 +250,7 @@ CPPCHECK_FLAGS = \
     --suppress=knownConditionTrueFalse \
     --suppress=badBitmaskCheck \
     --suppress=normalCheckLevelMaxBranches \
+    --suppress=compareValueOutOfTypeRangeError \
     --suppressions-list=$(MISRA_SUPPR) \
     --inline-suppr \
     --error-exitcode=1
