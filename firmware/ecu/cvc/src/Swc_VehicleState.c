@@ -247,8 +247,8 @@ static uint8 fault_confirm_count[4];
 #define CVC_FAULT_IDX_MOTOR_RZC      3u
 #define CVC_FAULT_CONFIRM_COUNT      4u
 
-#define CVC_FAULT_COM_BRAKE         13u   /**< Com signal ID for brake_fault   */
-#define CVC_FAULT_COM_MOTOR_CUTOFF  14u   /**< Com signal ID for motor_cutoff  */
+#define CVC_FAULT_COM_BRAKE         CVC_COM_SIG_BRAKE_FAULT_FAULT_TYPE       /**< 103u */
+#define CVC_FAULT_COM_MOTOR_CUTOFF  CVC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE /**< 109u */
 #define CVC_FAULT_COM_STEERING      0xFFu /**< Not bridged via Com             */
 
 #define CVC_FAULT_E2E_BRAKE          2u   /**< CvcCom RX index for 0x210       */
@@ -754,7 +754,7 @@ void Swc_VehicleState_MainFunction(void)
 
             Swc_VehicleState_ConfirmFault(
                 CVC_FAULT_IDX_MOTOR_RZC, motor_fault_rzc,
-                21u, 0xFFu,
+                CVC_COM_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS, 0xFFu,
                 CVC_DTC_MOTOR_OVERCURRENT, CVC_EVT_MOTOR_CUTOFF);
 
             Swc_VehicleState_ConfirmFault(

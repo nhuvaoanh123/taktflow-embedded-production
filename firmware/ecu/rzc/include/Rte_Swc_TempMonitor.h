@@ -22,23 +22,23 @@
  * ==================================================================== */
 
 /**
- * @brief  Write WindingTemp1_C (uint16)
+ * @brief  Write WindingTemp1_C (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_WindingTemp1_C(uint16 value)
+static inline Rte_StatusType Rte_Write_WindingTemp1_C(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_WINDING_TEMP_1_C, (uint32)value);
+    return Rte_Write(RZC_SIG_WINDING_TEMP_1_C, (uint32_t)value);
 }
 
 /**
- * @brief  Write WindingTemp2_C (uint16)
+ * @brief  Write WindingTemp2_C (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_WindingTemp2_C(uint16 value)
+static inline Rte_StatusType Rte_Write_WindingTemp2_C(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_WINDING_TEMP_2_C, (uint32)value);
+    return Rte_Write(RZC_SIG_WINDING_TEMP_2_C, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_TEMPMONITOR_H */

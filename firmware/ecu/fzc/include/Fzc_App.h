@@ -54,8 +54,8 @@
  * signal ID.  The PDU IDs are in generated Fzc_Cfg.h.
  * ==================================================================== */
 
-#define FZC_COM_SIG_TX_BRAKE_FAULT     6u   /* sig_tx_brake_fault  in Com_Cfg_Fzc.c */
-#define FZC_COM_SIG_TX_MOTOR_CUTOFF    7u   /* sig_tx_motor_cutoff in Com_Cfg_Fzc.c */
+#define FZC_COM_SIG_TX_BRAKE_FAULT     FZC_COM_SIG_BRAKE_FAULT_FAULT_TYPE       /* 25u */
+#define FZC_COM_SIG_TX_MOTOR_CUTOFF    FZC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE /* 31u */
 
 /* ====================================================================
  * Com Signal IDs for Virtual Sensors (RX from plant-sim, SIL only)

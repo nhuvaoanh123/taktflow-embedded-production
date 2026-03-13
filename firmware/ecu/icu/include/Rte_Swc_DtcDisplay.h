@@ -22,139 +22,139 @@
  * ==================================================================== */
 
 /**
- * @brief  Read FaultMask (uint16)
+ * @brief  Read DTC_Number (uint32_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_FaultMask(uint16 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_MASK, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read FaultReason (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_FaultReason(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_REASON, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read FaultStatus (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_FaultStatus(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_STATUS, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read DTC_Number (uint32)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_DTC_Number(uint32 *data)
+static inline Rte_StatusType Rte_Read_DTC_Number(uint32_t *data)
 {
     return Rte_Read(ICU_SIG_DTC_NUMBER, data);
 }
 
 /**
- * @brief  Read DTC_Status (uint8)
+ * @brief  Read FaultStatus (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_DTC_Status(uint8 *data)
+static inline Rte_StatusType Rte_Read_FaultStatus(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_DTC_STATUS, &tmp);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_STATUS, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read SteerFaultStatus (uint8)
+ * @brief  Read BrakeFaultStatus (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SteerFaultStatus(uint8 *data)
+static inline Rte_StatusType Rte_Read_BrakeFaultStatus(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_STEER_FAULT_STATUS, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read BrakeFaultStatus (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_BrakeFaultStatus(uint8 *data)
-{
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(ICU_SIG_BRAKE_FAULT_STATUS, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read MotorFaultStatus (uint8)
+ * @brief  Read SC_FaultFlags (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_MotorFaultStatus(uint8 *data)
+static inline Rte_StatusType Rte_Read_SC_FaultFlags(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(ICU_SIG_MOTOR_FAULT_STATUS, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_FaultFlags (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_FaultFlags(uint8 *data)
-{
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(ICU_SIG_SC_FAULT_FLAGS, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read SteerFaultStatus (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_SteerFaultStatus(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_STEER_FAULT_STATUS, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read DTC_Status (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_DTC_Status(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_DTC_STATUS, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read FaultReason (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_FaultReason(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_REASON, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read MotorFaultStatus (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_MotorFaultStatus(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_MOTOR_FAULT_STATUS, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read FaultMask (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_FaultMask(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(ICU_SIG_FAULT_MASK, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
     }
     return status;
 }

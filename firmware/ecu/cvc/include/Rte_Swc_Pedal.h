@@ -22,13 +22,23 @@
  * ==================================================================== */
 
 /**
- * @brief  Write PedalPosition2 (uint16)
+ * @brief  Write PedalPosition1 (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_PedalPosition2(uint16 value)
+static inline Rte_StatusType Rte_Write_PedalPosition1(uint16_t value)
 {
-    return Rte_Write(CVC_SIG_PEDAL_POSITION_2, (uint32)value);
+    return Rte_Write(CVC_SIG_PEDAL_POSITION_1, (uint32_t)value);
+}
+
+/**
+ * @brief  Write PedalPosition2 (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_PedalPosition2(uint16_t value)
+{
+    return Rte_Write(CVC_SIG_PEDAL_POSITION_2, (uint32_t)value);
 }
 
 /**
@@ -38,17 +48,7 @@ static inline Rte_StatusType Rte_Write_PedalPosition2(uint16 value)
  */
 static inline Rte_StatusType Rte_Write_PedalFault(boolean value)
 {
-    return Rte_Write(CVC_SIG_PEDAL_FAULT, (uint32)value);
-}
-
-/**
- * @brief  Write PedalPosition1 (uint16)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_PedalPosition1(uint16 value)
-{
-    return Rte_Write(CVC_SIG_PEDAL_POSITION_1, (uint32)value);
+    return Rte_Write(CVC_SIG_PEDAL_FAULT, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_PEDAL_H */

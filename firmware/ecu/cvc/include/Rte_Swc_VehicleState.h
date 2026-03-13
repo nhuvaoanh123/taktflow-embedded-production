@@ -22,13 +22,13 @@
  * ==================================================================== */
 
 /**
- * @brief  Write VehicleState (uint8)
+ * @brief  Write VehicleState (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_VehicleState(uint8 value)
+static inline Rte_StatusType Rte_Write_VehicleState(uint8_t value)
 {
-    return Rte_Write(CVC_SIG_VEHICLE_STATE, (uint32)value);
+    return Rte_Write(CVC_SIG_VEHICLE_STATE, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_VEHICLESTATE_H */

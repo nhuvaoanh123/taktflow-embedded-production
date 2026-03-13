@@ -337,8 +337,8 @@ void Swc_CvcCom_TransmitSchedule(uint32 currentTimeMs)
         if (tx_brake != 0u) {
             CVCCOM_DIAG("TX brake=%u vs=%u", (unsigned)tx_brake, (unsigned)vs);
         }
-        (void)Com_SendSignal(6u, &tx_steer);  /* Signal 6 = steer_angle -> CAN 0x102 */
-        (void)Com_SendSignal(7u, &tx_brake);  /* Signal 7 = brake_pressure -> CAN 0x103 */
+        (void)Com_SendSignal(CVC_COM_SIG_STEER_COMMAND_STEER_ANGLE_CMD, &tx_steer);
+        (void)Com_SendSignal(CVC_COM_SIG_BRAKE_COMMAND_BRAKE_FORCE_CMD, &tx_brake);
     }
 }
 
@@ -368,20 +368,18 @@ void Swc_CvcCom_BridgeRxToRte(void)
     uint8  motor_fault_rzc_val = 0u;
 
     /* Read fault signals from Com shadow buffers */
-    (void)Com_ReceiveSignal(13u, &brake_fault_val);      /* sig_rx_brake_fault */
-    (void)Com_ReceiveSignal(14u, &motor_cutoff_val);     /* sig_rx_motor_cutoff */
-    (void)Com_ReceiveSignal(17u, &sc_relay_byte3);       /* byte 3 of SC_Status 0x013 */
-    /* DBC: RelayState at bit 31 = bit 7 within byte 3.
+    (void)Com_ReceiveSignal(CVC_COM_SIG_BRAKE_FAULT_FAULT_TYPE, &brake_fault_val);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE, &motor_cutoff_val);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_SC_STATUS_RELAY_STATE, &sc_relay_byte3);
+    /* Com extracts the 1-bit RelayState signal as 0 or 1.
      * 1=energized (OK), 0=de-energized (killed).
-     * Extract bit 7 and write directly to RTE — VehicleState checks == 0
-     * for kill event.  On PDU timeout Com zeros shadow → bit7=0 → kill. */
+     * On PDU timeout Com zeros shadow → 0 → kill. */
     {
-        uint32 sc_relay_state = (uint32)((sc_relay_byte3 >> 7u) & 1u);
-        (void)Rte_Write(CVC_SIG_SC_RELAY_KILL, sc_relay_state);
+        (void)Rte_Write(CVC_SIG_SC_RELAY_KILL, (uint32)sc_relay_byte3);
     }
-    (void)Com_ReceiveSignal(18u, &battery_status_val);   /* sig_rx_battery_status (CAN 0x303) */
-    (void)Com_ReceiveSignal(20u, &steering_fault_val);   /* sig_rx_steering_fault (CAN 0x200) */
-    (void)Com_ReceiveSignal(21u, &motor_fault_rzc_val);  /* sig_rx_motor_fault_rzc (CAN 0x300) */
+    (void)Com_ReceiveSignal(CVC_COM_SIG_BATTERY_STATUS_BATTERY_STATUS, &battery_status_val);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_STEERING_STATUS_STEER_FAULT_STATUS, &steering_fault_val);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS, &motor_fault_rzc_val);
 
     /* Bridge to RTE for VehicleState to consume.
      * Heartbeat comm status is owned exclusively by Swc_Heartbeat.c
@@ -400,6 +398,9 @@ void Swc_CvcCom_BridgeRxToRte(void)
     {
         extern void CvcCom_Hw_InjectEstop(uint8 Level);
         uint8 estop_inject_val = 0u;
+        /* TODO:SCALE — signal ID 19u is a dev-repo leftover; no dedicated
+         * RX EStop_Inject Com signal exists in production codegen yet.
+         * Harmless on target (CvcCom_Hw_InjectEstop is a no-op). */
         (void)Com_ReceiveSignal(19u, &estop_inject_val);
         CvcCom_Hw_InjectEstop((estop_inject_val != 0u) ? 1u : 0u);
     }

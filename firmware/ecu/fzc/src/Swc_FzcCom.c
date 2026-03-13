@@ -240,51 +240,42 @@ void Swc_FzcCom_Receive(void)
     Swc_FzcCanMonitor_NotifyRx();
 
     /* NOTE: Com_ReceiveSignal reads extracted signal values from shadow
-     * buffers (not raw PDU bytes).  The previous E2E check at signal level
-     * was incorrect — it read TX signal shadow buffers due to PDU/signal ID
-     * mismatch, causing E2E to always fail and E-stop safe default (1) to
-     * be written every cycle.  E2E protection should be applied at the PDU
-     * level (TODO:POST-BETA — add Com_GetRxPduData + E2E at PDU layer).
-     *
-     * Signal IDs reference Com_Cfg_Fzc.c signal table:
-     *   10 = sig_rx_estop_active   (uint8,  PDU FZC_COM_RX_ESTOP)
-     *   11 = sig_rx_vehicle_state  (uint8,  PDU FZC_COM_RX_VEHICLE_STATE)
-     *   12 = sig_rx_steer_cmd      (sint16, PDU FZC_COM_RX_STEER_CMD)
-     *   13 = sig_rx_brake_cmd      (uint8,  PDU FZC_COM_RX_BRAKE_CMD)
-     */
+     * buffers (not raw PDU bytes).  E2E protection should be applied at
+     * the PDU level (TODO:POST-BETA — add Com_GetRxPduData + E2E at PDU
+     * layer).  Signal IDs use FZC_COM_SIG_* defines from Fzc_Cfg.h. */
 
-    /* ---- RX: 0x001 E-stop (signal 10, uint8) ---- */
+    /* ---- RX: 0x001 E-stop (uint8) ---- */
     {
         uint8 estop_val = 0u;
-        ret = Com_ReceiveSignal(10u, &estop_val);
+        ret = Com_ReceiveSignal(FZC_COM_SIG_ESTOP_BROADCAST_ESTOP_ACTIVE, &estop_val);
         if (ret == E_OK) {
             (void)Rte_Write(FZC_SIG_ESTOP_ACTIVE, (uint32)estop_val);
         }
     }
 
-    /* ---- RX: 0x100 Vehicle State (signal 11, uint8) ---- */
+    /* ---- RX: 0x100 Vehicle State (uint8) ---- */
     {
         uint8 vs_val = 0u;
-        ret = Com_ReceiveSignal(11u, &vs_val);
+        ret = Com_ReceiveSignal(FZC_COM_SIG_VEHICLE_STATE_VEHICLE_STATE, &vs_val);
         if (ret == E_OK) {
             (void)Rte_Write(FZC_SIG_VEHICLE_STATE, (uint32)vs_val);
         }
     }
 
-    /* ---- RX: 0x102 Steering Command (signal 12, sint16) ---- */
+    /* ---- RX: 0x102 Steering Command (sint16) ---- */
     {
         sint16 steer_val = 0;
-        ret = Com_ReceiveSignal(12u, &steer_val);
+        ret = Com_ReceiveSignal(FZC_COM_SIG_STEER_COMMAND_STEER_ANGLE_CMD, &steer_val);
         if (ret == E_OK) {
             (void)Rte_Write(FZC_SIG_STEER_CMD,
                 (uint32)((uint16)steer_val));
         }
     }
 
-    /* ---- RX: 0x103 Brake Command (signal 13, uint8) ---- */
+    /* ---- RX: 0x103 Brake Command (uint8) ---- */
     {
         uint8 brake_val = 0u;
-        ret = Com_ReceiveSignal(13u, &brake_val);
+        ret = Com_ReceiveSignal(FZC_COM_SIG_BRAKE_COMMAND_BRAKE_FORCE_CMD, &brake_val);
         if (ret == E_OK) {
             (void)Rte_Write(FZC_SIG_BRAKE_CMD, (uint32)brake_val);
         }
@@ -328,21 +319,21 @@ void Swc_FzcCom_TransmitSchedule(void)
         (void)Rte_Read(FZC_SIG_STEER_ANGLE, &steer_val);
         (void)Rte_Read(FZC_SIG_STEER_FAULT, &fault_val);
 
-        /* Signal 3 = steer_angle (sint16), signal 4 = steer_fault (uint8) */
+        /* TX: steer_angle (sint16), steer_fault (uint8) → Steering_Status PDU */
         {
             sint16 angle = (sint16)((uint16)steer_val);
             uint8  fault = (uint8)fault_val;
-            (void)Com_SendSignal(3u, &angle);
-            (void)Com_SendSignal(4u, &fault);
+            (void)Com_SendSignal(FZC_COM_SIG_STEERING_STATUS_ACTUAL_ANGLE, &angle);
+            (void)Com_SendSignal(FZC_COM_SIG_STEERING_STATUS_STEER_FAULT_STATUS, &fault);
         }
 
-        /* Signal 5 = brake_pos (uint8) → 0x201 Brake_Status cyclic */
+        /* TX: brake_pos (uint8) → Brake_Status PDU */
         {
             uint32 brake_val = 0u;
             uint8  bpos;
             (void)Rte_Read(FZC_SIG_BRAKE_POS, &brake_val);
             bpos = (uint8)brake_val;
-            (void)Com_SendSignal(5u, &bpos);
+            (void)Com_SendSignal(FZC_COM_SIG_BRAKE_STATUS_BRAKE_POSITION, &bpos);
         }
     }
 

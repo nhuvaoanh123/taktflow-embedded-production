@@ -22,17 +22,17 @@
  * ==================================================================== */
 
 /**
- * @brief  Read MotorSpeed_RPM (uint16)
+ * @brief  Read MotorSpeed_RPM (uint16_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_MotorSpeed_RPM(uint16 *data)
+static inline Rte_StatusType Rte_Read_MotorSpeed_RPM(uint16_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(CVC_SIG_MOTOR_SPEED_RPM, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint16)tmp;
+        *data = (uint16_t)tmp;
     }
     return status;
 }

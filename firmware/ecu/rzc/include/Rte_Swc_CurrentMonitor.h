@@ -22,13 +22,13 @@
  * ==================================================================== */
 
 /**
- * @brief  Write Current_mA (uint16)
+ * @brief  Write Current_mA (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Current_mA(uint16 value)
+static inline Rte_StatusType Rte_Write_Current_mA(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_CURRENT_M_A, (uint32)value);
+    return Rte_Write(RZC_SIG_CURRENT_M_A, (uint32_t)value);
 }
 
 /**
@@ -38,7 +38,7 @@ static inline Rte_StatusType Rte_Write_Current_mA(uint16 value)
  */
 static inline Rte_StatusType Rte_Write_OvercurrentFlag(boolean value)
 {
-    return Rte_Write(RZC_SIG_OVERCURRENT_FLAG, (uint32)value);
+    return Rte_Write(RZC_SIG_OVERCURRENT_FLAG, (uint32_t)value);
 }
 
 /**
@@ -48,7 +48,7 @@ static inline Rte_StatusType Rte_Write_OvercurrentFlag(boolean value)
  */
 static inline Rte_StatusType Rte_Write_CurrentDirection(boolean value)
 {
-    return Rte_Write(RZC_SIG_CURRENT_DIRECTION, (uint32)value);
+    return Rte_Write(RZC_SIG_CURRENT_DIRECTION, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_CURRENTMONITOR_H */

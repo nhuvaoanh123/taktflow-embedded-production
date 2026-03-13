@@ -15,6 +15,26 @@
  * Forward declarations for SWC runnables
  * ================================================================== */
 
+extern void Swc_CanMonitor_Init(void);
+extern void Can_MainFunction_Read(void);
+extern void Com_MainFunction_Rx(void);
+extern void Com_MainFunction_Tx(void);
+extern void Can_MainFunction_BusOff(void);
+extern void Swc_CvcCom_Init(void);
+extern void Swc_CvcDcm_Init(void);
+extern void Swc_Dashboard_MainFunction(void);
+extern void Swc_Dashboard_Init(void);
+extern void Swc_EStop_MainFunction(void);
+extern void Swc_EStop_Init(void);
+extern void Swc_Heartbeat_MainFunction(void);
+extern void Swc_Heartbeat_Init(void);
+extern void Swc_Nvm_Init(void);
+extern void Swc_Pedal_MainFunction(void);
+extern void Swc_Pedal_Init(void);
+extern void Swc_Scheduler_Init(void);
+extern void Swc_VehicleState_MainFunction(void);
+extern void Swc_VehicleState_Init(void);
+extern void Swc_Watchdog_Init(void);
 
 /* ==================================================================
  * Signal Configuration Table
@@ -216,6 +236,15 @@ static const Rte_SignalConfigType cvc_signal_config[CVC_SIG_COUNT] = {
 
 static const Rte_RunnableConfigType cvc_runnable_config[] = {
     /* func,                        periodMs, priority, seId */
+    { Can_MainFunction_Read,                       1u,     9u, 0xFFu },
+    { Com_MainFunction_Rx,                        10u,     8u, 0xFFu },
+    { Swc_EStop_MainFunction,                     10u,     7u, 0x02u },
+    { Swc_Pedal_MainFunction,                     10u,     6u, 0x00u },
+    { Swc_VehicleState_MainFunction,              10u,     5u, 0x01u },
+    { Swc_Heartbeat_MainFunction,                 10u,     4u, 0x03u },
+    { Swc_Dashboard_MainFunction,                 10u,     3u, 0x04u },
+    { Com_MainFunction_Tx,                        10u,     2u, 0xFFu },
+    { Can_MainFunction_BusOff,                    10u,     1u, 0xFFu },
 };
 
 #define CVC_RUNNABLE_COUNT  (sizeof(cvc_runnable_config) / sizeof(cvc_runnable_config[0]))

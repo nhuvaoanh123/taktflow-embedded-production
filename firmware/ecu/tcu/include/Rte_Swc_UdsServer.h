@@ -22,13 +22,13 @@
  * ==================================================================== */
 
 /**
- * @brief  Write UDS_Data (uint32)
+ * @brief  Write UDS_Data (uint32_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_UDS_Data(uint32 value)
+static inline Rte_StatusType Rte_Write_UDS_Data(uint32_t value)
 {
-    return Rte_Write(TCU_SIG_UDS_DATA, (uint32)value);
+    return Rte_Write(TCU_SIG_UDS_DATA, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_UDSSERVER_H */

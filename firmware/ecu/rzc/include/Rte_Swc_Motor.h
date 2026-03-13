@@ -22,45 +22,35 @@
  * ==================================================================== */
 
 /**
- * @brief  Read TorqueRequest (uint8)
+ * @brief  Read TorqueRequest (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_TorqueRequest(uint8 *data)
+static inline Rte_StatusType Rte_Read_TorqueRequest(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read TorqueLimit (uint8)
+ * @brief  Read TorqueLimit (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_TorqueLimit(uint8 *data)
+static inline Rte_StatusType Rte_Read_TorqueLimit(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_LIMIT, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
-}
-
-/**
- * @brief  Write MotorDirection (uint8)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_MotorDirection(uint8 value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_DIRECTION, (uint32)value);
 }
 
 /**
@@ -70,37 +60,47 @@ static inline Rte_StatusType Rte_Write_MotorDirection(uint8 value)
  */
 static inline Rte_StatusType Rte_Write_MotorEnable(boolean value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_ENABLE, (uint32)value);
+    return Rte_Write(RZC_SIG_MOTOR_ENABLE, (uint32_t)value);
 }
 
 /**
- * @brief  Write MotorSpeed_RPM (uint16)
+ * @brief  Write MotorSpeed_RPM (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_MotorSpeed_RPM(uint16 value)
+static inline Rte_StatusType Rte_Write_MotorSpeed_RPM(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_SPEED_RPM, (uint32)value);
+    return Rte_Write(RZC_SIG_MOTOR_SPEED_RPM, (uint32_t)value);
 }
 
 /**
- * @brief  Write MotorFaultStatus (uint8)
+ * @brief  Write MotorDirection (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_MotorFaultStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_MotorDirection(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_FAULT_STATUS, (uint32)value);
+    return Rte_Write(RZC_SIG_MOTOR_DIRECTION, (uint32_t)value);
 }
 
 /**
- * @brief  Write TorqueEcho (uint8)
+ * @brief  Write MotorFaultStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_TorqueEcho(uint8 value)
+static inline Rte_StatusType Rte_Write_MotorFaultStatus(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_TORQUE_ECHO, (uint32)value);
+    return Rte_Write(RZC_SIG_MOTOR_FAULT_STATUS, (uint32_t)value);
+}
+
+/**
+ * @brief  Write TorqueEcho (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_TorqueEcho(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_TORQUE_ECHO, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_MOTOR_H */

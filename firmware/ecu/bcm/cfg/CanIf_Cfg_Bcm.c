@@ -22,6 +22,7 @@ static const CanIf_TxPduConfigType bcm_tx_pdu_config[] = {
     { 0x400u,  BCM_COM_TX_LIGHT_STATUS,  4u, 0u },
     { 0x401u,  BCM_COM_TX_INDICATOR_STATE,  4u, 0u },
     { 0x402u,  BCM_COM_TX_DOOR_LOCK_STATUS,  2u, 0u },
+    { 0x500u,  BCM_COM_TX_DTC_BROADCAST,  8u, 0u },
 };
 
 #define BCM_CANIF_TX_PDU_COUNT  (sizeof(bcm_tx_pdu_config) / sizeof(bcm_tx_pdu_config[0]))

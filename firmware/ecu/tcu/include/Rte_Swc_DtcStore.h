@@ -22,27 +22,27 @@
  * ==================================================================== */
 
 /**
- * @brief  Read DTC_Number (uint32)
+ * @brief  Read DTC_Number (uint32_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_DTC_Number(uint32 *data)
+static inline Rte_StatusType Rte_Read_DTC_Number(uint32_t *data)
 {
     return Rte_Read(TCU_SIG_DTC_NUMBER, data);
 }
 
 /**
- * @brief  Read DTC_Status (uint8)
+ * @brief  Read DTC_Status (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_DTC_Status(uint8 *data)
+static inline Rte_StatusType Rte_Read_DTC_Status(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(TCU_SIG_DTC_STATUS, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }

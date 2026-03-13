@@ -84,16 +84,6 @@ static inline Rte_StatusType Rte_Write_HeadlightOn(boolean value)
 }
 
 /**
- * @brief  Write HeadlightLevel (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_HeadlightLevel(uint8_t value)
-{
-    return Rte_Write(BCM_SIG_HEADLIGHT_LEVEL, (uint32_t)value);
-}
-
-/**
  * @brief  Write TailLightOn (boolean)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -101,6 +91,16 @@ static inline Rte_StatusType Rte_Write_HeadlightLevel(uint8_t value)
 static inline Rte_StatusType Rte_Write_TailLightOn(boolean value)
 {
     return Rte_Write(BCM_SIG_TAIL_LIGHT_ON, (uint32_t)value);
+}
+
+/**
+ * @brief  Write HeadlightLevel (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_HeadlightLevel(uint8_t value)
+{
+    return Rte_Write(BCM_SIG_HEADLIGHT_LEVEL, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_LIGHTS_H */

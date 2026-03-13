@@ -22,29 +22,29 @@
  * ==================================================================== */
 
 /**
- * @brief  Read SC_AliveCounter (uint8)
+ * @brief  Read SC_AliveCounter (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SC_AliveCounter(uint8 *data)
+static inline Rte_StatusType Rte_Read_SC_AliveCounter(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_SC_ALIVE_COUNTER, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Write E2E_AliveCounter (uint8)
+ * @brief  Write E2E_AliveCounter (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_E2E_AliveCounter(uint8 value)
+static inline Rte_StatusType Rte_Write_E2E_AliveCounter(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_E_2_E_ALIVE_COUNTER, (uint32)value);
+    return Rte_Write(FZC_SIG_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_HEARTBEAT_H */

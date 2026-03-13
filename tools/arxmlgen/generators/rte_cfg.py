@@ -46,10 +46,12 @@ class RteCfgGenerator:
             key=lambda x: x[1],
         )
 
-        # Collect and sort runnables by priority descending
+        # Collect periodic runnables (exclude init-only) and sort by priority desc
         all_runnables = []
         for swc in ecu.swcs:
-            all_runnables.extend(swc.runnables)
+            for r in swc.runnables:
+                if not r.is_init and r.period_ms > 0:
+                    all_runnables.append(r)
         sorted_runnables = sorted(all_runnables, key=lambda r: r.priority, reverse=True)
 
         context = {
@@ -101,8 +103,40 @@ class RteCfgGenerator:
 
         return results
 
+    def render_pbcfg(self, ecu: Ecu, gen_config, engine: TemplateEngine) -> str:
+        """
+        Render Rte_PbCfg.h — per-ECU RTE buffer limits.
+
+        @return rendered content string
+        """
+        # Build ECU-specific signal list to compute total count
+        ecu_app_signals = sorted(
+            [(name, sid) for name, sid in ecu.rte_signal_map.items() if sid >= 16],
+            key=lambda x: x[1],
+        )
+        sig_count = 16 + len(ecu_app_signals)
+
+        # Count periodic runnables (exclude init-only)
+        runnable_count = 0
+        for swc in ecu.swcs:
+            for r in swc.runnables:
+                if not r.is_init and r.period_ms > 0:
+                    runnable_count += 1
+
+        context = {
+            "ecu": ecu,
+            "filename": "Rte_PbCfg.h",
+            "brief": f"RTE buffer limits for {ecu.prefix} — sizes static arrays in Rte.c",
+            "tool_version": "1.0.0",
+            "arxml_source": "TaktflowSystem.arxml",
+            "sig_count": sig_count,
+            "runnable_count": runnable_count,
+        }
+
+        return engine.render("rte/Rte_PbCfg.h.j2", context)
+
     def generate(self, ecu: Ecu, gen_config, engine: TemplateEngine) -> list[OutputFile]:
-        """Generate and write Rte_Cfg.c and per-SWC wrappers for one ECU."""
+        """Generate and write Rte_Cfg.c, Rte_PbCfg.h, and per-SWC wrappers for one ECU."""
         rendered = self.render(ecu, gen_config, engine)
         results = []
 
@@ -118,6 +152,19 @@ class RteCfgGenerator:
             result = engine.write_file(path, content)
             result.template = "rte/Rte_Cfg.c.j2"
             results.append(result)
+
+        # Generate Rte_PbCfg.h (per-ECU RTE limits)
+        pbcfg_content = self.render_pbcfg(ecu, gen_config, engine)
+        pbcfg_path = os.path.join(
+            engine.config.project_root,
+            engine.config.output.base_dir,
+            ecu.name,
+            engine.config.output.header_dir,
+            "Rte_PbCfg.h",
+        )
+        result = engine.write_file(pbcfg_path, pbcfg_content)
+        result.template = "rte/Rte_PbCfg.h.j2"
+        results.append(result)
 
         # Generate per-SWC typed wrapper headers
         wrappers = self.render_wrappers(ecu, gen_config, engine)

@@ -22,129 +22,33 @@
  * ==================================================================== */
 
 /**
- * @brief  Read ECU_Health (uint8)
+ * @brief  Read SC_AliveCounter (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_ECU_Health(uint8 *data)
+static inline Rte_StatusType Rte_Read_SC_AliveCounter(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_ECU_HEALTH, &tmp);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_SC_ALIVE_COUNTER, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read VehicleState (uint8)
+ * @brief  Read SteerAngleCmd (uint16_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_VehicleState(uint8 *data)
+static inline Rte_StatusType Rte_Read_SteerAngleCmd(uint16_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_VEHICLE_STATE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read FaultMask (uint16)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_FaultMask(uint16 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_FAULT_MASK, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read FaultReason (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_FaultReason(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_FAULT_REASON, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read EStop_Source (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Source(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_SOURCE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read BrakeForceCmd (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_BrakeForceCmd(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_BRAKE_FORCE_CMD, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_CRC8 (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_CRC8(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_SC_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SteerAngleCmd (uint16)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SteerAngleCmd(uint16 *data)
-{
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_STEER_ANGLE_CMD, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint16)tmp;
+        *data = (uint16_t)tmp;
     }
     return status;
 }
@@ -156,7 +60,7 @@ static inline Rte_StatusType Rte_Read_SteerAngleCmd(uint16 *data)
  */
 static inline Rte_StatusType Rte_Read_RelayState(boolean *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_RELAY_STATE, &tmp);
     if (status == RTE_E_OK)
     {
@@ -166,333 +70,429 @@ static inline Rte_StatusType Rte_Read_RelayState(boolean *data)
 }
 
 /**
- * @brief  Read EStop_Active (uint8)
+ * @brief  Read SC_Mode (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_EStop_Active(uint8 *data)
+static inline Rte_StatusType Rte_Read_SC_Mode(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_ACTIVE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_FaultFlags (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_FaultFlags(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_SC_FAULT_FLAGS, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SteerRateLimit (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SteerRateLimit(uint8 *data)
-{
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_STEER_RATE_LIMIT, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_Mode (uint8)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_Mode(uint8 *data)
-{
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_SC_MODE, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read SC_AliveCounter (uint8)
+ * @brief  Read SC_FaultFlags (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SC_AliveCounter(uint8 *data)
+static inline Rte_StatusType Rte_Read_SC_FaultFlags(uint8_t *data)
 {
-    uint32 tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_SC_ALIVE_COUNTER, &tmp);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_SC_FAULT_FLAGS, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Write E2E_DataID (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read ECU_Health (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_E2E_DataID(uint8 value)
+static inline Rte_StatusType Rte_Read_ECU_Health(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_E_2_E_DATA_ID, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_ECU_HEALTH, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write FaultType (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read VehicleState (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_FaultType(uint8 value)
+static inline Rte_StatusType Rte_Read_VehicleState(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_FAULT_TYPE, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_VEHICLE_STATE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write FaultStatus (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read EStop_Active (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_FaultStatus(uint8 value)
+static inline Rte_StatusType Rte_Read_EStop_Active(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_FAULT_STATUS, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_ACTIVE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write BrakeMode (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read BrakeForceCmd (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BrakeMode(uint8 value)
+static inline Rte_StatusType Rte_Read_BrakeForceCmd(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_BRAKE_MODE, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_BRAKE_FORCE_CMD, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write ServoCurrent_mA (uint16)
- * @param  value  Signal value to transmit
+ * @brief  Read FaultReason (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_ServoCurrent_mA(uint16 value)
+static inline Rte_StatusType Rte_Read_FaultReason(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_SERVO_CURRENT_M_A, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_FAULT_REASON, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write SignalStrength (uint16)
- * @param  value  Signal value to transmit
+ * @brief  Read SteerRateLimit (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SignalStrength(uint16 value)
+static inline Rte_StatusType Rte_Read_SteerRateLimit(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_SIGNAL_STRENGTH, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_STEER_RATE_LIMIT, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write MeasuredBrake (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read FaultMask (uint16_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_MeasuredBrake(uint8 value)
+static inline Rte_StatusType Rte_Read_FaultMask(uint16_t *data)
 {
-    return Rte_Write(FZC_SIG_MEASURED_BRAKE, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_FAULT_MASK, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write CommandedAngle (uint16)
- * @param  value  Signal value to transmit
+ * @brief  Read SC_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_CommandedAngle(uint16 value)
+static inline Rte_StatusType Rte_Read_SC_CRC8(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_COMMANDED_ANGLE, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_SC_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write RequestType (uint8)
- * @param  value  Signal value to transmit
+ * @brief  Read EStop_Source (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_RequestType(uint8 value)
+static inline Rte_StatusType Rte_Read_EStop_Source(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_REQUEST_TYPE, (uint32)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_SOURCE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
- * @brief  Write E2E_CRC8 (uint8)
+ * @brief  Write BrakePosition (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_E2E_CRC8(uint8 value)
+static inline Rte_StatusType Rte_Write_BrakePosition(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_E_2_E_CRC_8, (uint32)value);
+    return Rte_Write(FZC_SIG_BRAKE_POSITION, (uint32_t)value);
 }
 
 /**
- * @brief  Write ActualAngle (uint16)
+ * @brief  Write CommandedBrake (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_ActualAngle(uint16 value)
+static inline Rte_StatusType Rte_Write_CommandedBrake(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_ACTUAL_ANGLE, (uint32)value);
+    return Rte_Write(FZC_SIG_COMMANDED_BRAKE, (uint32_t)value);
 }
 
 /**
- * @brief  Write OperatingMode (uint8)
+ * @brief  Write FaultStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_OperatingMode(uint8 value)
+static inline Rte_StatusType Rte_Write_FaultStatus(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_OPERATING_MODE, (uint32)value);
+    return Rte_Write(FZC_SIG_FAULT_STATUS, (uint32_t)value);
 }
 
 /**
- * @brief  Write SteerMode (uint8)
+ * @brief  Write SteerMode (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SteerMode(uint8 value)
+static inline Rte_StatusType Rte_Write_SteerMode(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_STEER_MODE, (uint32)value);
+    return Rte_Write(FZC_SIG_STEER_MODE, (uint32_t)value);
 }
 
 /**
- * @brief  Write ECU_ID (uint8)
+ * @brief  Write BrakeFaultStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_ECU_ID(uint8 value)
+static inline Rte_StatusType Rte_Write_BrakeFaultStatus(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_ECU_ID, (uint32)value);
+    return Rte_Write(FZC_SIG_BRAKE_FAULT_STATUS, (uint32_t)value);
 }
 
 /**
- * @brief  Write E2E_AliveCounter (uint8)
+ * @brief  Write FaultType (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_E2E_AliveCounter(uint8 value)
+static inline Rte_StatusType Rte_Write_FaultType(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_E_2_E_ALIVE_COUNTER, (uint32)value);
+    return Rte_Write(FZC_SIG_FAULT_TYPE, (uint32_t)value);
 }
 
 /**
- * @brief  Write Reason (uint8)
+ * @brief  Write ServoCurrent_mA (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Reason(uint8 value)
+static inline Rte_StatusType Rte_Write_ServoCurrent_mA(uint16_t value)
 {
-    return Rte_Write(FZC_SIG_REASON, (uint32)value);
+    return Rte_Write(FZC_SIG_SERVO_CURRENT_M_A, (uint32_t)value);
 }
 
 /**
- * @brief  Write SteerFaultStatus (uint8)
+ * @brief  Write E2E_CRC8 (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SteerFaultStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_E2E_CRC8(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_STEER_FAULT_STATUS, (uint32)value);
+    return Rte_Write(FZC_SIG_E_2_E_CRC_8, (uint32_t)value);
 }
 
 /**
- * @brief  Write BrakeFaultStatus (uint8)
+ * @brief  Write E2E_DataID (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BrakeFaultStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_E2E_DataID(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_BRAKE_FAULT_STATUS, (uint32)value);
+    return Rte_Write(FZC_SIG_E_2_E_DATA_ID, (uint32_t)value);
 }
 
 /**
- * @brief  Write BrakePosition (uint8)
+ * @brief  Write SteerFaultStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BrakePosition(uint8 value)
+static inline Rte_StatusType Rte_Write_SteerFaultStatus(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_BRAKE_POSITION, (uint32)value);
+    return Rte_Write(FZC_SIG_STEER_FAULT_STATUS, (uint32_t)value);
 }
 
 /**
- * @brief  Write SensorStatus (uint8)
+ * @brief  Write ObstacleZone (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SensorStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_ObstacleZone(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_SENSOR_STATUS, (uint32)value);
+    return Rte_Write(FZC_SIG_OBSTACLE_ZONE, (uint32_t)value);
 }
 
 /**
- * @brief  Write ObstacleZone (uint8)
+ * @brief  Write BrakeMode (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_ObstacleZone(uint8 value)
+static inline Rte_StatusType Rte_Write_BrakeMode(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_OBSTACLE_ZONE, (uint32)value);
+    return Rte_Write(FZC_SIG_BRAKE_MODE, (uint32_t)value);
 }
 
 /**
- * @brief  Write Distance_cm (uint16)
+ * @brief  Write E2E_AliveCounter (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Distance_cm(uint16 value)
+static inline Rte_StatusType Rte_Write_E2E_AliveCounter(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_DISTANCE_CM, (uint32)value);
+    return Rte_Write(FZC_SIG_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 /**
- * @brief  Write CommandedBrake (uint8)
+ * @brief  Write ActualAngle (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_CommandedBrake(uint8 value)
+static inline Rte_StatusType Rte_Write_ActualAngle(uint16_t value)
 {
-    return Rte_Write(FZC_SIG_COMMANDED_BRAKE, (uint32)value);
+    return Rte_Write(FZC_SIG_ACTUAL_ANGLE, (uint32_t)value);
 }
 
 /**
- * @brief  Write UDS_Data (uint32)
+ * @brief  Write MeasuredBrake (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_UDS_Data(uint32 value)
+static inline Rte_StatusType Rte_Write_MeasuredBrake(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_UDS_DATA, (uint32)value);
+    return Rte_Write(FZC_SIG_MEASURED_BRAKE, (uint32_t)value);
 }
 
 /**
- * @brief  Write BrakeCommandEcho (uint8)
+ * @brief  Write RequestType (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BrakeCommandEcho(uint8 value)
+static inline Rte_StatusType Rte_Write_RequestType(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_BRAKE_COMMAND_ECHO, (uint32)value);
+    return Rte_Write(FZC_SIG_REQUEST_TYPE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write ECU_ID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_ECU_ID(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_ECU_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Distance_cm (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Distance_cm(uint16_t value)
+{
+    return Rte_Write(FZC_SIG_DISTANCE_CM, (uint32_t)value);
+}
+
+/**
+ * @brief  Write SensorStatus (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_SensorStatus(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_SENSOR_STATUS, (uint32_t)value);
+}
+
+/**
+ * @brief  Write BrakeCommandEcho (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_BrakeCommandEcho(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_BRAKE_COMMAND_ECHO, (uint32_t)value);
+}
+
+/**
+ * @brief  Write UDS_Data (uint32_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_UDS_Data(uint32_t value)
+{
+    return Rte_Write(FZC_SIG_UDS_DATA, (uint32_t)value);
+}
+
+/**
+ * @brief  Write OperatingMode (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_OperatingMode(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_OPERATING_MODE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write CommandedAngle (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_CommandedAngle(uint16_t value)
+{
+    return Rte_Write(FZC_SIG_COMMANDED_ANGLE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Reason (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Reason(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_REASON, (uint32_t)value);
+}
+
+/**
+ * @brief  Write SignalStrength (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_SignalStrength(uint16_t value)
+{
+    return Rte_Write(FZC_SIG_SIGNAL_STRENGTH, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_FZCCOM_H */

@@ -22,23 +22,23 @@
  * ==================================================================== */
 
 /**
- * @brief  Write EStop_Source (uint8)
+ * @brief  Write EStop_Active (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_EStop_Source(uint8 value)
+static inline Rte_StatusType Rte_Write_EStop_Active(uint8_t value)
 {
-    return Rte_Write(CVC_SIG_ESTOP_SOURCE, (uint32)value);
+    return Rte_Write(CVC_SIG_ESTOP_ACTIVE, (uint32_t)value);
 }
 
 /**
- * @brief  Write EStop_Active (uint8)
+ * @brief  Write EStop_Source (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_EStop_Active(uint8 value)
+static inline Rte_StatusType Rte_Write_EStop_Source(uint8_t value)
 {
-    return Rte_Write(CVC_SIG_ESTOP_ACTIVE, (uint32)value);
+    return Rte_Write(CVC_SIG_ESTOP_SOURCE, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_ESTOP_H */

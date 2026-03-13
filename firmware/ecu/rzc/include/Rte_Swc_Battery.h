@@ -22,23 +22,23 @@
  * ==================================================================== */
 
 /**
- * @brief  Write BatteryVoltage_mV (uint16)
+ * @brief  Write BatteryStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BatteryVoltage_mV(uint16 value)
+static inline Rte_StatusType Rte_Write_BatteryStatus(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_BATTERY_VOLTAGE_M_V, (uint32)value);
+    return Rte_Write(RZC_SIG_BATTERY_STATUS, (uint32_t)value);
 }
 
 /**
- * @brief  Write BatteryStatus (uint8)
+ * @brief  Write BatteryVoltage_mV (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_BatteryStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_BatteryVoltage_mV(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_BATTERY_STATUS, (uint32)value);
+    return Rte_Write(RZC_SIG_BATTERY_VOLTAGE_M_V, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_BATTERY_H */

@@ -38,16 +38,6 @@ static inline Rte_StatusType Rte_Read_DoorLockCmd(boolean *data)
 }
 
 /**
- * @brief  Write RearLeftLock (boolean)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_RearLeftLock(boolean value)
-{
-    return Rte_Write(BCM_SIG_REAR_LEFT_LOCK, (uint32_t)value);
-}
-
-/**
  * @brief  Write CentralLock (boolean)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -55,6 +45,16 @@ static inline Rte_StatusType Rte_Write_RearLeftLock(boolean value)
 static inline Rte_StatusType Rte_Write_CentralLock(boolean value)
 {
     return Rte_Write(BCM_SIG_CENTRAL_LOCK, (uint32_t)value);
+}
+
+/**
+ * @brief  Write FrontLeftLock (boolean)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_FrontLeftLock(boolean value)
+{
+    return Rte_Write(BCM_SIG_FRONT_LEFT_LOCK, (uint32_t)value);
 }
 
 /**
@@ -68,13 +68,13 @@ static inline Rte_StatusType Rte_Write_RearRightLock(boolean value)
 }
 
 /**
- * @brief  Write FrontLeftLock (boolean)
+ * @brief  Write RearLeftLock (boolean)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_FrontLeftLock(boolean value)
+static inline Rte_StatusType Rte_Write_RearLeftLock(boolean value)
 {
-    return Rte_Write(BCM_SIG_FRONT_LEFT_LOCK, (uint32_t)value);
+    return Rte_Write(BCM_SIG_REAR_LEFT_LOCK, (uint32_t)value);
 }
 
 /**

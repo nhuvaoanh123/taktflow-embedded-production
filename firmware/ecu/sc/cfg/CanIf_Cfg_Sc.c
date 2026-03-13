@@ -19,6 +19,7 @@
 static const CanIf_TxPduConfigType sc_tx_pdu_config[] = {
     /* canId,       upperPduId,                                      dlc, hth */
     { 0x013u,  SC_COM_TX_SC_STATUS,  4u, 0u },
+    { 0x500u,  SC_COM_TX_DTC_BROADCAST,  8u, 0u },
 };
 
 #define SC_CANIF_TX_PDU_COUNT  (sizeof(sc_tx_pdu_config) / sizeof(sc_tx_pdu_config[0]))

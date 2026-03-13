@@ -677,17 +677,45 @@ class ArxmlReader:
             if "thresholds" in ecu_data:
                 ecu.thresholds.update(ecu_data["thresholds"])
 
-            # Runnable scheduling overrides
+            # Runnable scheduling — override ARXML runnables or create from sidecar
             if "runnables" in ecu_data:
                 runnable_overrides = ecu_data["runnables"]
+                # Try to override existing ARXML-defined runnables
+                found_names = set()
                 for swc in ecu.swcs:
                     for r in swc.runnables:
                         if r.name in runnable_overrides:
+                            found_names.add(r.name)
                             override = runnable_overrides[r.name]
                             if "priority" in override:
                                 r.priority = override["priority"]
                             if "wdgm_se_id" in override:
                                 r.wdgm_se_id = override["wdgm_se_id"]
+                            if "period_ms" in override:
+                                r.period_ms = override["period_ms"]
+
+                # Create runnables from sidecar when ARXML has none
+                missing = set(runnable_overrides.keys()) - found_names
+                if missing:
+                    sidecar_runnables = []
+                    for rname in runnable_overrides:
+                        if rname not in found_names:
+                            rdata = runnable_overrides[rname]
+                            sidecar_runnables.append(Runnable(
+                                name=rname,
+                                period_ms=rdata.get("period_ms", 10),
+                                priority=rdata.get("priority", 5),
+                                wdgm_se_id=rdata.get("wdgm_se_id", 0xFF),
+                            ))
+                    # Attach to existing SWC or create a synthetic one
+                    if ecu.swcs:
+                        ecu.swcs[0].runnables.extend(sidecar_runnables)
+                    else:
+                        ecu.swcs.append(Swc(
+                            name=f"Swc_{ecu_name.upper()}",
+                            short_name=ecu_name,
+                            runnables=sidecar_runnables,
+                        ))
 
         # Apply the global E2E map across ALL ECUs (handles broadcast CAN)
         # Only when e2e_source is "sidecar" — DBC mode uses _apply_dbc_e2e instead

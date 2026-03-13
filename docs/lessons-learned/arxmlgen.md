@@ -187,3 +187,15 @@
 **Fix:** Added `--e2e-source {dbc,sidecar}` CLI option. DBC mode reads `BA_ "E2E_DataID"` attributes added to the DBC file with values matching the CAN matrix exactly. Sidecar mode preserved for backward compatibility. Added 14 TDD tests covering both paths.
 
 **Principle:** In an OEM-grade process, the CAN message matrix (SYS.3) is the single authoritative source. E2E data IDs must flow through the same toolchain as CAN routing: Matrix -> DBC -> codegen. Never maintain safety-critical IDs in a secondary file that requires manual synchronization. When multiple sources exist, make the conflict explicit with a CLI option and document the tradeoffs.
+
+---
+
+## 2026-03-13 — Hardcoded Com Signal IDs Break When Codegen Reorders Signals
+
+**Context:** CVC heartbeat sent duplicate 0x010 [4] frames with all zeros alongside the correct 0x010 [8] heartbeat. Swc_Pedal.c called `Com_SendSignal(5u, ...)` and Swc_CvcCom.c called `Com_SendSignal(6u, ...)` / `Com_SendSignal(7u, ...)` — these IDs were correct in the dev repo's signal table but wrong in production.
+
+**Mistake:** SWC code used hardcoded integer signal IDs (5, 6, 7, 13, 14, 17, 18, 19, 20, 21) migrated from the dev repo. Production codegen inserted heartbeat signals at positions 5-10, shifting all subsequent IDs. The hardcoded IDs now wrote torque/steer/brake data into heartbeat E2E fields (PDU 1), setting `com_tx_pending[1] = TRUE` and causing Com to transmit a corrupted heartbeat frame every 10ms.
+
+**Fix:** Replaced all hardcoded IDs with generated `CVC_COM_SIG_*` defines from Cvc_Cfg.h. Also fixed Cvc_App.h aliases that cross-referenced `CVC_SIG_*` (RTE signal IDs) instead of `CVC_COM_SIG_*` (Com signal IDs) — two different namespaces.
+
+**Principle:** Never hardcode Com signal IDs in SWC code. Always use the generated `<ECU>_COM_SIG_*` defines. Signal ordering is a codegen implementation detail that can change when messages/signals are added. RTE signal IDs (`CVC_SIG_*`) and Com signal IDs (`CVC_COM_SIG_*`) are separate namespaces — never mix them in aliases.

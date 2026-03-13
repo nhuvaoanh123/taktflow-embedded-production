@@ -35,6 +35,13 @@ class CfgHeaderGenerator:
         # rte_signal_map only contains app signals (ID >= 16)
         sig_count = 16 + len(ecu_app_signals)
 
+        # Count periodic runnables (exclude init-only) for RTE_MAX_RUNNABLES
+        runnable_count = 0
+        for swc in ecu.swcs:
+            for r in swc.runnables:
+                if not r.is_init and r.period_ms > 0:
+                    runnable_count += 1
+
         context = {
             "ecu": ecu,
             "filename": f"{ecu.prefix.capitalize()}_Cfg.h",
@@ -43,6 +50,7 @@ class CfgHeaderGenerator:
             "arxml_source": "TaktflowSystem.arxml",
             "ecu_app_signals": ecu_app_signals,
             "sig_count": sig_count,
+            "runnable_count": runnable_count,
         }
 
         content = engine.render("cfg/Ecu_Cfg.h.j2", context)

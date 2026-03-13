@@ -15,6 +15,12 @@
  * Forward declarations for SWC runnables
  * ================================================================== */
 
+extern void Swc_DoorLock_100ms(void);
+extern void Swc_DoorLock_Init(void);
+extern void Swc_Indicators_10ms(void);
+extern void Swc_Indicators_Init(void);
+extern void Swc_Lights_10ms(void);
+extern void Swc_Lights_Init(void);
 
 /* ==================================================================
  * Signal Configuration Table
@@ -216,6 +222,9 @@ static const Rte_SignalConfigType bcm_signal_config[BCM_SIG_COUNT] = {
 
 static const Rte_RunnableConfigType bcm_runnable_config[] = {
     /* func,                        periodMs, priority, seId */
+    { Swc_DoorLock_100ms,                        100u,     5u, 0xFFu },
+    { Swc_Indicators_10ms,                        10u,     5u, 0xFFu },
+    { Swc_Lights_10ms,                            10u,     5u, 0xFFu },
 };
 
 #define BCM_RUNNABLE_COUNT  (sizeof(bcm_runnable_config) / sizeof(bcm_runnable_config[0]))

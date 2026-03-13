@@ -22,55 +22,55 @@
  * ==================================================================== */
 
 /**
- * @brief  Read SteerAngleCmd (uint16)
+ * @brief  Read SteerAngleCmd (uint16_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SteerAngleCmd(uint16 *data)
+static inline Rte_StatusType Rte_Read_SteerAngleCmd(uint16_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_STEER_ANGLE_CMD, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint16)tmp;
+        *data = (uint16_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Read SteerRateLimit (uint8)
+ * @brief  Read SteerRateLimit (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SteerRateLimit(uint8 *data)
+static inline Rte_StatusType Rte_Read_SteerRateLimit(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(FZC_SIG_STEER_RATE_LIMIT, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Write SteerMode (uint8)
+ * @brief  Write SteerMode (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SteerMode(uint8 value)
+static inline Rte_StatusType Rte_Write_SteerMode(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_STEER_MODE, (uint32)value);
+    return Rte_Write(FZC_SIG_STEER_MODE, (uint32_t)value);
 }
 
 /**
- * @brief  Write SteerFaultStatus (uint8)
+ * @brief  Write SteerFaultStatus (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_SteerFaultStatus(uint8 value)
+static inline Rte_StatusType Rte_Write_SteerFaultStatus(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_STEER_FAULT_STATUS, (uint32)value);
+    return Rte_Write(FZC_SIG_STEER_FAULT_STATUS, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_STEERING_H */

@@ -22,29 +22,29 @@
  * ==================================================================== */
 
 /**
- * @brief  Read SpeedLimit (uint8)
+ * @brief  Read SpeedLimit (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SpeedLimit(uint8 *data)
+static inline Rte_StatusType Rte_Read_SpeedLimit(uint8_t *data)
 {
-    uint32 tmp;
+    uint32_t tmp;
     Rte_StatusType status = Rte_Read(RZC_SIG_SPEED_LIMIT, &tmp);
     if (status == RTE_E_OK)
     {
-        *data = (uint8)tmp;
+        *data = (uint8_t)tmp;
     }
     return status;
 }
 
 /**
- * @brief  Write MotorSpeed_RPM (uint16)
+ * @brief  Write MotorSpeed_RPM (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_MotorSpeed_RPM(uint16 value)
+static inline Rte_StatusType Rte_Write_MotorSpeed_RPM(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_SPEED_RPM, (uint32)value);
+    return Rte_Write(RZC_SIG_MOTOR_SPEED_RPM, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_ENCODER_H */
