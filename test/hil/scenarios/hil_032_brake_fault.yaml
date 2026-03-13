@@ -22,7 +22,8 @@ setup:
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"brake_fault"}'
+    payload:
+      type: brake_fault
     description: "Inject brake fault via MQTT"
   - action: wait
     seconds: 5

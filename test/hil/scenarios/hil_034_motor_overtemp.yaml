@@ -22,7 +22,9 @@ setup:
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"overtemp","temp_c":120}'
+    payload:
+      type: inject_temp
+      temp_c: 120
     description: "Inject motor overtemperature fault via MQTT"
   - action: wait
     seconds: 5

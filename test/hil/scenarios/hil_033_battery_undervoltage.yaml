@@ -22,7 +22,10 @@ setup:
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"voltage","voltage_mv":9000,"soc_pct":5}'
+    payload:
+      type: voltage
+      mV: 9000
+      soc: 5
     description: "Inject low battery voltage and SOC via MQTT"
   - action: wait
     seconds: 8

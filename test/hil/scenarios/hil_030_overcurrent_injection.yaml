@@ -21,7 +21,8 @@ setup:
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"overcurrent","current_ma":28000}'
+    payload:
+      type: overcurrent
     description: "Inject overcurrent fault via MQTT"
   - action: wait
     seconds: 5

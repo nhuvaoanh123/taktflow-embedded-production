@@ -22,7 +22,8 @@ setup:
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"steer_fault"}'
+    payload:
+      type: steer_fault
     description: "Inject steering fault via MQTT"
   - action: wait
     seconds: 5
