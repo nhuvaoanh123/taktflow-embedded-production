@@ -16,7 +16,7 @@
  * ================================================================== */
 
 static const PduR_RoutingTableType icu_pdur_routing[] = {
-    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com) */
+    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com/Dcm) */
     { ICU_COM_RX_ESTOP_BROADCAST,  PDUR_DEST_COM,  ICU_COM_RX_ESTOP_BROADCAST },   /* 0x001 EStop_Broadcast */
     { ICU_COM_RX_CVC_HEARTBEAT,  PDUR_DEST_COM,  ICU_COM_RX_CVC_HEARTBEAT },   /* 0x010 CVC_Heartbeat */
     { ICU_COM_RX_FZC_HEARTBEAT,  PDUR_DEST_COM,  ICU_COM_RX_FZC_HEARTBEAT },   /* 0x011 FZC_Heartbeat */
@@ -43,7 +43,7 @@ static const PduR_RoutingTableType icu_pdur_routing[] = {
     { ICU_COM_RX_DOOR_LOCK_STATUS,  PDUR_DEST_COM,  ICU_COM_RX_DOOR_LOCK_STATUS },   /* 0x402 Door_Lock_Status */
     { ICU_COM_RX_DTC_BROADCAST,  PDUR_DEST_COM,  ICU_COM_RX_DTC_BROADCAST },   /* 0x500 DTC_Broadcast */
     { ICU_COM_RX_UDS_RESP_TCU,  PDUR_DEST_COM,  ICU_COM_RX_UDS_RESP_TCU },   /* 0x644 UDS_Resp_TCU */
-    { ICU_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_COM,  ICU_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request */
+    { ICU_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_DCM,  ICU_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request → Dcm */
     { ICU_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_COM,  ICU_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC */
     { ICU_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_DEST_COM,  ICU_COM_RX_UDS_PHYS_REQ_FZC },   /* 0x7E1 UDS_Phys_Req_FZC */
     { ICU_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_DEST_COM,  ICU_COM_RX_UDS_PHYS_REQ_RZC },   /* 0x7E2 UDS_Phys_Req_RZC */

@@ -16,7 +16,7 @@
  * ================================================================== */
 
 static const PduR_RoutingTableType cvc_pdur_routing[] = {
-    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com) */
+    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com/Dcm) */
     { CVC_COM_RX_FZC_HEARTBEAT,  PDUR_DEST_COM,  CVC_COM_RX_FZC_HEARTBEAT },   /* 0x011 FZC_Heartbeat */
     { CVC_COM_RX_RZC_HEARTBEAT,  PDUR_DEST_COM,  CVC_COM_RX_RZC_HEARTBEAT },   /* 0x012 RZC_Heartbeat */
     { CVC_COM_RX_SC_STATUS,  PDUR_DEST_COM,  CVC_COM_RX_SC_STATUS },   /* 0x013 SC_Status */
@@ -36,8 +36,8 @@ static const PduR_RoutingTableType cvc_pdur_routing[] = {
     { CVC_COM_RX_INDICATOR_STATE,  PDUR_DEST_COM,  CVC_COM_RX_INDICATOR_STATE },   /* 0x401 Indicator_State */
     { CVC_COM_RX_DOOR_LOCK_STATUS,  PDUR_DEST_COM,  CVC_COM_RX_DOOR_LOCK_STATUS },   /* 0x402 Door_Lock_Status */
     { CVC_COM_RX_UDS_RESP_TCU,  PDUR_DEST_COM,  CVC_COM_RX_UDS_RESP_TCU },   /* 0x644 UDS_Resp_TCU */
-    { CVC_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_COM,  CVC_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request */
-    { CVC_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_COM,  CVC_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC */
+    { CVC_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_DCM,  CVC_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request → Dcm */
+    { CVC_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_DCM,  CVC_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC → Dcm */
     { CVC_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_DEST_COM,  CVC_COM_RX_UDS_PHYS_REQ_FZC },   /* 0x7E1 UDS_Phys_Req_FZC */
     { CVC_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_DEST_COM,  CVC_COM_RX_UDS_PHYS_REQ_RZC },   /* 0x7E2 UDS_Phys_Req_RZC */
     { CVC_COM_RX_UDS_PHYS_REQ_TCU,  PDUR_DEST_COM,  CVC_COM_RX_UDS_PHYS_REQ_TCU },   /* 0x7E3 UDS_Phys_Req_TCU */

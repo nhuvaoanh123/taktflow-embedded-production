@@ -16,7 +16,7 @@
  * ================================================================== */
 
 static const PduR_RoutingTableType tcu_pdur_routing[] = {
-    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com) */
+    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com/Dcm) */
     { TCU_COM_RX_ESTOP_BROADCAST,  PDUR_DEST_COM,  TCU_COM_RX_ESTOP_BROADCAST },   /* 0x001 EStop_Broadcast */
     { TCU_COM_RX_CVC_HEARTBEAT,  PDUR_DEST_COM,  TCU_COM_RX_CVC_HEARTBEAT },   /* 0x010 CVC_Heartbeat */
     { TCU_COM_RX_FZC_HEARTBEAT,  PDUR_DEST_COM,  TCU_COM_RX_FZC_HEARTBEAT },   /* 0x011 FZC_Heartbeat */
@@ -42,11 +42,11 @@ static const PduR_RoutingTableType tcu_pdur_routing[] = {
     { TCU_COM_RX_INDICATOR_STATE,  PDUR_DEST_COM,  TCU_COM_RX_INDICATOR_STATE },   /* 0x401 Indicator_State */
     { TCU_COM_RX_DOOR_LOCK_STATUS,  PDUR_DEST_COM,  TCU_COM_RX_DOOR_LOCK_STATUS },   /* 0x402 Door_Lock_Status */
     { TCU_COM_RX_DTC_BROADCAST,  PDUR_DEST_COM,  TCU_COM_RX_DTC_BROADCAST },   /* 0x500 DTC_Broadcast */
-    { TCU_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_COM,  TCU_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request */
+    { TCU_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_DCM,  TCU_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request → Dcm */
     { TCU_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC */
     { TCU_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_PHYS_REQ_FZC },   /* 0x7E1 UDS_Phys_Req_FZC */
     { TCU_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_PHYS_REQ_RZC },   /* 0x7E2 UDS_Phys_Req_RZC */
-    { TCU_COM_RX_UDS_PHYS_REQ_TCU,  PDUR_DEST_COM,  TCU_COM_RX_UDS_PHYS_REQ_TCU },   /* 0x7E3 UDS_Phys_Req_TCU */
+    { TCU_COM_RX_UDS_PHYS_REQ_TCU,  PDUR_DEST_DCM,  TCU_COM_RX_UDS_PHYS_REQ_TCU },   /* 0x7E3 UDS_Phys_Req_TCU → Dcm */
     { TCU_COM_RX_UDS_RESP_CVC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_RESP_CVC },   /* 0x7E8 UDS_Resp_CVC */
     { TCU_COM_RX_UDS_RESP_FZC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_RESP_FZC },   /* 0x7E9 UDS_Resp_FZC */
     { TCU_COM_RX_UDS_RESP_RZC,  PDUR_DEST_COM,  TCU_COM_RX_UDS_RESP_RZC },   /* 0x7EA UDS_Resp_RZC */
