@@ -22,12 +22,17 @@ ifdef DIAG
   CFLAGS += -DSIL_DIAG
 endif
 
-ifndef TARGET
-  $(error TARGET is required. Usage: make -f firmware/platform/posix/Makefile.posix TARGET=bcm|icu|tcu|cvc|fzc|rzc|sc)
-endif
 VALID_TARGETS = bcm icu tcu cvc fzc rzc sc
-ifeq ($(filter $(TARGET),$(VALID_TARGETS)),)
-  $(error Invalid TARGET='$(TARGET)'. Must be one of: $(VALID_TARGETS))
+# TARGET validation deferred — misra/misra-report targets iterate all ECUs internally
+ifneq ($(filter misra misra-report,$(MAKECMDGOALS)),)
+  TARGET ?= cvc
+else
+  ifndef TARGET
+    $(error TARGET is required. Usage: make -f firmware/platform/posix/Makefile.posix TARGET=bcm|icu|tcu|cvc|fzc|rzc|sc)
+  endif
+  ifeq ($(filter $(TARGET),$(VALID_TARGETS)),)
+    $(error Invalid TARGET='$(TARGET)'. Must be one of: $(VALID_TARGETS))
+  endif
 endif
 
 # --- Directories (production layout) ---
