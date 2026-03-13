@@ -161,22 +161,17 @@
           "CVC_STATE_INVALID": 255
         },
         "thresholds": {
-          "CVC_INIT_HOLD_CYCLES": 500,
-          "CVC_POST_INIT_GRACE_CYCLES": 0,
           "CVC_RTE_PERIOD_MS": 10,
           "CVC_HB_TX_PERIOD_MS": 50,
           "CVC_HB_ALIVE_MAX": 15,
           "CVC_E2E_SM_FZC_MIN_OK_INIT": 2,
-          "CVC_E2E_SM_FZC_MAX_ERR_VALID": 1,
           "CVC_E2E_SM_FZC_MIN_OK_INV": 3,
           "CVC_E2E_SM_RZC_MIN_OK_INIT": 3,
-          "CVC_E2E_SM_RZC_MAX_ERR_VALID": 2,
           "CVC_E2E_SM_RZC_MIN_OK_INV": 3,
           "CVC_EVT_CAN_TIMEOUT_SINGLE": 4,
           "CVC_EVT_CAN_TIMEOUT_DUAL": 5,
           "CVC_SAFE_STOP_RECOVERY_CYCLES": 200,
-          "CVC_FAULT_UNLATCH_CYCLES": 300,
-          "CVC_CREEP_DEBOUNCE_TICKS": 20
+          "CVC_FAULT_UNLATCH_CYCLES": 300
         }
       },
       "runnables": [
@@ -638,7 +633,6 @@
         },
         "enums": {
           "FZC_BRAKE_PWM_FAULT_THRESH": 2,
-          "FZC_BRAKE_FAULT_DEBOUNCE": 3,
           "FZC_STATE_INIT": 0,
           "FZC_STATE_RUN": 1,
           "FZC_STATE_DEGRADED": 2,
@@ -651,7 +645,6 @@
         },
         "thresholds": {
           "FZC_STEER_PLAUS_THRESHOLD_DEG": 5,
-          "FZC_STEER_PLAUS_DEBOUNCE": 5,
           "FZC_STEER_RATE_LIMIT_DEG_10MS": 3,
           "FZC_STEER_CMD_TIMEOUT_MS": 100,
           "FZC_STEER_ANGLE_MAX": 45,
@@ -674,7 +667,6 @@
           "FZC_HB_TIMEOUT_MS": 150,
           "FZC_HB_MAX_MISS": 3,
           "FZC_HB_ALIVE_MAX": 15,
-          "FZC_POST_INIT_GRACE_CYCLES": 0,
           "FZC_STEER_CMD_TIMEOUT": 4,
           "FZC_BRAKE_CMD_TIMEOUT": 2
         }

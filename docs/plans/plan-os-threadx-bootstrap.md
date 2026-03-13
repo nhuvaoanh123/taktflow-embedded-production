@@ -4,6 +4,18 @@
 **Created:** 2026-03-13
 **Author:** Codex + andao
 
+## Local Reference Source
+
+This plan is verified against the local archive:
+
+- `d:\Compressed\threadx-master.zip`
+
+The file paths below were checked against that archive on 2026-03-13.
+
+The checked-in companion reference map is:
+
+- `docs/reference/threadx-local-reference-map.md`
+
 ## Goal
 
 Support the primary OSEK roadmap in `docs/plans/OSEK_OS_SPEC.md` by keeping a
@@ -34,6 +46,8 @@ ThreadX is a good acceleration tool for this effort because it shows three thing
 1. A compact core kernel with clear ownership boundaries.
 2. A disciplined separation between portable scheduler policy and CPU-specific context-switch code.
 3. Mature Cortex-M4 and Cortex-R5 ports that map well to our two targets.
+4. Useful stack-analysis and module-manager protection code that can accelerate
+   our SC3 learning path.
 
 For this work we will study ThreadX internals, not reuse its public API shape.
 
@@ -41,8 +55,9 @@ For this work we will study ThreadX internals, not reuse its public API shape.
 
 | Our target | MCU family | CPU | ThreadX reference area |
 |---|---|---|---|
-| Zone ECUs | STM32 | Cortex-M4 | `ports/cortex_m4/*` |
-| Safety controller | TMS570 | Cortex-R5 | `ports/cortex_r5/*` |
+| Zone ECUs | STM32 | Cortex-M4 | `ports/cortex_m4/gnu/*` |
+| Safety controller | TMS570LC43x | Cortex-R5 | `ports/cortex_r5/gnu/*` |
+| Cross-check for TMS570 family | Legacy Hercules parts | Cortex-R4 | `ports/cortex_r4/gnu/*` |
 | Host learning build | POSIX | x86/x64 | Portable core only |
 
 ## ThreadX Files Worth Studying First
@@ -55,6 +70,8 @@ For this work we will study ThreadX internals, not reuse its public API shape.
 | Thread create path | `common/src/tx_thread_create.c` | Good reference for control block initialization, stack preparation, and activation logic. |
 | Thread internals | `common/inc/tx_thread.h` | Shows what a mature TCB needs beyond the public API. |
 | Global API surface | `common/inc/tx_api.h` | Useful as a completeness checklist, not as an AUTOSAR API template. |
+| Stack analysis | `common/src/tx_thread_stack_analyze.c` | Portable pattern for high-water-mark analysis once real target stacks exist. |
+| Stack overflow reaction | `common/src/tx_thread_stack_error_handler.c` and `common/src/tx_thread_stack_error_notify.c` | Good references for fault path split between detection and notification. |
 
 ### STM32 / Cortex-M4 Port
 
@@ -69,10 +86,30 @@ For this work we will study ThreadX internals, not reuse its public API shape.
 
 | Topic | ThreadX file | Lesson for our OS |
 |---|---|---|
-| Port constants and interrupt model | `ports/cortex_r5/gnu/inc/tx_port.h` | IRQ/FIQ mask model, timer thread defaults, architectural assumptions. |
-| Scheduler loop | `ports/cortex_r5/gnu/src/tx_thread_schedule.S` | How the first runnable thread is selected and transferred on ARM-R. |
-| Context save / restore | `ports/cortex_r5/gnu/src/tx_thread_context_save.S` and `tx_thread_context_restore.S` | Banked registers, mode switching, and return path details we must respect on TMS570. |
-| Low-level init | `ports/cortex_r5/gnu/example_build/tx_initialize_low_level.S` | Reset-to-kernel transition and timer/vector setup ideas. |
+| Port constants and interrupt model | `ports/cortex_r5/gnu/inc/tx_port.h` | Separate IRQ/FIQ build options and interrupt-mask assumptions. |
+| Scheduler loop | `ports/cortex_r5/gnu/src/tx_thread_schedule.S` | How the first runnable thread is selected and transferred in the matching local Cortex-R5 port. |
+| Context save / restore | `ports/cortex_r5/gnu/src/tx_thread_context_save.S` and `tx_thread_context_restore.S` | Interrupt entry, mode switching, and final-return branch rules for TMS570. |
+| IRQ/FIQ nesting | `ports/cortex_r5/gnu/src/tx_thread_irq_nesting_start.S`, `tx_thread_irq_nesting_end.S`, `tx_thread_fiq_context_save.S`, `tx_thread_fiq_context_restore.S`, `tx_thread_fiq_nesting_start.S`, and `tx_thread_fiq_nesting_end.S` | Exact local reference for keeping FIQ separate from IRQ-return dispatch completion. |
+| Tick ISR | `ports/cortex_r5/gnu/src/tx_timer_interrupt.S` | Timer-interrupt-to-kernel handoff pattern. |
+| Stack build | `ports/cortex_r5/gnu/src/tx_thread_stack_build.S` | Synthetic first-task frame ideas. |
+
+### SC3 / Protection Study
+
+| Topic | ThreadX file | Lesson for our OS |
+|---|---|---|
+| Module-manager core | `common_modules/module_manager/src/txm_module_manager_initialize.c` | High-level split between core kernel and protected application runtime. |
+| Module load path | `common_modules/module_manager/src/txm_module_manager_memory_load.c` | Useful for understanding protected object setup flow and per-module metadata. |
+| ARMv7-M MPU register setup | `ports_arch/ARMv7-M/threadx_modules/common/module_manager/src/txm_module_manager_mm_register_setup.c` | Concrete RBAR/RASR setup logic that is valuable when we start STM32 MPU work. |
+| Memory fault handling | `ports_arch/ARMv7-M/threadx_modules/common/module_manager/src/txm_module_manager_memory_fault_handler.c` and `txm_module_manager_memory_fault_notify.c` | Helpful reference for fault capture, notify, and task termination flow. |
+| User-mode entry and protected stack build | `ports_arch/ARMv7-M/threadx_modules/gnu/module_manager/src/txm_module_manager_thread_stack_build.s` | Useful when shaping trusted/non-trusted launch rules on Cortex-M4. |
+
+Notes:
+
+- The local archive contains strong ARMv7-M module-manager MPU references.
+- I did not find an equally direct Cortex-R5 module-manager MPU example in this
+  archive, so TMS570 protection work should use:
+  - `ports/cortex_r5/gnu/*` for exact local interrupt/context behavior study
+  - ARMv7-M module-manager files for protection-state design ideas only
 
 ## Architectural Direction for Our OS
 
@@ -112,25 +149,29 @@ Portable kernel structure should learn from ThreadX patterns:
 
 ## Bootstrap Scope
 
-This bootstrap is intentionally small:
+Current bootstrap scope in `firmware/bsw/os/bootstrap/`:
 
-- static task table
-- application modes
-- priority-based ready selection
-- activation limits
-- basic task state tracking
-- host-runnable unit tests
+- static tasks with BCC2-style queued activations
+- FULL/NON scheduling behavior
+- bootstrap preemption and Cat2 ISR exit dispatch simulation
+- bootstrap PCP resources
+- ECC1-style events
+- counters and task-activation alarms
+- hooks
+- OS-Application object ownership and access checks
+- trusted-function access checks
+- IOC queue communication
+- bootstrap stack monitoring
+- bootstrap task memory-access checks
 
-This bootstrap will not attempt:
+Still intentionally out of scope:
 
-- real context switching
-- stack switching
-- ISR2 nesting
-- resource ceiling protocol
-- alarms or schedule tables
-
-The bootstrap uses cooperative task completion so we can verify scheduler
-policy before starting the real OSEK BCC1 target-port work.
+- real context switching on hardware
+- real Cortex-M4 PendSV launch and timer hookup
+- real Cortex-R5 IRQ/VIM integration
+- hardware MPU programming
+- hardware-enforced trusted/non-trusted separation
+- production configuration generation
 
 ## CPU Port Strategy
 

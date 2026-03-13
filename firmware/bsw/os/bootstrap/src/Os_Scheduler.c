@@ -5,9 +5,36 @@
  */
 #include "Os_Internal.h"
 
+#if defined(PLATFORM_STM32) || defined(PLATFORM_TMS570)
+#include "Os_Port_TaskBinding.h"
+#endif
+
 uint8 os_isr_cat2_nesting = 0u;
 TaskType os_preempted_task_stack[OS_MAX_TASKS];
 uint8 os_preempted_task_depth = 0u;
+
+static void os_publish_port_dispatch(TaskType NextTask)
+{
+#if defined(PLATFORM_STM32) || defined(PLATFORM_TMS570)
+    Os_Port_ObserveConfiguredDispatch(NextTask);
+#else
+    (void)NextTask;
+#endif
+}
+
+static void os_stage_port_dispatch(TaskType PreviousTask, TaskType NextTask)
+{
+#if defined(PLATFORM_STM32) || defined(PLATFORM_TMS570)
+    if (PreviousTask == INVALID_TASK) {
+        Os_Port_SynchronizeConfiguredTask(NextTask);
+    } else {
+        (void)Os_Port_RequestConfiguredDispatch(NextTask);
+    }
+#else
+    (void)PreviousTask;
+    (void)NextTask;
+#endif
+}
 
 static boolean os_has_higher_priority(TaskType CandidateTask, TaskType CurrentTask)
 {
@@ -103,6 +130,7 @@ void os_complete_running_task(void)
 static void os_dispatch_task(TaskType NextTask)
 {
     TaskType previous_task = os_current_task;
+    uint8 stack_base_marker = 0u;
 
     if (previous_task != INVALID_TASK) {
         os_push_preempted_task(previous_task);
@@ -111,10 +139,23 @@ static void os_dispatch_task(TaskType NextTask)
     os_current_task = NextTask;
     os_tcb[NextTask].State = RUNNING;
     os_tcb[NextTask].ReadyStamp = 0u;
+    os_stage_port_dispatch(previous_task, NextTask);
+    os_publish_port_dispatch(NextTask);
+    os_stack_monitor_enter_task(NextTask, (uintptr_t)&stack_base_marker);
     os_rebuild_ready_bitmap();
     os_dispatch_count++;
 
+    if (os_pre_task_hook != (Os_HookType)0) {
+        os_pre_task_hook();
+    }
+
     os_task_cfg[NextTask].Entry();
+
+    if (os_post_task_hook != (Os_HookType)0) {
+        os_post_task_hook();
+    }
+
+    os_stack_monitor_leave_task(NextTask);
 
     if ((os_current_task == NextTask) && (os_tcb[NextTask].State == RUNNING)) {
         os_complete_running_task();
@@ -165,6 +206,10 @@ StatusType os_maybe_dispatch_preemption(void)
         return E_OS_NOFUNC;
     }
 
+    if (os_is_preemptive_task(os_current_task) == FALSE) {
+        return E_OS_NOFUNC;
+    }
+
     next_task = os_select_next_ready_task();
     if (next_task == INVALID_TASK) {
         return E_OS_NOFUNC;
@@ -180,15 +225,37 @@ StatusType os_maybe_dispatch_preemption(void)
 
 StatusType Schedule(void)
 {
+    TaskType next_task;
+    OS_STACK_SAMPLE(OS_DET_API_SCHEDULE);
+
     if (os_started == FALSE) {
         os_report_service_error(OS_DET_API_SCHEDULE, DET_E_UNINIT, E_OS_STATE);
         return E_OS_STATE;
     }
 
-    if (os_current_task != INVALID_TASK) {
+    if (os_current_task == INVALID_TASK) {
+        return os_run_ready_tasks();
+    }
+
+    if (os_tcb[os_current_task].State != RUNNING) {
         os_report_service_error(OS_DET_API_SCHEDULE, DET_E_PARAM_VALUE, E_OS_CALLEVEL);
         return E_OS_CALLEVEL;
     }
 
-    return os_run_ready_tasks();
+    if (os_is_preemptive_task(os_current_task) == TRUE) {
+        os_report_service_error(OS_DET_API_SCHEDULE, DET_E_PARAM_VALUE, E_OS_CALLEVEL);
+        return E_OS_CALLEVEL;
+    }
+
+    if (os_tcb[os_current_task].ResourceCount != 0u) {
+        os_report_service_error(OS_DET_API_SCHEDULE, DET_E_PARAM_VALUE, E_OS_RESOURCE);
+        return E_OS_RESOURCE;
+    }
+
+    next_task = os_select_next_ready_task();
+    if ((next_task != INVALID_TASK) && (os_has_higher_priority(next_task, os_current_task) == TRUE)) {
+        os_dispatch_task(next_task);
+    }
+
+    return E_OK;
 }

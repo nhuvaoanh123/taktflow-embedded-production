@@ -67,9 +67,12 @@ LDSCRIPT = $(HALCOGEN_DIR)/source/HL_sys_link.cmd
 
 # --- Linker flags (via tiarmclang driver -> tiarmlnk) ---
 # --rom_model: auto-init globals from flash (required for __TI_auto_init)
+# --be32: MANDATORY — TMS570 uses BE-32 byte ordering, linker defaults to BE-8.
+#         Without this, instructions are byte-swapped and CPU executes garbage.
 LDFLAGS  = $(MCU_FLAGS)
 LDFLAGS += -Wl,-m,$(BUILD_DIR)/sc.map
 LDFLAGS += -Wl,--rom_model
+LDFLAGS += -Wl,--be32
 
 # --- HALCoGen C sources (exclude files with conflicting symbols) ---
 # Excluded:
@@ -88,18 +91,29 @@ HALCOGEN_EXCLUDE  = $(HALCOGEN_DIR)/source/HL_sys_main.c \
 HALCOGEN_SRCS = $(filter-out $(HALCOGEN_EXCLUDE),$(HALCOGEN_SRCS_ALL))
 
 # --- HALCoGen assembly (.asm — TI assembler syntax) ---
-HALCOGEN_ASM = $(wildcard $(HALCOGEN_DIR)/source/*.asm)
+# sc_startup.S replaces: HL_sys_core.asm, HL_sys_intvecs.asm, HL_sys_mpu.asm, HL_sys_pmu.asm
+# Exclude them to avoid duplicate symbol errors.
+HALCOGEN_ASM_ALL = $(wildcard $(HALCOGEN_DIR)/source/*.asm)
+HALCOGEN_ASM_EXCLUDE = $(HALCOGEN_DIR)/source/HL_sys_core.asm \
+                       $(HALCOGEN_DIR)/source/HL_sys_intvecs.asm \
+                       $(HALCOGEN_DIR)/source/HL_sys_mpu.asm \
+                       $(HALCOGEN_DIR)/source/HL_sys_pmu.asm
+HALCOGEN_ASM = $(filter-out $(HALCOGEN_ASM_EXCLUDE),$(HALCOGEN_ASM_ALL))
 
 # --- SC application sources (exclude POSIX backend) ---
 SC_SRCS_ALL = $(wildcard $(SC_DIR)/src/*.c)
 SC_HW_TMS570 = $(PLAT)/src/sc_hw_tms570.c
 SC_SRCS = $(filter-out %_posix.c,$(SC_SRCS_ALL)) $(SC_HW_TMS570)
 
+# --- SC GNU assembly (.S — preprocessed assembly, e.g. sc_startup.S) ---
+SC_ASM_GNU = $(wildcard $(SC_DIR)/src/*.S)
+
 # --- Object files ---
-HAL_OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(HALCOGEN_SRCS))
-SC_OBJS  = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SC_SRCS))
-ASM_OBJS = $(patsubst %.asm,$(BUILD_DIR)/%.o,$(HALCOGEN_ASM))
-ALL_OBJS = $(HAL_OBJS) $(SC_OBJS) $(ASM_OBJS)
+HAL_OBJS     = $(patsubst %.c,$(BUILD_DIR)/%.o,$(HALCOGEN_SRCS))
+SC_OBJS      = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SC_SRCS))
+ASM_OBJS     = $(patsubst %.asm,$(BUILD_DIR)/%.o,$(HALCOGEN_ASM))
+SC_ASM_OBJS  = $(patsubst %.S,$(BUILD_DIR)/%.o,$(SC_ASM_GNU))
+ALL_OBJS     = $(HAL_OBJS) $(SC_OBJS) $(ASM_OBJS) $(SC_ASM_OBJS)
 
 # --- Output files ---
 ELF = $(BUILD_DIR)/sc.elf
@@ -116,7 +130,7 @@ CCXML  = $(SC_DIR)/TMS570LC43xx_XDS110.ccxml
 # Targets
 # =============================================================================
 
-.PHONY: all flash size clean check-halcogen
+.PHONY: all flash size clean check-halcogen blinky flash-blinky
 
 all: check-halcogen $(ELF)
 	@echo "=== Built $(ELF) ==="
@@ -153,6 +167,11 @@ $(BUILD_DIR)/$(HALCOGEN_DIR)/%.o: $(HALCOGEN_DIR)/%.asm | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(MCU_FLAGS) -x ti-asm -c $< -o $@
 
+# --- Assemble .S (GNU syntax — preprocessed assembly, e.g. sc_startup.S) ---
+$(BUILD_DIR)/$(SC_DIR)/%.o: $(SC_DIR)/%.S | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(MCU_FLAGS) $(INC_FLAGS) -c $< -o $@
+
 # --- Build directory ---
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
@@ -161,6 +180,24 @@ $(BUILD_DIR):
 flash: $(ELF)
 	@echo "=== Flashing SC via DSLite (XDS110) ==="
 	"$(DSLITE)" load -c "$(CCXML)" -f "$(ELF)"
+
+# --- Standalone LED blinky test (pure assembly, no C) ---
+BLINKY_SRC = $(SC_DIR)/test/test_blinky.S
+BLINKY_OBJ = $(BUILD_DIR)/test_blinky.o
+BLINKY_ELF = $(BUILD_DIR)/test_blinky.elf
+
+blinky: $(BLINKY_ELF)
+	@echo "=== Built $(BLINKY_ELF) (standalone blinky test) ==="
+
+$(BLINKY_ELF): $(BLINKY_OBJ) | $(BUILD_DIR)
+	$(CC) $(MCU_FLAGS) -Wl,-m,$(BUILD_DIR)/test_blinky.map -Wl,--ram_model -Wl,--be32 -Wl,-e,resetEntry $(BLINKY_OBJ) $(LDSCRIPT) -o $@
+
+$(BLINKY_OBJ): $(BLINKY_SRC) | $(BUILD_DIR)
+	$(CC) $(MCU_FLAGS) -c $< -o $@
+
+flash-blinky: $(BLINKY_ELF)
+	@echo "=== Flashing blinky test via DSLite (XDS110) ==="
+	"$(DSLITE)" load -c "$(CCXML)" -f "$(BLINKY_ELF)"
 
 # --- Firmware size report ---
 size: $(ELF)

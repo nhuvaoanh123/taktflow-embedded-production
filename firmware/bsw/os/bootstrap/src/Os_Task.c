@@ -42,9 +42,16 @@ StatusType os_activate_task_internal(TaskType TaskID, boolean AllowPreemption)
 
 StatusType ActivateTask(TaskType TaskID)
 {
+    OS_STACK_SAMPLE(OS_DET_API_ACTIVATE_TASK);
+
     if (os_started == FALSE) {
         os_report_service_error(OS_DET_API_ACTIVATE_TASK, DET_E_UNINIT, E_OS_STATE);
         return E_OS_STATE;
+    }
+
+    if (os_current_application_has_access(OBJECT_TASK, TaskID) == FALSE) {
+        os_report_service_error(OS_DET_API_ACTIVATE_TASK, DET_E_PARAM_VALUE, E_OS_ACCESS);
+        return E_OS_ACCESS;
     }
 
     return os_activate_task_internal(TaskID, TRUE);
@@ -52,6 +59,8 @@ StatusType ActivateTask(TaskType TaskID)
 
 StatusType TerminateTask(void)
 {
+    OS_STACK_SAMPLE(OS_DET_API_TERMINATE_TASK);
+
     if ((os_started == FALSE) || (os_current_task == INVALID_TASK)) {
         os_report_service_error(OS_DET_API_TERMINATE_TASK, DET_E_PARAM_VALUE, E_OS_CALLEVEL);
         return E_OS_CALLEVEL;
@@ -68,6 +77,8 @@ StatusType TerminateTask(void)
 
 StatusType ChainTask(TaskType TaskID)
 {
+    OS_STACK_SAMPLE(OS_DET_API_CHAIN_TASK);
+
     if ((os_started == FALSE) || (os_current_task == INVALID_TASK)) {
         os_report_service_error(OS_DET_API_CHAIN_TASK, DET_E_PARAM_VALUE, E_OS_CALLEVEL);
         return E_OS_CALLEVEL;
@@ -76,6 +87,11 @@ StatusType ChainTask(TaskType TaskID)
     if (os_is_valid_task(TaskID) == FALSE) {
         os_report_service_error(OS_DET_API_CHAIN_TASK, DET_E_PARAM_VALUE, E_OS_ID);
         return E_OS_ID;
+    }
+
+    if (os_current_application_has_access(OBJECT_TASK, TaskID) == FALSE) {
+        os_report_service_error(OS_DET_API_CHAIN_TASK, DET_E_PARAM_VALUE, E_OS_ACCESS);
+        return E_OS_ACCESS;
     }
 
     if (os_tcb[os_current_task].ResourceCount != 0u) {
@@ -95,6 +111,8 @@ StatusType ChainTask(TaskType TaskID)
 
 StatusType GetTaskID(TaskRefType TaskID)
 {
+    OS_STACK_SAMPLE(OS_DET_API_GET_TASK_ID);
+
     if (TaskID == NULL_PTR) {
         os_report_service_error(OS_DET_API_GET_TASK_ID, DET_E_PARAM_POINTER, E_OS_VALUE);
         return E_OS_VALUE;
@@ -106,6 +124,8 @@ StatusType GetTaskID(TaskRefType TaskID)
 
 StatusType GetTaskState(TaskType TaskID, TaskStateRefType State)
 {
+    OS_STACK_SAMPLE(OS_DET_API_GET_TASK_STATE);
+
     if (State == NULL_PTR) {
         os_report_service_error(OS_DET_API_GET_TASK_STATE, DET_E_PARAM_POINTER, E_OS_VALUE);
         return E_OS_VALUE;

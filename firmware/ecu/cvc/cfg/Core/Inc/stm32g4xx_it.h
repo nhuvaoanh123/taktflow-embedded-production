@@ -1,9 +1,8 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
+  * @file    stm32g4xx_it.h
+  * @brief   This file contains the headers of the interrupt handlers.
   ******************************************************************************
   * @attention
   *
@@ -19,17 +18,12 @@
 /* USER CODE END Header */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
+#ifndef __STM32G4xx_IT_H
+#define __STM32G4xx_IT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* Includes ------------------------------------------------------------------*/
-#include "stm32g4xx_hal.h"
-
-#include "stm32g4xx_nucleo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -52,42 +46,22 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
-
+void NMI_Handler(void);
+void HardFault_Handler(void);
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void UsageFault_Handler(void);
+void SVC_Handler(void);
+void DebugMon_Handler(void);
+void PendSV_Handler(void);
+void SysTick_Handler(void);
+void EXTI15_10_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
-
-/* Private defines -----------------------------------------------------------*/
-#define RCC_OSC32_IN_Pin GPIO_PIN_14
-#define RCC_OSC32_IN_GPIO_Port GPIOC
-#define RCC_OSC32_OUT_Pin GPIO_PIN_15
-#define RCC_OSC32_OUT_GPIO_Port GPIOC
-#define RCC_OSC_IN_Pin GPIO_PIN_0
-#define RCC_OSC_IN_GPIO_Port GPIOF
-#define RCC_OSC_OUT_Pin GPIO_PIN_1
-#define RCC_OSC_OUT_GPIO_Port GPIOF
-#define CVC_PED_CS1_Pin GPIO_PIN_4
-#define CVC_PED_CS1_GPIO_Port GPIOA
-#define CVC_WDT_WDI_Pin GPIO_PIN_0
-#define CVC_WDT_WDI_GPIO_Port GPIOB
-#define T_SWDIO_Pin GPIO_PIN_13
-#define T_SWDIO_GPIO_Port GPIOA
-#define T_SWCLK_Pin GPIO_PIN_14
-#define T_SWCLK_GPIO_Port GPIOA
-#define CVC_PED_CS2_Pin GPIO_PIN_15
-#define CVC_PED_CS2_GPIO_Port GPIOA
-#define CVC_LED_GRN_Pin GPIO_PIN_4
-#define CVC_LED_GRN_GPIO_Port GPIOB
-#define CVC_LED_RED_Pin GPIO_PIN_5
-#define CVC_LED_RED_GPIO_Port GPIOB
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __MAIN_H */
+#endif /* __STM32G4xx_IT_H */

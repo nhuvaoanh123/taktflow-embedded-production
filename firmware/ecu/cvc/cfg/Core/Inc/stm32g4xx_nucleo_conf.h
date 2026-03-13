@@ -1,12 +1,15 @@
+
 /**
   ******************************************************************************
-  * @file    stm32g4xx_nucleo_conf_template.h
+  * @file    stm32g4xx_nucleo_conf.h
   * @author  MCD Application Team
   * @brief   STM32G4xx_Nucleo board configuration file.
+  *          This file should be copied to the application folder and renamed
+  *          to stm32g4xx_nucleo_conf.h
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2019 STMicroelectronics.
+  * Copyright (c) 2022 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -21,7 +24,7 @@
 #define STM32G4XX_NUCLEO_CONF_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -39,21 +42,19 @@
   * @{
   */
 
-/** @defgroup STM32G4XX_NUCLEO_CONFIG_Exported_Constants Exported Constants
+/** @defgroup STM32C0XX_NUCLEO_CONFIG_Exported_Constants Exported Constants
   * @{
   */
-/* Uncomment one of the board define below */
-/* #define USE_NUCLEO_32 */
-/* #define USE_NUCLEO_64 */
+/* Nucleo pin and part number defines */
+#define USE_STM32G4XX_NUCLEO
 
-/* COM usage define */
-#define USE_BSP_COM_FEATURE                 0U
-
-/* COM log define */
+/* COM define */
 #define USE_COM_LOG                         0U
+#define USE_BSP_COM_FEATURE                 0U
 
 /* IRQ priorities */
 #define BSP_BUTTON_USER_IT_PRIORITY         15U
+
 /**
   * @}
   */
@@ -75,4 +76,3 @@
 #endif
 
 #endif /* STM32G4XX_NUCLEO_CONF_H */
-

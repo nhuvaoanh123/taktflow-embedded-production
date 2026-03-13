@@ -64,6 +64,26 @@ services:
       - ECU_NAME=tcu
     restart: unless-stopped
 
+
+  # --- Plant Simulator (virtual vehicle peripherals on physical CAN) ---
+  plant-sim:
+    build:
+      context: ..
+      dockerfile: gateway/plant_sim/Dockerfile
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    depends_on:
+      mqtt-broker:
+        condition: service_started
+    environment:
+      - CAN_CHANNEL=can0
+      - DBC_PATH=/app/taktflow.dbc
+      - MQTT_HOST=localhost
+      - MQTT_PORT=1883
+    restart: unless-stopped
+
   # --- CAN-to-MQTT Gateway ---
   can-gateway:
     build:

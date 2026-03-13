@@ -430,16 +430,20 @@ void Main_Hw_DebugPrintStatus(uint32 tick_us)
 {
     uint32 fzc_comm = 0u;
     uint32 rzc_comm = 0u;
+    uint32 veh_state = 0u;
     uint8  tec = 0u;
     uint8  rec = 0u;
 
     (void)Rte_Read(CVC_SIG_FZC_COMM_STATUS, &fzc_comm);
     (void)Rte_Read(CVC_SIG_RZC_COMM_STATUS, &rzc_comm);
+    (void)Rte_Read(CVC_SIG_VEHICLE_STATE, &veh_state);
     (void)Can_GetErrorCounters(0u, &tec, &rec);
 
     Dbg_Uart_Print("[");
     Dbg_PrintU32(tick_us / 1000000u);
-    Dbg_Uart_Print("s] CVC: FZC=");
+    Dbg_Uart_Print("s] CVC S=");
+    Dbg_PrintU32(veh_state);
+    Dbg_Uart_Print(" FZC=");
     Dbg_Uart_Print((fzc_comm == CVC_COMM_OK) ? "OK" : "TIMEOUT");
     Dbg_Uart_Print(" RZC=");
     Dbg_Uart_Print((rzc_comm == CVC_COMM_OK) ? "OK" : "TIMEOUT");

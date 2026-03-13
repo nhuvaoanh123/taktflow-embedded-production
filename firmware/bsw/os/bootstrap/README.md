@@ -14,6 +14,14 @@ Contents:
 - `src/Os_Core.c` - OS lifecycle, bootstrap helpers, test-only ISR wrapper
 - `src/Os_Task.c` - task services and activation logic
 - `src/Os_Scheduler.c` - ready selection, nested dispatch, preemption behavior
+- `src/Os_Resource.c` - PCP-style resource handling
+- `src/Os_Event.c` - first ECC1 event services
+- `src/Os_Alarm.c` - software counter plus task-activation alarms
+- `src/Os_Application.c` - OS-Application and trusted-function bootstrap services
+- `src/Os_Ioc.c` - IOC queue bootstrap services
+- `src/Os_Stack.c` - stack-budget monitoring bootstrap services
+- `src/Os_Memory.c` - task memory-access query bootstrap services
+- `port/` - non-integrated STM32/TMS570 port boundary and study notes
 - `src/Os_Internal.h` - shared bootstrap kernel state
 - `test/test_Os_asild.c` - focused Unity tests for the starter
 
@@ -25,9 +33,21 @@ Current scope:
 - application modes
 - priority-based ready selection
 - activation limits
+- queued multi-activation behavior for BCC2-style tasks
 - nested dispatch for host verification
 - immediate higher-priority preemption in bootstrap form
+- FULL/NON task scheduling behavior
 - Cat2 ISR exit dispatch simulation in bootstrap form
+- PCP-style resource ownership and release-order checks
+- first ECC1-style extended task events with WAITING state
+- software-driven counter advancement and task-activation alarms
+- counter-driven tests now drain deferred bootstrap port handoffs to quiescence
+- startup, error, pre-task, post-task, and shutdown hook behavior
+- OS-Application ownership and object-access queries
+- trusted-function access checks in bootstrap form
+- bootstrap IOC queue communication across OS-Applications
+- bootstrap stack-budget monitoring with shutdown-on-violation behavior
+- bootstrap task memory-access checks against configured application regions
 
 Not integrated yet:
 
@@ -40,3 +60,4 @@ Reference plan:
 
 - `docs/plans/OSEK_OS_SPEC.md`
 - `docs/plans/plan-os-threadx-bootstrap.md`
+- `docs/reference/threadx-local-reference-map.md`

@@ -49,13 +49,13 @@ Minimal viable scheduler. Prove the concept.
 
 | Feature | Spec Reference | Status |
 |---|---|---|
-| Task states (SUSPENDED, READY, RUNNING, WAITING) | OSEK 2.2.3 §13.2 | TODO |
-| ActivateTask / TerminateTask / ChainTask | OSEK §13.2 | TODO |
-| Priority-based preemptive scheduling | OSEK §13.1 | TODO |
-| Conformance class BCC1 | OSEK §13.1.1 | TODO |
-| StartOS / ShutdownOS | OSEK §13.7 | TODO |
-| Error hook | OSEK §13.7.2 | TODO |
-| ISR Category 2 | OSEK §13.3 | TODO |
+| Task states (SUSPENDED, READY, RUNNING, WAITING) | OSEK 2.2.3 §13.2 | BOOTSTRAP |
+| ActivateTask / TerminateTask / ChainTask | OSEK §13.2 | BOOTSTRAP |
+| Priority-based preemptive scheduling | OSEK §13.1 | BOOTSTRAP |
+| Conformance class BCC1 | OSEK §13.1.1 | BOOTSTRAP |
+| StartOS / ShutdownOS | OSEK §13.7 | BOOTSTRAP |
+| Error hook | OSEK §13.7.2 | BOOTSTRAP |
+| ISR Category 2 | OSEK §13.3 | BOOTSTRAP |
 | Context switch — Cortex-M4 | ARM Cortex-M TRM | TODO |
 
 ### Phase 2 — OSEK Full (BCC2 / ECC1 / ECC2)
@@ -63,14 +63,14 @@ Extended tasks, multiple activations, events.
 
 | Feature | Spec Reference | Status |
 |---|---|---|
-| Extended tasks (WAITING state) | OSEK §13.2.3 | TODO |
-| Events — SetEvent / WaitEvent / ClearEvent | OSEK §13.5 | TODO |
-| Multiple activations (BCC2) | OSEK §13.1.1 | TODO |
-| Resources — GetResource / ReleaseResource | OSEK §13.4 | TODO |
-| Priority Ceiling Protocol | OSEK §13.4.3 | TODO |
-| Alarms — SetAbsAlarm / SetRelAlarm / CancelAlarm | OSEK §13.6 | TODO |
-| Counters | OSEK §13.6.1 | TODO |
-| Pre/Post task hooks | OSEK §13.7.2 | TODO |
+| Extended tasks (WAITING state) | OSEK §13.2.3 | BOOTSTRAP |
+| Events — SetEvent / WaitEvent / ClearEvent | OSEK §13.5 | BOOTSTRAP |
+| Multiple activations (BCC2) | OSEK §13.1.1 | BOOTSTRAP |
+| Resources — GetResource / ReleaseResource | OSEK §13.4 | BOOTSTRAP |
+| Priority Ceiling Protocol | OSEK §13.4.3 | BOOTSTRAP |
+| Alarms — SetAbsAlarm / SetRelAlarm / CancelAlarm | OSEK §13.6 | BOOTSTRAP |
+| Counters | OSEK §13.6.1 | BOOTSTRAP |
+| Pre/Post task hooks | OSEK §13.7.2 | BOOTSTRAP |
 
 ### Phase 3 — AUTOSAR OS SC1 / SC2
 OSEK + AUTOSAR extensions, no memory protection yet.
@@ -82,18 +82,18 @@ OSEK + AUTOSAR extensions, no memory protection yet.
 | Execution time budget monitoring | AUTOSAR OS §7.6 | TODO |
 | Inter-arrival time protection | AUTOSAR OS §7.6.3 | TODO |
 | Schedule Tables | AUTOSAR OS §10 | TODO |
-| OS-Application concept | AUTOSAR OS §7.10 | TODO |
+| OS-Application concept | AUTOSAR OS §7.10 | BOOTSTRAP |
 
 ### Phase 4 — AUTOSAR OS SC3
 Memory protection. Full ASIL D decomposition.
 
 | Feature | Spec Reference | Status |
 |---|---|---|
-| Scalability Class 3 — memory protection | AUTOSAR OS §7.9.3 | TODO |
+| Scalability Class 3 — memory protection | AUTOSAR OS §7.9.3 | BOOTSTRAP |
 | MPU configuration per OS-Application | AUTOSAR OS §7.10.5 | TODO |
-| Trusted / Non-trusted functions | AUTOSAR OS §7.10.3 | TODO |
-| IOC — Inter-OS-Application Communication | AUTOSAR OS §8 | TODO |
-| Stack monitoring | AUTOSAR OS §7.6.5 | TODO |
+| Trusted / Non-trusted functions | AUTOSAR OS §7.10.3 | BOOTSTRAP |
+| IOC — Inter-OS-Application Communication | AUTOSAR OS §8 | BOOTSTRAP |
+| Stack monitoring | AUTOSAR OS §7.6.5 | BOOTSTRAP |
 
 ### Phase 5 — Taktflow Integration
 Replace FreeRTOS / bare-metal BSW foundation with OsekRTOS.

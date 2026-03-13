@@ -21,6 +21,7 @@ static boolean os_is_running_task_context(void)
 StatusType GetResource(ResourceType ResID)
 {
     Os_TaskControlBlockType* current_tcb;
+    OS_STACK_SAMPLE(OS_DET_API_GET_RESOURCE);
 
     if (os_is_running_task_context() == FALSE) {
         os_report_service_error(OS_DET_API_GET_RESOURCE, DET_E_PARAM_VALUE, E_OS_CALLEVEL);
@@ -30,6 +31,11 @@ StatusType GetResource(ResourceType ResID)
     if (os_is_valid_resource(ResID) == FALSE) {
         os_report_service_error(OS_DET_API_GET_RESOURCE, DET_E_PARAM_VALUE, E_OS_ID);
         return E_OS_ID;
+    }
+
+    if (os_current_application_has_access(OBJECT_RESOURCE, ResID) == FALSE) {
+        os_report_service_error(OS_DET_API_GET_RESOURCE, DET_E_PARAM_VALUE, E_OS_ACCESS);
+        return E_OS_ACCESS;
     }
 
     if (os_resource_cb[ResID].InUse == TRUE) {
@@ -55,6 +61,7 @@ StatusType GetResource(ResourceType ResID)
 StatusType ReleaseResource(ResourceType ResID)
 {
     Os_TaskControlBlockType* current_tcb;
+    OS_STACK_SAMPLE(OS_DET_API_RELEASE_RESOURCE);
 
     if (os_is_running_task_context() == FALSE) {
         os_report_service_error(OS_DET_API_RELEASE_RESOURCE, DET_E_PARAM_VALUE, E_OS_CALLEVEL);

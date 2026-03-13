@@ -72,33 +72,39 @@ ecus:
 
     runnables:
       Can_MainFunction_Read:
+        period_ms: 1
         priority: 9
         wdgm_se_id: 0xFF
-      Com_RxIndication:
+      Com_MainFunction_Rx:
+        period_ms: 10
         priority: 8
         wdgm_se_id: 0xFF
-      Swc_Pedal_MainFunction:
-        priority: 7
-        wdgm_se_id: 0
-      Swc_VehicleState_MainFunction:
-        priority: 6
-        wdgm_se_id: 1
       Swc_EStop_MainFunction:
+        period_ms: 10
         priority: 7
         wdgm_se_id: 2
-      Swc_Heartbeat_MainFunction:
+      Swc_Pedal_MainFunction:
+        period_ms: 10
+        priority: 6
+        wdgm_se_id: 0
+      Swc_VehicleState_MainFunction:
+        period_ms: 10
         priority: 5
+        wdgm_se_id: 1
+      Swc_Heartbeat_MainFunction:
+        period_ms: 10
+        priority: 4
         wdgm_se_id: 3
       Swc_Dashboard_MainFunction:
+        period_ms: 10
         priority: 3
         wdgm_se_id: 4
-      Swc_CvcCom_MainFunction:
-        priority: 4
-        wdgm_se_id: 5
       Com_MainFunction_Tx:
+        period_ms: 10
         priority: 2
         wdgm_se_id: 0xFF
       Can_MainFunction_BusOff:
+        period_ms: 10
         priority: 1
         wdgm_se_id: 0xFF
 
@@ -159,6 +165,64 @@ ecus:
       FZC_LIDAR_MAX_RANGE: 4000
       FZC_LIDAR_MIN_RANGE: 50
 
+    runnables:
+      Can_MainFunction_Read:
+        period_ms: 10
+        priority: 14
+        wdgm_se_id: 0xFF
+      Com_MainFunction_Rx:
+        period_ms: 10
+        priority: 13
+        wdgm_se_id: 0xFF
+      Swc_FzcCom_Receive:
+        period_ms: 10
+        priority: 12
+        wdgm_se_id: 0xFF
+      Swc_FzcSensorFeeder_MainFunction:
+        period_ms: 10
+        priority: 11
+        wdgm_se_id: 0xFF
+      Swc_Steering_MainFunction:
+        period_ms: 10
+        priority: 10
+        wdgm_se_id: 0
+      Swc_Brake_MainFunction:
+        period_ms: 10
+        priority: 9
+        wdgm_se_id: 1
+      Swc_Lidar_MainFunction:
+        period_ms: 10
+        priority: 8
+        wdgm_se_id: 2
+      Swc_Heartbeat_MainFunction:
+        period_ms: 10
+        priority: 7
+        wdgm_se_id: 3
+      Swc_FzcSafety_MainFunction:
+        period_ms: 10
+        priority: 6
+        wdgm_se_id: 4
+      Swc_Buzzer_MainFunction:
+        period_ms: 10
+        priority: 5
+        wdgm_se_id: 5
+      Swc_FzcCanMonitor_Check:
+        period_ms: 10
+        priority: 4
+        wdgm_se_id: 0xFF
+      Swc_FzcCom_TransmitSchedule:
+        period_ms: 10
+        priority: 3
+        wdgm_se_id: 0xFF
+      Com_MainFunction_Tx:
+        period_ms: 10
+        priority: 2
+        wdgm_se_id: 0xFF
+      Can_MainFunction_BusOff:
+        period_ms: 10
+        priority: 1
+        wdgm_se_id: 0xFF
+
   rzc:
     dtc_events:
       RZC_DTC_OVERCURRENT: 0
@@ -210,6 +274,64 @@ ecus:
       RZC_BATTERY_LOW_MV: 2200
       RZC_BATTERY_CRITICAL_MV: 2000
       RZC_ENCODER_TIMEOUT: 50
+
+    runnables:
+      Swc_CurrentMonitor_MainFunction:
+        period_ms: 1
+        priority: 11
+        wdgm_se_id: 0
+      Swc_Motor_MainFunction:
+        period_ms: 10
+        priority: 10
+        wdgm_se_id: 1
+      Swc_Encoder_MainFunction:
+        period_ms: 10
+        priority: 10
+        wdgm_se_id: 2
+      Can_MainFunction_Read:
+        period_ms: 1
+        priority: 9
+        wdgm_se_id: 0xFF
+      Com_MainFunction_Rx:
+        period_ms: 10
+        priority: 8
+        wdgm_se_id: 0xFF
+      Swc_RzcCom_Receive:
+        period_ms: 10
+        priority: 7
+        wdgm_se_id: 0xFF
+      Swc_RzcSensorFeeder_MainFunction:
+        period_ms: 10
+        priority: 6
+        wdgm_se_id: 0xFF
+      Swc_RzcCom_TransmitSchedule:
+        period_ms: 10
+        priority: 5
+        wdgm_se_id: 0xFF
+      Com_MainFunction_Tx:
+        period_ms: 10
+        priority: 4
+        wdgm_se_id: 0xFF
+      Swc_TempMonitor_MainFunction:
+        period_ms: 100
+        priority: 4
+        wdgm_se_id: 3
+      Swc_Battery_MainFunction:
+        period_ms: 100
+        priority: 4
+        wdgm_se_id: 4
+      Swc_Heartbeat_MainFunction:
+        period_ms: 50
+        priority: 3
+        wdgm_se_id: 5
+      Can_MainFunction_BusOff:
+        period_ms: 10
+        priority: 2
+        wdgm_se_id: 0xFF
+      Swc_RzcSafety_MainFunction:
+        period_ms: 100
+        priority: 2
+        wdgm_se_id: 6
 
   bcm:
     e2e_data_ids:
