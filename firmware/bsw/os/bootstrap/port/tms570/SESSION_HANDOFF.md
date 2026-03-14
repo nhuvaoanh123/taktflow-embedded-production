@@ -111,7 +111,7 @@ Current status:
 - `Model-tested`: yes
 - `Build-tested`: yes
 - `Spec-backed`: partly
-- `Target-verified`: partial (RTI compare0 IRQ — PASS, first-task launch — PASS, 2026-03-14)
+- `Target-verified`: partial (RTI IRQ — PASS, first-task launch — PASS, same-task IRQ return — PASS, 2026-03-14)
 
 Current passing checks:
 
@@ -279,11 +279,25 @@ Step 3 — Prove first-task launch via direct MSR+BX: [DONE — TARGET VERIFIED]
 - Implication: `OS_PORT_TMS570_INITIAL_CPSR` in the bootstrap model should be 0x1F (System), not 0x13 (SVC). The real `Os_Port_Tms570_StartFirstTaskAsm` needs the same MSR+BX approach.
 - One-way trip — test 2 never returns; the task entry prints final summary and blinks LED.
 
+Step 4 — Prove same-task IRQ return with register preservation: [DONE — TARGET VERIFIED]
+
+- Test: `bringup_test_same_task_irq_return()` in `Os_Port_Tms570_Bringup.c`
+  - Called from inside the launched task (bringup_first_task_entry)
+  - Loads 8 sentinel values (0xDEAD0004..0xDEAD000B) into R4-R11
+  - Captures SP before the test
+  - Enables RTI compare0 IRQ via VIM channel 2 (same ISR as test 1)
+  - Busy-waits ~620ms with CPSIE i, allowing IRQs to fire
+  - Disables IRQ with CPSID i, reads R4-R11 and SP back
+  - Verifies all 8 registers match sentinels and SP is unchanged
+- **Hardware result**: 24 IRQs fired, all registers preserved — PASS
+- All register load/store and IRQ enable/disable in a single inline asm block to prevent compiler from using R4-R11 during the test window
+- Proves `__attribute__((interrupt("IRQ")))` ISR correctly saves/restores SPSR, scratch registers, and returns via `subs pc, lr, #4`
+
 Bring-up order (remaining):
 
 1. [DONE] Prove RTI compare0 fires + VIM channel 2 routes to IRQ — TARGET VERIFIED 2026-03-14.
 2. [DONE] Prove first-task launch — TARGET VERIFIED 2026-03-14.
-3. Prove same-task IRQ return.
+3. [DONE] Prove same-task IRQ return — TARGET VERIFIED 2026-03-14.
 4. Prove two-task switch.
 5. Prove IRQ-driven preemption.
 6. Prove FIQ does not break IRQ-return ownership.

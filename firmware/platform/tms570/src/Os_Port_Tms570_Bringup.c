@@ -154,18 +154,157 @@ static boolean bringup_test_rti_compare0_irq(void)
 }
 
 /* ==================================================================
- * Test 2: Prove first-task context launch via exception return
+ * Test 3: Prove same-task IRQ return preserves callee-saved registers
  *
- * Builds a synthetic initial frame on a dedicated stack, then uses
- * the same LDMIA SP!, {R0-R12, LR, PC}^ exception return that the
- * bootstrap OS assembly uses. Proves:
+ * Called from inside the launched task (test 2). Loads known sentinel
+ * values into R4-R11, enables RTI compare0 IRQ, busy-waits while IRQs
+ * fire, then verifies all registers are unchanged after ISR returns.
+ *
+ * Proves:
+ *   - IRQ fires while a launched task is running
+ *   - __attribute__((interrupt("IRQ"))) ISR correctly saves/restores
+ *     CPSR (via SPSR_irq) and scratch registers (R0-R3, R12, LR)
+ *   - Callee-saved registers (R4-R11) survive the ISR round-trip
+ *   - Task SP is unchanged after IRQ return
+ * ================================================================== */
+
+/** @brief  Sentinel values for R4-R11 register preservation check */
+static const uint32 bringup_reg_sentinels[8] = {
+    0xDEAD0004u, 0xDEAD0005u, 0xDEAD0006u, 0xDEAD0007u,
+    0xDEAD0008u, 0xDEAD0009u, 0xDEAD000Au, 0xDEAD000Bu
+};
+
+/**
+ * @brief  Prove IRQ return preserves callee-saved registers R4-R11
+ *
+ * @return TRUE if all registers preserved and at least one IRQ fired
+ *
+ * @note   Must be called from the launched task (System mode, IRQs disabled).
+ *         Reuses bringup_rti_compare0_isr from test 1.
+ */
+static boolean bringup_test_same_task_irq_return(void)
+{
+    uint32 after[8];
+    uint32 spBefore;
+    uint32 spAfter;
+    uint32 irqsBefore;
+    uint32 irqsAfter;
+    boolean pass;
+    uint32 i;
+
+    sc_sci_puts("[BRINGUP-3] Same-task IRQ return + register preservation...\r\n");
+
+    /* Setup VIM/RTI — same ISR as test 1 */
+    bringup_rti_irq_count = 0u;
+    vimChannelMap(2u, 2u, (t_isrFuncPTR)&bringup_rti_compare0_isr);
+    vimEnableInterrupt(2u, SYS_IRQ);
+    rtiREG1->SETINTENA = (uint32)1u;
+
+    irqsBefore = bringup_rti_irq_count;
+
+    /* Load sentinels into R4-R11, capture SP, enable IRQ, busy-wait
+     * while IRQs fire, disable IRQ, read R4-R11 and SP back.
+     *
+     * All in one asm block so the compiler cannot use R4-R11 for
+     * other purposes during the test window. */
+    __asm__ volatile(
+        /* Capture SP before */
+        "MOV    %[spb], sp          \n\t"
+        /* Load sentinel values into R4-R11 */
+        "LDR    r4, [%[sen], #0]    \n\t"
+        "LDR    r5, [%[sen], #4]    \n\t"
+        "LDR    r6, [%[sen], #8]    \n\t"
+        "LDR    r7, [%[sen], #12]   \n\t"
+        "LDR    r8, [%[sen], #16]   \n\t"
+        "LDR    r9, [%[sen], #20]   \n\t"
+        "LDR    r10, [%[sen], #24]  \n\t"
+        "LDR    r11, [%[sen], #28]  \n\t"
+        /* Enable IRQ (clear I bit) */
+        "CPSIE  i                   \n\t"
+        /* Busy-wait ~620ms at 300 MHz — expect ~62 IRQs at 10ms */
+        "MOV    r0, %[cnt]          \n\t"
+        "1:                         \n\t"
+        "SUBS   r0, r0, #1          \n\t"
+        "BNE    1b                  \n\t"
+        /* Disable IRQ */
+        "CPSID  i                   \n\t"
+        /* Store R4-R11 to after[] */
+        "STR    r4, [%[aft], #0]    \n\t"
+        "STR    r5, [%[aft], #4]    \n\t"
+        "STR    r6, [%[aft], #8]    \n\t"
+        "STR    r7, [%[aft], #12]   \n\t"
+        "STR    r8, [%[aft], #16]   \n\t"
+        "STR    r9, [%[aft], #20]   \n\t"
+        "STR    r10, [%[aft], #24]  \n\t"
+        "STR    r11, [%[aft], #28]  \n\t"
+        /* Capture SP after */
+        "MOV    %[spa], sp          \n\t"
+        : [spb] "=&r" (spBefore), [spa] "=&r" (spAfter)
+        : [sen] "r" (bringup_reg_sentinels), [aft] "r" (after),
+          [cnt] "r" ((uint32)0x00800000u)
+        : "r0", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+          "memory"
+    );
+
+    irqsAfter = bringup_rti_irq_count;
+
+    /* Restore polled mode */
+    rtiREG1->CLEARINTENA = (uint32)1u;
+    vimDisableInterrupt(2u);
+    rtiREG1->INTFLAG = (uint32)1u;
+
+    /* Verify register preservation */
+    pass = TRUE;
+    for (i = 0u; i < 8u; i++) {
+        if (bringup_reg_sentinels[i] != after[i]) {
+            pass = FALSE;
+            sc_sci_puts("[BRINGUP-3] R");
+            sc_sci_put_uint(i + 4u);
+            sc_sci_puts(" MISMATCH: 0x");
+            bringup_put_hex(bringup_reg_sentinels[i]);
+            sc_sci_puts(" -> 0x");
+            bringup_put_hex(after[i]);
+            sc_sci_puts("\r\n");
+        }
+    }
+
+    /* Verify SP preservation */
+    if (spBefore != spAfter) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-3] SP MISMATCH: 0x");
+        bringup_put_hex(spBefore);
+        sc_sci_puts(" -> 0x");
+        bringup_put_hex(spAfter);
+        sc_sci_puts("\r\n");
+    }
+
+    /* Report */
+    sc_sci_puts("[BRINGUP-3] IRQs during test: ");
+    sc_sci_put_uint(irqsAfter - irqsBefore);
+    sc_sci_puts("\r\n");
+
+    if ((irqsAfter - irqsBefore) == 0u) {
+        sc_sci_puts("[BRINGUP-3] FAIL - no IRQs fired\r\n");
+        return FALSE;
+    }
+
+    sc_sci_puts(pass ? "[BRINGUP-3] PASS\r\n" : "[BRINGUP-3] FAIL\r\n");
+    return pass;
+}
+
+/* ==================================================================
+ * Test 2: Prove first-task context launch via direct MSR+BX
+ *
+ * Builds a synthetic initial frame on a dedicated stack, then launches
+ * the task using MSR CPSR_cxsf + BX (not exception return). Proves:
  *   - Initial frame layout is correct
- *   - Exception return from SVC mode works
- *   - CPU lands at the task entry function in expected mode
+ *   - Direct mode switch via MSR works from System mode
+ *   - CPU lands at the task entry function in System mode (0x1F)
  *   - Task can execute C code and call SCI UART functions
  *
  * This test is a ONE-WAY TRIP — it never returns to BringupAll.
- * The task entry function takes over as the main loop.
+ * The task entry also runs test 3 (IRQ return) before entering
+ * the LED blink loop.
  * ================================================================== */
 
 /** @brief  512-byte stack for the bring-up test task */
@@ -191,18 +330,20 @@ extern void sc_het_led_off(void);
 /**
  * @brief  Entry point for the first-task bring-up test
  *
- * Verifies CPU mode via MRS CPSR, reports pass/fail over SCI UART,
+ * Verifies CPU mode via MRS CPSR, then runs test 3 (same-task IRQ
+ * return with register preservation). Reports combined pass/fail,
  * then enters a polled RTI LED blink loop to prove the task is alive.
  * This function never returns.
  *
- * @note   Entered via exception return — R0-R12 and LR are loaded from
- *         the initial frame. SP points past the consumed frame.
+ * @note   Entered via direct MSR+BX from bringup_launch_task().
+ *         R0-R12 and LR are zeroed, SP points past the consumed frame.
  */
 __attribute__((used))
 static void bringup_first_task_entry(void)
 {
     uint32 cpsrVal;
-    boolean pass;
+    boolean allPass;
+    boolean test3Pass;
     uint32 blink = 0u;
 
     __asm__ volatile("MRS %0, CPSR" : "=r"(cpsrVal));
@@ -215,11 +356,17 @@ static void bringup_first_task_entry(void)
     sc_sci_puts(")\r\n");
 
     /* Expect System mode (0x1F) — HALCoGen runs main() in System mode */
-    pass = ((cpsrVal & 0x1Fu) == BRINGUP_TARGET_MODE) ? TRUE : FALSE;
-    sc_sci_puts(pass ? "[BRINGUP-2] PASS\r\n" : "[BRINGUP-2] FAIL\r\n");
+    allPass = ((cpsrVal & 0x1Fu) == BRINGUP_TARGET_MODE) ? TRUE : FALSE;
+    sc_sci_puts(allPass ? "[BRINGUP-2] PASS\r\n" : "[BRINGUP-2] FAIL\r\n");
+
+    /* Test 3: same-task IRQ return with register preservation */
+    test3Pass = bringup_test_same_task_irq_return();
+    if (test3Pass == FALSE) {
+        allPass = FALSE;
+    }
 
     sc_sci_puts("=== Bring-up ");
-    sc_sci_puts(pass ? "ALL PASS" : "SOME FAILED");
+    sc_sci_puts(allPass ? "ALL PASS" : "SOME FAILED");
     sc_sci_puts(" ===\r\n\r\n");
 
     /* Stay alive: polled RTI LED blink (500ms on / 500ms off) */
