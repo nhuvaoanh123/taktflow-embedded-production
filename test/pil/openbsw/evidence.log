@@ -1,0 +1,51 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.3, pytest-9.0.2, pluggy-1.6.0 -- C:\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\workspace_ccstheia\taktflow-embedded-production
+plugins: anyio-4.12.1
+collecting ... collected 41 items
+
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_programmer_exists PASSED [  2%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_elf_exists[g474re] PASSED [  4%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_stlink_connects[g474re] PASSED [  7%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_flash_and_verify[g474re] PASSED [  9%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_elf_exists[f413zh] PASSED [ 12%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_stlink_connects[f413zh] PASSED [ 14%]
+test/pil/openbsw/test_flash_verify.py::TestFlashVerify::test_flash_and_verify[f413zh] PASSED [ 17%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhFlash::test_boot_produces_output PASSED [ 19%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhFlash::test_lifecycle_log_present PASSED [ 21%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_init_level_1 PASSED [ 24%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_run_level_1 PASSED [ 26%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_init_level_2 PASSED [ 29%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_init_can PASSED [ 31%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_run_can PASSED [ 34%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_init_level_9 PASSED [ 36%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_lifecycle_run_level_9 PASSED [ 39%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhLifecycle::test_no_hardfault PASSED [ 41%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhCan::test_can_frame_sent PASSED [ 43%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhCan::test_can_frame_id PASSED [ 46%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhCan::test_multiple_frames_sent PASSED [ 48%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhCan::test_no_bus_error PASSED [ 51%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhHardwareConfig::test_clock_96mhz_via_uart PASSED [ 53%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhHardwareConfig::test_uart_clean_output PASSED [ 56%]
+test/pil/openbsw/test_openbsw_f413zh.py::TestF413ZhHardwareConfig::test_freertos_tick_advancing PASSED [ 58%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReFlash::test_boot_produces_output PASSED [ 60%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReFlash::test_lifecycle_log_present PASSED [ 63%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_init_level_1 PASSED [ 65%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_run_level_1 PASSED [ 68%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_init_level_2 PASSED [ 70%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_init_can PASSED [ 73%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_run_can PASSED [ 75%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_init_level_9 PASSED [ 78%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_lifecycle_run_level_9 PASSED [ 80%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReLifecycle::test_no_hardfault PASSED [ 82%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReCan::test_can_frame_sent PASSED [ 85%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReCan::test_can_frame_id PASSED [ 87%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReCan::test_multiple_frames_sent PASSED [ 90%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReCan::test_no_bus_error PASSED [ 92%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReHardwareConfig::test_clock_170mhz_via_uart PASSED [ 95%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReHardwareConfig::test_uart_clean_output PASSED [ 97%]
+test/pil/openbsw/test_openbsw_g474re.py::TestG474ReHardwareConfig::test_freertos_tick_advancing PASSED [100%]
+
+- generated xml file: D:\workspace_ccstheia\taktflow-embedded-production\test\pil\openbsw\report.xml -
+============================= 41 passed in 27.63s =============================
