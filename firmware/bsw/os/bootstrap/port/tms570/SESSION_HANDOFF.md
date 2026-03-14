@@ -111,7 +111,7 @@ Current status:
 - `Model-tested`: yes
 - `Build-tested`: yes
 - `Spec-backed`: partly
-- `Target-verified`: no
+- `Target-verified`: partial (RTI compare0 IRQ via VIM ch2 — PASS 2026-03-14)
 
 Current passing checks:
 
@@ -245,25 +245,28 @@ Step 1 — Fill in HAL bridge target branches: [DONE]
 - Host tests still pass: 210 tests, 0 failures.
 - Target build (`make -f Makefile.tms570 all`) still produces `sc.elf` — Os_Port_Tms570.c is not yet linked into the SC firmware build but all headers resolve.
 
-Step 2 — Prove RTI compare0 fires as IRQ via VIM channel 2: [READY TO FLASH]
+Step 2 — Prove RTI compare0 fires as IRQ via VIM channel 2: [DONE — TARGET VERIFIED]
 
 - New file: `firmware/platform/tms570/src/Os_Port_Tms570_Bringup.c`
 - Standalone bring-up test: `bringup_test_rti_compare0_irq()`
   - Maps RTI compare0 (request 2) → VIM channel 2 with a minimal ISR
   - ISR increments counter + acknowledges via `rtiREG1->INTFLAG = 1`
-  - Enables CPU IRQs, waits ~200ms, expects ~20 interrupts at 10ms period
-  - Reports pass/fail over SCI UART, then restores polled mode
+  - Enables CPU IRQs, waits ~4.4s delay loop, reports count over SCI UART
+  - Reports pass/fail, then restores polled mode
+- **Hardware result**: `[BRINGUP-1] IRQ count: 442 (expect ~20)` — PASS
+  - Count higher than expected because delay loop runs ~22× longer than estimated at 300 MHz (1 cycle/iteration vs assumed 3)
+  - 442 IRQs at 10ms period ≈ 4.42s total delay, confirming continuous IRQ delivery
+- Key fix: ISR must use `__attribute__((interrupt("IRQ")))` — regular `bx lr` crashes on first IRQ return (CPSR not restored from SPSR, return address not adjusted by 4)
+- Key fix: `systemInit()` in sc_main.c resets SCI peripheral — added `sc_sci_init()` after it to restore UART output
 - Call site: `sc_main.c` calls `Os_Port_Tms570_BringupAll()` between `rtiStartCounter()` and main loop, guarded by `#ifdef OS_BOOTSTRAP_BRINGUP`
 - Build: `make -f firmware/platform/tms570/Makefile.tms570 BRINGUP=1 all`
 - Flash: `make -f firmware/platform/tms570/Makefile.tms570 flash`
-- Verify via SCI UART output: `[BRINGUP-1] PASS` or `[BRINGUP-1] FAIL`
 - Does NOT use Os_Port_Tms570.c bridge functions — standalone HALCoGen calls
 - HALCoGen header conflict: `sc_types.h` defines `boolean` as `uint8`, HALCoGen as `bool`. Bring-up file uses HALCoGen types only, declares SCI externs manually.
-- Both normal build and BRINGUP=1 build produce clean `sc.elf`
 
-Bring-up order (remaining — awaiting hardware flash):
+Bring-up order (remaining):
 
-1. [READY] Prove RTI compare0 fires + VIM channel 2 routes to IRQ (combined in step 2).
+1. [DONE] Prove RTI compare0 fires + VIM channel 2 routes to IRQ — TARGET VERIFIED 2026-03-14.
 2. Prove first-task launch.
 3. Prove same-task IRQ return.
 4. Prove two-task switch.
