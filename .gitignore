@@ -31,6 +31,7 @@ Thumbs.db
 # Test reports (generated)
 test/*/reports/*.xml
 test/*/reports/*.html
+firmware/bsw/os/bootstrap/test/*.exe
 
 # Secrets
 .env
