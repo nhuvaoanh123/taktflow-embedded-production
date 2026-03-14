@@ -352,6 +352,13 @@ int main(void)
 
     /* ---- Step 1: Hardware initialization ---- */
     Main_Hw_SystemClockInit();
+
+#ifdef OS_BOOTSTRAP_BRINGUP
+    /* OSEK port bring-up: runs 6 hardware tests, never returns */
+    extern void Os_Port_Stm32_BringupAll(void);
+    Os_Port_Stm32_BringupAll();
+#endif
+
     Main_Hw_MpuConfig();
 
     /* ---- Step 2: BSW module initialization (order matters) ---- */

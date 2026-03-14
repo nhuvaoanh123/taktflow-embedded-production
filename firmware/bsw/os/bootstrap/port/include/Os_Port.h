@@ -23,5 +23,6 @@ void Os_PortStartFirstTask(void);
 void Os_PortRequestContextSwitch(void);
 void Os_PortEnterIsr2(void);
 void Os_PortExitIsr2(void);
+boolean Os_PortIsInIsrContext(void);
 
 #endif /* OS_PORT_H */

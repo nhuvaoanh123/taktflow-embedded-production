@@ -49,7 +49,7 @@ Os_HookType os_pre_task_hook = 0;
 Os_HookType os_post_task_hook = 0;
 Os_ShutdownHookType os_shutdown_hook = 0;
 
-#if defined(UNIT_TEST)
+#if defined(UNIT_TEST) || defined(OS_BOOTSTRAP_BRINGUP)
 void os_clear_task_cfg(void)
 {
     uint8 idx;
@@ -379,7 +379,7 @@ void StartOS(AppModeType Mode)
 
     (void)os_run_ready_tasks();
 
-#if !defined(UNIT_TEST)
+#if !defined(UNIT_TEST) && !defined(OS_BOOTSTRAP_BRINGUP)
     for (;;) {
         if (os_shutdown_requested == TRUE) {
             break;
@@ -430,7 +430,7 @@ void Os_BootstrapExitIsr2(void)
     }
 }
 
-#if defined(UNIT_TEST)
+#if defined(UNIT_TEST) || defined(OS_BOOTSTRAP_BRINGUP)
 void Os_TestReset(void)
 {
     os_clear_task_cfg();

@@ -2903,6 +2903,11 @@ void Os_PortExitIsr2(void)
      */
 }
 
+boolean Os_PortIsInIsrContext(void)
+{
+    return (boolean)(os_port_tms570_state.IrqNesting > 0u);
+}
+
 void Os_Port_Tms570_EnterFiq(void)
 {
     if (os_port_tms570_state.TargetInitialized == FALSE) {

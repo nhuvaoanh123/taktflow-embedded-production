@@ -51,6 +51,11 @@ ifdef HIL
   CFLAGS += -DPLATFORM_HIL
 endif
 
+# --- OS bootstrap bring-up tests (pass BRINGUP=1 to enable) ---
+ifdef BRINGUP
+  CFLAGS += -DOS_BOOTSTRAP_BRINGUP
+endif
+
 # --- Validate TARGET ---
 ifndef TARGET
   $(error TARGET is required. Usage: make -f firmware/platform/stm32/Makefile.stm32 TARGET=cvc|fzc|rzc)
@@ -105,6 +110,9 @@ CFLAGS += -I$(BSW)/services/NvM/include
 CFLAGS += -I$(BSW)/services/CanTp/include
 CFLAGS += -I$(BSW)/rte/include
 CFLAGS += -I$(BSW)/os/include
+CFLAGS += -I$(BSW)/os/bootstrap/include
+CFLAGS += -I$(BSW)/os/bootstrap/port/include
+CFLAGS += -I$(BSW)/os/bootstrap/src
 CFLAGS += -I$(PLAT)/include
 CFLAGS += -I$(ECU)/$(TARGET)/include
 
@@ -151,7 +159,20 @@ BSW_SRCS = \
     $(BSW)/services/Det/src/Det.c \
     $(BSW)/services/SchM/src/SchM.c \
     $(BSW)/services/CanTp/src/CanTp.c \
-    $(BSW)/rte/src/Rte.c
+    $(BSW)/rte/src/Rte.c \
+    $(BSW)/os/bootstrap/src/Os_Core.c \
+    $(BSW)/os/bootstrap/src/Os_Task.c \
+    $(BSW)/os/bootstrap/src/Os_Scheduler.c \
+    $(BSW)/os/bootstrap/src/Os_Resource.c \
+    $(BSW)/os/bootstrap/src/Os_Event.c \
+    $(BSW)/os/bootstrap/src/Os_Alarm.c \
+    $(BSW)/os/bootstrap/src/Os_Application.c \
+    $(BSW)/os/bootstrap/src/Os_Ioc.c \
+    $(BSW)/os/bootstrap/src/Os_Memory.c \
+    $(BSW)/os/bootstrap/src/Os_Stack.c \
+    $(BSW)/os/bootstrap/port/src/Os_Port_TaskBinding.c \
+    $(PLAT)/src/Os_Port_Stm32.c \
+    $(PLAT)/src/Os_Port_Stm32_Bringup.c
 
 # --- FZC additionally needs Uart MCAL ---
 ifeq ($(TARGET),fzc)
@@ -202,10 +223,14 @@ ECU_SRCS = $(filter-out %_posix.c %_tms570.c,$(ECU_SRCS_ALL)) $(ECU_HW_STM32)
 # --- All application sources ---
 APP_SRCS = $(BSW_SRCS) $(HAL_SRCS) $(BSP_SRCS) $(CUBEMX_SRCS) $(ECU_SRCS)
 
+# --- OS port assembly (uppercase .S for cpp preprocessing) ---
+OS_ASM_SRCS = $(PLAT)/src/Os_Port_Stm32_Asm.S
+
 # --- Object files ---
 APP_OBJS  = $(patsubst %.c,$(BUILD_DIR)/%.o,$(APP_SRCS))
 ASM_OBJS  = $(patsubst %.s,$(BUILD_DIR)/%.o,$(STARTUP))
-ALL_OBJS  = $(APP_OBJS) $(ASM_OBJS)
+OS_ASM_OBJS = $(patsubst %.S,$(BUILD_DIR)/%.o,$(OS_ASM_SRCS))
+ALL_OBJS  = $(APP_OBJS) $(ASM_OBJS) $(OS_ASM_OBJS)
 
 # --- Output files ---
 ELF = $(BUILD_DIR)/$(TARGET).elf
@@ -237,8 +262,13 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# --- Assemble startup ---
+# --- Assemble startup (.s lowercase) ---
 $(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(AS) $(MCU_FLAGS) -c $< -o $@
+
+# --- Assemble OS port (.S uppercase, cpp preprocessing) ---
+$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(AS) $(MCU_FLAGS) -c $< -o $@
 
