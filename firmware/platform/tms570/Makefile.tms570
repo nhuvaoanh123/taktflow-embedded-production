@@ -57,6 +57,11 @@ BUILD_DIR    = build/tms570
 INC_FLAGS  = -I$(SC_DIR)/include
 INC_FLAGS += -I$(HALCOGEN_DIR)/include
 INC_FLAGS += -I$(PLAT)/include
+INC_FLAGS += -I$(FW)/bsw/os/bootstrap/port/include
+INC_FLAGS += -I$(FW)/bsw/os/bootstrap/include
+INC_FLAGS += -I$(FW)/bsw/os/bootstrap/src
+INC_FLAGS += -I$(FW)/bsw/include
+INC_FLAGS += -I$(FW)/bsw/services/Det/include
 
 # --- SC code: strict warnings ---
 SC_CFLAGS  = $(COMMON_CFLAGS) $(INC_FLAGS)
@@ -109,17 +114,45 @@ HALCOGEN_ASM = $(filter-out $(HALCOGEN_ASM_EXCLUDE),$(HALCOGEN_ASM_ALL))
 SC_SRCS_ALL = $(wildcard $(SC_DIR)/src/*.c)
 SC_HW_TMS570 = $(PLAT)/src/sc_hw_tms570.c
 SC_BRINGUP   = $(PLAT)/src/Os_Port_Tms570_Bringup.c
-SC_SRCS = $(filter-out %_posix.c,$(SC_SRCS_ALL)) $(SC_HW_TMS570) $(SC_BRINGUP)
+SC_TARGET    = $(PLAT)/src/Os_Port_Tms570_Target.c
+SC_HW_PORT   = $(PLAT)/src/Os_Port_Tms570_Hw.c
+SC_SRCS = $(filter-out %_posix.c,$(SC_SRCS_ALL)) $(SC_HW_TMS570) $(SC_BRINGUP) $(SC_TARGET) $(SC_HW_PORT)
+
+# --- OSEK bootstrap kernel sources ---
+OS_KERN_DIR  = $(FW)/bsw/os/bootstrap/src
+OS_KERN_SRCS = $(OS_KERN_DIR)/Os_Core.c \
+               $(OS_KERN_DIR)/Os_Scheduler.c \
+               $(OS_KERN_DIR)/Os_Task.c \
+               $(OS_KERN_DIR)/Os_Alarm.c \
+               $(OS_KERN_DIR)/Os_Stack.c \
+               $(OS_KERN_DIR)/Os_Resource.c \
+               $(OS_KERN_DIR)/Os_Event.c \
+               $(OS_KERN_DIR)/Os_Application.c \
+               $(OS_KERN_DIR)/Os_Ioc.c \
+               $(OS_KERN_DIR)/Os_Memory.c
+
+# --- OS port binding layer ---
+OS_BIND_SRC  = $(FW)/bsw/os/bootstrap/port/src/Os_Port_TaskBinding.c
+
+# --- Det (Development Error Tracer — required by Os_Internal.h) ---
+DET_SRC      = $(FW)/bsw/services/Det/src/Det.c
 
 # --- SC GNU assembly (.S — preprocessed assembly, e.g. sc_startup.S) ---
 SC_ASM_GNU = $(wildcard $(SC_DIR)/src/*.S)
 
+# --- Platform GNU assembly (.S — OS port assembly) ---
+PLAT_ASM_GNU = $(wildcard $(PLAT)/src/*.S)
+
 # --- Object files ---
 HAL_OBJS     = $(patsubst %.c,$(BUILD_DIR)/%.o,$(HALCOGEN_SRCS))
 SC_OBJS      = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SC_SRCS))
+OS_KERN_OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(OS_KERN_SRCS))
+OS_BIND_OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(OS_BIND_SRC))
+DET_OBJS     = $(patsubst %.c,$(BUILD_DIR)/%.o,$(DET_SRC))
 ASM_OBJS     = $(patsubst %.asm,$(BUILD_DIR)/%.o,$(HALCOGEN_ASM))
 SC_ASM_OBJS  = $(patsubst %.S,$(BUILD_DIR)/%.o,$(SC_ASM_GNU))
-ALL_OBJS     = $(HAL_OBJS) $(SC_OBJS) $(ASM_OBJS) $(SC_ASM_OBJS)
+PLAT_ASM_OBJS = $(patsubst %.S,$(BUILD_DIR)/%.o,$(PLAT_ASM_GNU))
+ALL_OBJS     = $(HAL_OBJS) $(SC_OBJS) $(OS_KERN_OBJS) $(OS_BIND_OBJS) $(DET_OBJS) $(ASM_OBJS) $(SC_ASM_OBJS) $(PLAT_ASM_OBJS)
 
 # --- Output files ---
 ELF = $(BUILD_DIR)/sc.elf
@@ -173,6 +206,26 @@ $(BUILD_DIR)/$(PLAT)/src/Os_Port_Tms570_Bringup.o: $(PLAT)/src/Os_Port_Tms570_Br
 	@mkdir -p $(dir $@)
 	$(CC) $(HAL_CFLAGS) -c $< -o $@
 
+# --- Compile target helpers (relaxed — includes HALCoGen headers) ---
+$(BUILD_DIR)/$(PLAT)/src/Os_Port_Tms570_Target.o: $(PLAT)/src/Os_Port_Tms570_Target.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(HAL_CFLAGS) -c $< -o $@
+
+# --- Compile OSEK bootstrap kernel sources (strict — BSW headers only) ---
+$(BUILD_DIR)/$(OS_KERN_DIR)/%.o: $(OS_KERN_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(SC_CFLAGS) -c $< -o $@
+
+# --- Compile OS port binding layer (strict — BSW headers only) ---
+$(BUILD_DIR)/$(FW)/bsw/os/bootstrap/port/src/%.o: $(FW)/bsw/os/bootstrap/port/src/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(SC_CFLAGS) -c $< -o $@
+
+# --- Compile Det (strict — BSW headers only) ---
+$(BUILD_DIR)/$(FW)/bsw/services/Det/src/%.o: $(FW)/bsw/services/Det/src/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(SC_CFLAGS) -c $< -o $@
+
 # --- Assemble .asm (TI assembler syntax — requires -x ti-asm for LLVM) ---
 $(BUILD_DIR)/$(HALCOGEN_DIR)/%.o: $(HALCOGEN_DIR)/%.asm | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
@@ -182,6 +235,11 @@ $(BUILD_DIR)/$(HALCOGEN_DIR)/%.o: $(HALCOGEN_DIR)/%.asm | $(BUILD_DIR)
 $(BUILD_DIR)/$(SC_DIR)/%.o: $(SC_DIR)/%.S | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(MCU_FLAGS) $(INC_FLAGS) -c $< -o $@
+
+# --- Assemble platform .S (GNU syntax — OS port assembly) ---
+$(BUILD_DIR)/$(PLAT)/%.o: $(PLAT)/%.S | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(MCU_FLAGS) $(INC_FLAGS) -DPLATFORM_TMS570 -c $< -o $@
 
 # --- Build directory ---
 $(BUILD_DIR):

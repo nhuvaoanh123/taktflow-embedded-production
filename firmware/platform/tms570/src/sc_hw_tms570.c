@@ -27,6 +27,7 @@
 
 #include "sc_types.h"
 #include "Sc_Hw_Cfg.h"
+#include "sc_esm.h"       /* SC_ESM_HighLevelInterrupt — runtime safety response */
 
 /* ==================================================================
  * TMS570LC43x Register Base Addresses
@@ -762,6 +763,22 @@ void dcan1_transmit(uint8 mbIndex, const uint8* data, uint8 dlc)
  * ESM (Error Signaling Module) — from sc_esm.c
  * ================================================================== */
 
+/** Runtime mode flag — FALSE during startup (clear-and-continue),
+ *  TRUE after SC_ESM_Init() completes (errors trigger safe state). */
+static boolean esm_runtime_active = FALSE;
+
+/**
+ * @brief  Mark ESM as initialized — switch from startup to runtime mode
+ *
+ * Called by SC_ESM_Init() after enabling lockstep monitoring.
+ * From this point, esmGroup3Notification() will trigger safe state
+ * instead of clearing errors and continuing boot.
+ */
+void esm_set_runtime_mode(void)
+{
+    esm_runtime_active = TRUE;
+}
+
 /**
  * @brief  Enable ESM group 1 channel
  * @param  channel  ESM channel number (0-31)
@@ -1123,6 +1140,18 @@ void esmGroup3Notification(void *esm, uint32 channel)
     g3_esm_ekr = reg_read(ESM_BASE, ESM_EKR_OFF);
     g3_channel = channel;
     g3_call_count++;
+
+    /* RUNTIME: If ESM init is complete, a Group 3 error is a genuine
+     * safety fault (lockstep, CCM compare, etc). Enter safe state
+     * immediately — relay off, LED on, halt for watchdog reset.
+     * Do NOT clear the error — let it persist for post-mortem. */
+    if (esm_runtime_active != FALSE) {
+        SC_ESM_HighLevelInterrupt();
+        /* Never returns */
+    }
+
+    /* STARTUP: Clear errors and continue boot.
+     * Common cause: CCM-R5F lockstep desync after JTAG debug reset. */
 
     /* 1. Clear ALL CCM-R5F compare errors at their SOURCE.
      *    The CCM continuously drives ESM Group 3 until its status

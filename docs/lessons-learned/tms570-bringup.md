@@ -39,3 +39,35 @@
 **Fix:** Use direct `MSR CPSR_cxsf, R1` + `BX R3` — no exception return needed. Set SP, zero registers, branch to entry. The bootstrap model's `OS_PORT_TMS570_INITIAL_CPSR = 0x13` (SVC mode) needs updating to 0x1F (System mode).
 
 **Principle:** On Cortex-R5 with HALCoGen, assume main() runs in System mode. First-task launch cannot use exception return from the calling context. Use direct MSR + branch instead. Reserve exception return for ISR exit paths where the CPU is already in an exception mode (IRQ/FIQ/SVC).
+
+## 2026-03-14 — IRQ preemption: mode switches preserve SPSR and unbanked registers
+
+**Context:** Implementing IRQ-driven preemption on TMS570. The naked ISR needs to switch from IRQ mode to System mode (to access the interrupted task's SP/LR), do a cooperative context switch to a different task, then switch back to IRQ mode for exception return.
+
+**Key insight 1:** R4-R11 are NOT banked between System and IRQ modes — they are the same physical registers. When the ISR fires, R4-R11 hold the interrupted task's values. The cooperative switch (in System mode) saves/restores them via a context structure. After switching back to IRQ mode, they're still correct.
+
+**Key insight 2:** SPSR_irq is preserved across MSR CPSR_c mode switches. Switching to System mode only writes CPSR, not SPSR. System mode has no SPSR, so nothing can corrupt it. When the ISR switches back to IRQ mode, SPSR_irq still contains the original interrupted CPSR. The final `LDMIA sp!, {r0-r3, r12, pc}^` correctly restores the interrupted task's processor state.
+
+**Key insight 3:** LR_sys (Task A's link register) must be explicitly saved/restored across the cooperative switch because BLX clobbers LR. PUSH/POP {lr} on Task A's System stack handles this — the cooperative switch saves the modified SP, and the restore returns it to the pre-push state.
+
+**Pattern:** `SUB lr,#4 → STMDB {r0-r3,r12,lr} → [ack+check] → MSR CPSR_c 0x9F → PUSH {lr} → BLX switch_context → POP {lr} → MSR CPSR_c 0x92 → LDMIA {r0-r3,r12,pc}^`. This is the ThreadX preemption pattern (tx_thread_context_restore.S lines 166-229) without the scheduler.
+
+## 2026-03-14 — ISR preemption path must not fire when idle (no current task)
+
+**Context:** Phase 4 OSEK integration. RTI ISR calls `Os_BootstrapProcessCounterTick()` → alarm expires → task becomes READY → ISR's preemption path tries to do a cooperative context switch. The `StartOS()` idle loop is running in main() context (not an OS task).
+
+**Mistake:** `RtiTickServiceCore()` unconditionally signaled preemption when `Os_BootstrapProcessCounterTick()` returned TRUE. The assembly preemption path called `GetPendingSaveCoopCtx()` which returned NULL (no current task — `os_tgt_current_task == 0xFF`). Assembly then called `SwitchContextAsm(NULL, restoreCtx)` — `STR r4, [r0, #0]` wrote to address 0x00000000 (flash). CPU crashed or entered unpredictable state.
+
+**Fix:** Guard `os_tgt_switch_pending = TRUE` with `(os_tgt_current_task < TARGET_MAX_TASKS)`. When idle, the ISR returns normally via `LDMIA {r0-r3,r12,pc}^`, and the `StartOS()` idle loop's `os_dispatch_one()` picks up the READY task.
+
+**Principle:** In a run-to-completion model with alarm-driven activation, the ISR preemption path must only fire when an OS task is actually running. The idle loop is NOT an OS task — it's bare main() context with no save context. Always check for a valid current task before requesting a cooperative context switch from an ISR.
+
+## 2026-03-14 — ESM now_SR1 bit 21 is DCC1, not lockstep — waiver HIL-PF-008 was misdiagnosed
+
+**Context:** SC ESM lockstep monitoring was disabled via `#ifdef SC_ESM_ENABLED` (waiver HIL-PF-008) because "CCM-R5F asserts a persistent ESM Group 2 error causing SC_ESM_Init() to enter an infinite ISR loop." Runtime UART register dumps showed `now_SR1=0x00200000`.
+
+**Mistake:** Assumed `now_SR1=0x00200000` was a lockstep error. It's actually ESM Group 1 Channel 21 = DCC1 (Dual Clock Comparator 1), a clock validation module — NOT Channel 2 (CCM-R5F lockstep). All lockstep registers (CCMSR1-4, ESM SR3) were clean at runtime. The original lockstep error was transient (caused by JTAG debug reset desync) and was already being cleared by `esmGroup3Notification()` during startup.
+
+**Fix:** Made `SC_ESM_Init()` defensive: (1) clear residual Group 1 flags for ch2 (lockstep) and ch21 (DCC1) before enabling, (2) verify ch2 is clean — if persistent, latch error without enabling EEPAPR1, (3) set a runtime mode flag so `esmGroup3Notification()` triggers `SC_ESM_HighLevelInterrupt()` (relay off + halt) for runtime errors instead of clear-and-continue. Removed `#ifdef SC_ESM_ENABLED` guard.
+
+**Principle:** Always decode ESM channel numbers to their peripheral source before diagnosing. `0x00200000` = bit 21, not bit 2. The TMS570 ESM has 128+ channels across 3 groups — DCC, CCM, ADC, and other peripherals share the same status registers. Use the device TRM ESM channel mapping table, not assumptions.

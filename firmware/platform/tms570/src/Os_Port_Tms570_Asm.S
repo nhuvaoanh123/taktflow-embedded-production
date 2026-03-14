@@ -1,45 +1,257 @@
 /*
  * @file    Os_Port_Tms570_Asm.S
- * @brief   TMS570 Cortex-R5 bootstrap OS port assembly skeleton
- * @date    2026-03-13
+ * @brief   TMS570 Cortex-R5 OS port assembly — hardware + model paths
+ * @date    2026-03-14
  *
- * The design target remains a Cortex-R5 port, and the local vendor ThreadX
- * tree now gives direct Cortex-R5 interrupt-flow references under:
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_context_save.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_context_restore.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_irq_nesting_start.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_irq_nesting_end.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_fiq_context_save.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_fiq_context_restore.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_fiq_nesting_start.S
- * - threadx-master/ports/cortex_r5/gnu/src/tx_thread_fiq_nesting_end.S
+ * Two compilation modes:
  *
- * This file now carries a bootstrap, non-production Cortex-R5 skeleton:
- * - StartFirstTask restores the prepared ARM-R frame structure
- * - IRQ save/restore wrap the bootstrap ISR2 bookkeeping hooks
- * - C-side hooks now exist for "save current task SP", "peek restore SP",
- *   and "peek restore action" so a future real assembly path can branch on
- *   nested-return versus resume-current versus switch-task behavior more
- *   directly
- * - solicited task return now has a dedicated C-side save seam, so the local
- *   model can capture the minimal `tx_thread_system_return.S` frame shape
- *   without relying on a manual stack-type override in the tests
- * - FIQ save/restore now use explicit begin/finish hooks so they can mirror
- *   the same save -> processing -> restore split we model in C
- * - explicit FIQ processing-start and processing-end labels now mirror the
- *   ThreadX nesting-start/nesting-end split instead of hiding that flow
- * - RTI tick now splits into a C service core plus the same IRQ save/restore
- *   wrapper seam, so future vector-entry glue has a cleaner handoff target
+ * 1. UNIT_TEST (model path): All assembly is C-trampoline stubs used by the
+ *    210 model tests. No real register saves/restores — the C-side state
+ *    machine tracks everything.
  *
- * It is still not a production context-switch port yet:
- * - no live task save into an OS-owned context object
- * - no next-task restore path from the scheduler
- * - no VIM-specific vector entry glue
+ * 2. !UNIT_TEST (hardware path): Real TMS570LC4357 assembly validated in
+ *    bring-up tests 1-6. Three proven primitives:
+ *    - SwitchContextAsm:   naked cooperative context switch (R4-R11, LR, SP)
+ *    - StartFirstTaskAsm:  MSR CPSR_cxsf + BX (System mode, no SPSR)
+ *    - RtiTickHandler:     naked ISR with preemptive context switch via
+ *                          IRQ→System→IRQ mode switches
+ *
+ * Key hardware facts (lessons-learned/tms570-bringup.md):
+ *   - HALCoGen runs main() in System mode (0x1F), NOT SVC (0x13)
+ *   - System mode has NO SPSR — exception return is UNPREDICTABLE
+ *   - R4-R11 are NOT banked between System and IRQ modes
+ *   - SPSR_irq is preserved across MSR CPSR_c mode switches
+ *   - CPSR mask: only replace mode bits [4:0], never full low byte
+ *   - 0x9F = System mode + I=1, 0x92 = IRQ mode + I=1
  */
 
     .arm
     .text
     .align 4
+
+#ifndef UNIT_TEST
+/* ====================================================================
+ * HARDWARE PATH — Real TMS570LC4357 assembly
+ *
+ * All patterns below were validated on target hardware in bring-up
+ * tests 1-6 (Os_Port_Tms570_Bringup.c). The bring-up tests serve
+ * as the regression suite for these patterns.
+ * ==================================================================== */
+
+    .extern Os_Port_Tms570_RtiTickServiceCore
+    .extern Os_Port_Tms570_CheckPreemption
+    .extern Os_Port_Tms570_GetPendingSaveCoopCtx
+    .extern Os_Port_Tms570_GetPendingRestoreCoopCtx
+    .extern Os_Port_Tms570_PeekRestoreTaskSp
+    .extern Os_Port_Tms570_PeekRestoreTaskStackType
+    .extern Os_Port_Tms570_PeekRestoreTaskCpsr
+    .extern Os_Port_Tms570_FinishFirstTaskStart
+
+/* --------------------------------------------------------------------
+ * Os_Port_Tms570_SwitchContextAsm
+ *
+ * Naked cooperative context switch between two tasks.
+ * Saves R4-R11, LR, SP to *Save (R0), loads from *Restore (R1).
+ *
+ * Layout: Os_Port_Tms570_CooperativeContextType
+ *   [0]  R4    [4]  R5    [8]  R6    [12] R7
+ *   [16] R8    [20] R9    [24] R10   [28] R11
+ *   [32] LR    [36] SP
+ *
+ * Validated: bring-up tests 4 (cooperative), 5 (preemptive), 6 (FIQ+IRQ)
+ * -------------------------------------------------------------------- */
+    .global Os_Port_Tms570_SwitchContextAsm
+Os_Port_Tms570_SwitchContextAsm:
+    /* Save current task: R4-R11, LR, SP */
+    STR     r4,  [r0, #0]
+    STR     r5,  [r0, #4]
+    STR     r6,  [r0, #8]
+    STR     r7,  [r0, #12]
+    STR     r8,  [r0, #16]
+    STR     r9,  [r0, #20]
+    STR     r10, [r0, #24]
+    STR     r11, [r0, #28]
+    STR     lr,  [r0, #32]
+    STR     sp,  [r0, #36]
+    /* Restore next task: SP first, then R4-R11, LR */
+    LDR     sp,  [r1, #36]
+    LDR     r4,  [r1, #0]
+    LDR     r5,  [r1, #4]
+    LDR     r6,  [r1, #8]
+    LDR     r7,  [r1, #12]
+    LDR     r8,  [r1, #16]
+    LDR     r9,  [r1, #20]
+    LDR     r10, [r1, #24]
+    LDR     r11, [r1, #28]
+    LDR     lr,  [r1, #32]
+    /* Branch to restored task */
+    BX      lr
+
+/* --------------------------------------------------------------------
+ * Os_Port_Tms570_StartFirstTaskAsm
+ *
+ * Launch the first OS task from the initial frame prepared by
+ * Os_Port_Tms570_PrepareFirstTask(). Called from System mode
+ * (HALCoGen's main context).
+ *
+ * Frame layout (17 x uint32 = 68 bytes):
+ *   [0]  StackType   [1]  CPSR
+ *   [2]  R0 .. [14] R12   [15] LR   [16] PC (entry address)
+ *
+ * For interrupt frames (StackType != 0): uses MSR CPSR_cxsf + BX
+ * because System mode has no SPSR — LDMIA^{pc} is UNPREDICTABLE.
+ *
+ * For solicited frames (StackType == 0): LDMIA {r4-r11, lr} + MSR + BX.
+ *
+ * Validated: bring-up test 2 (first-task launch)
+ * -------------------------------------------------------------------- */
+    .global Os_Port_Tms570_StartFirstTaskAsm
+Os_Port_Tms570_StartFirstTaskAsm:
+    /* Query C-side state for frame location and metadata */
+    BL      Os_Port_Tms570_PeekRestoreTaskSp
+    CMP     r0, #0
+    BEQ     __os_port_tms570_start_done
+    MOV     r4, r0                          /* r4 = frame SP */
+    BL      Os_Port_Tms570_PeekRestoreTaskStackType
+    MOV     r6, r0                          /* r6 = StackType */
+    BL      Os_Port_Tms570_PeekRestoreTaskCpsr
+    MOV     r5, r0                          /* r5 = target CPSR */
+    BL      Os_Port_Tms570_FinishFirstTaskStart
+
+    MOV     sp, r4
+    ADD     sp, sp, #8                      /* skip StackType + CPSR header */
+    CMP     r6, #0
+    BEQ     __os_port_tms570_solicited_return
+
+    /* --- Interrupt frame: MSR + BX (System mode has no SPSR) --- */
+    LDR     r3, [sp, #56]                  /* r3 = PC (entry address) at offset 14*4 */
+    MSR     CPSR_cxsf, r5                  /* switch to target mode */
+    ADD     sp, sp, #60                    /* SP past frame (15 regs * 4) */
+    /* Zero all registers for clean initial state */
+    MOV     r0, #0
+    MOV     r1, #0
+    MOV     r2, #0
+    MOV     r4, #0
+    MOV     r5, #0
+    MOV     r6, #0
+    MOV     r7, #0
+    MOV     r8, #0
+    MOV     r9, #0
+    MOV     r10, #0
+    MOV     r11, #0
+    MOV     r12, #0
+    MOV     lr, #0
+    BX      r3
+
+    /* --- Solicited frame: load callee-saved + MSR + branch --- */
+__os_port_tms570_solicited_return:
+    MOV     r0, r5                          /* r0 = target CPSR */
+    LDMIA   sp!, {r4-r11, lr}
+    MSR     CPSR_cxsf, r0
+    MOV     pc, lr
+
+__os_port_tms570_start_done:
+    BX      lr
+
+/* --------------------------------------------------------------------
+ * Os_Port_Tms570_RtiTickHandler
+ *
+ * VIM-dispatched naked ISR for RTI compare0. Entered in IRQ mode.
+ * Handles the OS system tick and optional preemptive context switch.
+ *
+ * Normal path:
+ *   1. Standard IRQ entry: SUB lr,#4; STMDB {r0-r3, r12, lr}
+ *   2. Acknowledge RTI compare0 via INTFLAG W1C
+ *   3. Call C-side tick service (counter tick, ISR2 entry/exit)
+ *   4. Check preemption: if no switch → exception return
+ *
+ * Preemption path (ThreadX pattern from tx_thread_context_restore.S):
+ *   5. Get save/restore cooperative context pointers
+ *   6. Switch to System mode (0x9F: I=1, IRQ disabled)
+ *   7. PUSH {lr} — save LR_sys (BLX will clobber it)
+ *   8. Cooperative switch: save current R4-R11,LR,SP; load next
+ *   9. POP {lr} — restore LR_sys
+ *  10. Switch back to IRQ mode (0x92: I=1, IRQ disabled)
+ *  11. Exception return: LDMIA {r0-r3, r12, pc}^
+ *      → atomically restores CPSR from SPSR_irq
+ *
+ * Key insight: SPSR_irq is preserved across mode switches because
+ * MSR CPSR_c only writes CPSR, not SPSR. System mode has no SPSR
+ * to corrupt. So the final LDMIA ^ correctly restores the interrupted
+ * task's full processor state.
+ *
+ * Validated: bring-up tests 5 (preemption) and 6 (FIQ+IRQ)
+ *
+ * RTI register addresses:
+ *   rtiREG1->INTFLAG = 0xFFFFFC88, bit 0 = compare0, W1C
+ * -------------------------------------------------------------------- */
+    .global Os_Port_Tms570_RtiTickHandler
+Os_Port_Tms570_RtiTickHandler:
+    /* ---- Standard IRQ entry ---- */
+    SUB     lr, lr, #4
+    STMDB   sp!, {r0-r3, r12, lr}
+
+    /* ---- Acknowledge RTI compare0 (W1C bit 0) ---- */
+    LDR     r0, =0xFFFFFC88                /* rtiREG1->INTFLAG */
+    MOV     r1, #1
+    STR     r1, [r0]
+
+    /* ---- C-side tick processing ---- */
+    /* RtiTickServiceCore: increments tick counter, calls Os_PortEnterIsr2/
+     * Os_PortExitIsr2, processes counter/alarms, checks scheduler */
+    BL      Os_Port_Tms570_RtiTickServiceCore
+
+    /* ---- Check if preemptive switch is needed ---- */
+    BL      Os_Port_Tms570_CheckPreemption
+    CMP     r0, #0
+    BEQ     __rti_no_preempt
+
+    /* ---- PREEMPTION PATH ---- */
+    /* Get save context pointer (still in IRQ mode — safe to call C) */
+    BL      Os_Port_Tms570_GetPendingSaveCoopCtx
+    PUSH    {r0}                            /* stash on IRQ stack */
+
+    /* Get restore context pointer */
+    BL      Os_Port_Tms570_GetPendingRestoreCoopCtx
+    MOV     r1, r0                          /* r1 = restore ctx */
+    POP     {r0}                            /* r0 = save ctx */
+
+    /* Switch to System mode (I=1: IRQs remain disabled) */
+    MOV     r2, #0x9F
+    MSR     CPSR_c, r2
+
+    /* Now SP = SP_sys (current task's stack), LR = LR_sys */
+    /* Save LR_sys — the BL to SwitchContextAsm will clobber it */
+    PUSH    {lr}
+
+    /* Cooperative switch: save current task, load next task */
+    BL      Os_Port_Tms570_SwitchContextAsm
+
+    /* Resumed — a different task switched back to us */
+    POP     {lr}
+
+    /* Switch back to IRQ mode (I=1: IRQs disabled) */
+    MOV     r2, #0x92
+    MSR     CPSR_c, r2
+
+__rti_no_preempt:
+    /* ---- Exception return ---- */
+    /* Restores R0-R3, R12 from IRQ stack, loads adjusted LR into PC,
+     * and the ^ suffix atomically copies SPSR_irq → CPSR, returning
+     * to the interrupted task in its original processor state. */
+    LDMIA   sp!, {r0-r3, r12, pc}^
+
+    /* Literal pool for LDR =constant references */
+    .ltorg
+
+
+#else /* UNIT_TEST */
+/* ====================================================================
+ * MODEL PATH — C-trampoline stubs for the 210 model tests
+ *
+ * No real register saves/restores. All logic lives in the C-side state
+ * machine (Os_Port_Tms570.c). Assembly just forwards calls to C hooks.
+ * ==================================================================== */
 
     .extern Os_PortEnterIsr2
     .extern Os_PortExitIsr2
@@ -665,3 +877,5 @@ Os_Port_Tms570_RtiTickHandler:
     BL      Os_Port_Tms570_RtiTickServiceCore
     BL      Os_Port_Tms570_IrqNestingEnd
     B       Os_Port_Tms570_IrqContextRestore
+
+#endif /* UNIT_TEST */

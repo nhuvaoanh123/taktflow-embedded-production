@@ -567,6 +567,8 @@ boolean esm_is_flag_set(uint8 group, uint8 channel)
     return FALSE;
 }
 
+void esm_set_runtime_mode(void) { }
+
 /* ==================================================================
  * Debug stubs — no-op on POSIX (no UART, no user LEDs, no MMIO)
  * ================================================================== */

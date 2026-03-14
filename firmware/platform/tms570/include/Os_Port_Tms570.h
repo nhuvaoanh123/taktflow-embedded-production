@@ -140,6 +140,26 @@ typedef struct {
     uint32 FrameBytes;
 } Os_Port_Tms570_TaskFrameViewType;
 
+/**
+ * @brief  Cooperative context for real hardware context switch
+ *
+ * Layout matches the naked Os_Port_Tms570_SwitchContextAsm function:
+ * save/restore R4-R11 (callee-saved), LR, SP at fixed offsets.
+ * Validated on TMS570LC4357 target (bring-up tests 4, 5, 6).
+ */
+typedef struct {
+    uint32 R4;      /**< offset  0 */
+    uint32 R5;      /**< offset  4 */
+    uint32 R6;      /**< offset  8 */
+    uint32 R7;      /**< offset 12 */
+    uint32 R8;      /**< offset 16 */
+    uint32 R9;      /**< offset 20 */
+    uint32 R10;     /**< offset 24 */
+    uint32 R11;     /**< offset 28 */
+    uint32 LR;      /**< offset 32 */
+    uint32 SP;      /**< offset 36 */
+} Os_Port_Tms570_CooperativeContextType;
+
 typedef struct {
     boolean Prepared;
     TaskType TaskID;
@@ -149,6 +169,7 @@ typedef struct {
     uint32 SavedTimeSlice;
     Os_Port_Tms570_TaskFrameType InitialFrame;
     Os_Port_Tms570_TaskFrameType RuntimeFrame;
+    Os_Port_Tms570_CooperativeContextType CoopCtx;
     Os_TaskEntryType Entry;
 } Os_Port_Tms570_TaskContextType;
 
@@ -424,6 +445,37 @@ StatusType Os_Port_Tms570_VimIrqEntryCore(void);
 StatusType Os_Port_Tms570_VimIrqEntry(void);
 void Os_Port_Tms570_RtiTickServiceCore(void);
 void Os_Port_Tms570_RtiTickHandler(void);
+
+/**
+ * @brief  Naked cooperative context switch — saves R4-R11, LR, SP to Save,
+ *         loads R4-R11, LR, SP from Restore, branches via restored LR.
+ * @param  Save    Pointer to current task's cooperative context (R0 via AAPCS)
+ * @param  Restore Pointer to next task's cooperative context (R1 via AAPCS)
+ * @note   Implemented in Os_Port_Tms570_Asm.S. Validated in bring-up tests 4-6.
+ */
+void Os_Port_Tms570_SwitchContextAsm(
+    Os_Port_Tms570_CooperativeContextType* Save,
+    Os_Port_Tms570_CooperativeContextType* Restore);
+
+/**
+ * @brief  Check if a preemptive task switch is needed after tick processing.
+ * @return 0 if no switch needed, nonzero if switch is pending.
+ *         When nonzero, Os_Port_Tms570_GetPendingSaveCoopCtx and
+ *         Os_Port_Tms570_GetPendingRestoreCoopCtx return the context pointers.
+ */
+uint32 Os_Port_Tms570_CheckPreemption(void);
+
+/**
+ * @brief  Get cooperative context pointer for the task being switched away from.
+ * @return Pointer to current task's cooperative context, or NULL if no switch.
+ */
+Os_Port_Tms570_CooperativeContextType* Os_Port_Tms570_GetPendingSaveCoopCtx(void);
+
+/**
+ * @brief  Get cooperative context pointer for the task being switched to.
+ * @return Pointer to next task's cooperative context, or NULL if no switch.
+ */
+Os_Port_Tms570_CooperativeContextType* Os_Port_Tms570_GetPendingRestoreCoopCtx(void);
 
 /**
  * @brief HALCoGen bring-up glue — bridge from bootstrap model to real hardware.

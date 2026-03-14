@@ -455,6 +455,513 @@ static boolean bringup_test_two_task_switch(void)
 }
 
 /* ==================================================================
+ * Test 5: IRQ-driven preemption
+ *
+ * Called from inside the launched task (test 2). Proves:
+ *   - An IRQ can preempt a running task mid-instruction-stream
+ *   - The ISR can switch to a different task (Task B) and run it
+ *   - Task B can switch back, resuming the ISR
+ *   - The ISR returns to the original task (Task A) with all
+ *     registers and SP intact
+ *
+ * Uses a naked ISR that:
+ *   1. Saves scratch regs on IRQ stack (standard IRQ entry)
+ *   2. Checks a preemption flag
+ *   3. If set: switches to System mode via MSR CPSR_c, does
+ *      cooperative context switch to Task B, waits for Task B
+ *      to switch back, then returns to IRQ mode for exception return
+ *
+ * Key insight: R4-R11 are NOT banked between System and IRQ modes.
+ * When the ISR fires, R4-R11 hold the interrupted task's values.
+ * The cooperative switch (in System mode) saves/restores them via
+ * BringupTaskContext, so the interrupted task sees them unchanged.
+ *
+ * This matches the ThreadX preemption pattern (tx_thread_context_restore.S
+ * lines 166-229) but simplified to prove the concept without a scheduler.
+ * ================================================================== */
+
+static BringupTaskContext bringup_preempt_ctx_a;
+static BringupTaskContext bringup_preempt_ctx_b;
+static uint8 bringup_preempt_b_stack[512u] __attribute__((aligned(8)));
+static volatile boolean bringup_preempt_b_ran = FALSE;
+static volatile uint32 bringup_preempt_flag = 0u;
+static volatile uint32 bringup_preempt_count = 0u;
+
+/**
+ * @brief  Task B entry for preemption test — runs inside ISR context
+ *
+ * Entered via cooperative switch from the preemption ISR (System mode,
+ * IRQs disabled). Sets a flag and switches back to the ISR. On
+ * subsequent entries, increments count and switches back.
+ *
+ * @note   Runs on its own stack but in System mode with IRQs disabled.
+ */
+__attribute__((used))
+static void bringup_preempt_task_b_entry(void)
+{
+    sc_sci_puts("[BRINGUP-5] Task B preempted in!\r\n");
+    bringup_preempt_b_ran = TRUE;
+    bringup_preempt_count++;
+
+    /* Switch back to ISR (Task A's context inside the ISR) */
+    bringup_switch_context(&bringup_preempt_ctx_b, &bringup_preempt_ctx_a);
+
+    /* Subsequent preemptions land here */
+    for (;;) {
+        bringup_preempt_count++;
+        bringup_switch_context(&bringup_preempt_ctx_b, &bringup_preempt_ctx_a);
+    }
+}
+
+/**
+ * @brief  Naked preemption ISR for RTI compare0
+ *
+ * Normal path: acknowledge RTI, increment count, exception return.
+ * Preemption path: switch to System mode, cooperative-switch to Task B,
+ * wait for Task B to return, switch back to IRQ mode, exception return.
+ *
+ * @note   Uses MSR CPSR_c for mode switches (following ThreadX pattern)
+ *         rather than CPS, for explicit control over I/F bits.
+ *         0x9F = System mode + I=1 (IRQ disabled)
+ *         0x92 = IRQ mode + I=1 (IRQ disabled)
+ *
+ * @note   SPSR_irq is preserved throughout — no code writes to it.
+ *         The final LDMIA ^{pc} restores CPSR from SPSR_irq, returning
+ *         to the interrupted task in its original processor state.
+ */
+__attribute__((naked))
+void bringup_preempt_isr(void)
+{
+    __asm__ volatile(
+        /* ---- Standard IRQ entry ---- */
+        "SUB    lr, lr, #4              \n\t"
+        "STMDB  sp!, {r0-r3, r12, lr}   \n\t"
+
+        /* ---- Acknowledge RTI compare0 ---- */
+        "LDR    r0, =0xFFFFFC88         \n\t"   /* rtiREG1->INTFLAG */
+        "MOV    r1, #1                  \n\t"
+        "STR    r1, [r0]                \n\t"
+
+        /* ---- Increment IRQ count ---- */
+        "LDR    r0, =bringup_rti_irq_count \n\t"
+        "LDR    r1, [r0]                \n\t"
+        "ADD    r1, r1, #1              \n\t"
+        "STR    r1, [r0]                \n\t"
+
+        /* ---- Check preemption flag ---- */
+        "LDR    r0, =bringup_preempt_flag \n\t"
+        "LDR    r1, [r0]                \n\t"
+        "CMP    r1, #0                  \n\t"
+        "BEQ    1f                      \n\t"
+
+        /* ---- PREEMPTION PATH ---- */
+        /* Clear flag (one preemption per request) */
+        "MOV    r1, #0                  \n\t"
+        "STR    r1, [r0]                \n\t"
+
+        /* Switch to System mode (I=1: IRQs remain disabled) */
+        "MOV    r2, #0x9F              \n\t"
+        "MSR    CPSR_c, r2             \n\t"
+
+        /* Now SP = SP_sys (Task A's stack), LR = LR_sys */
+        /* Save LR_sys — BLX will clobber it */
+        "PUSH   {lr}                    \n\t"
+
+        /* Cooperative switch: save Task A state, run Task B */
+        "LDR    r0, =bringup_preempt_ctx_a \n\t"
+        "LDR    r1, =bringup_preempt_ctx_b \n\t"
+        "LDR    r2, =bringup_switch_context \n\t"
+        "BLX    r2                      \n\t"
+
+        /* Resumed — Task B switched back */
+        "POP    {lr}                    \n\t"
+
+        /* Switch back to IRQ mode (I=1: IRQs disabled) */
+        "MOV    r2, #0x92              \n\t"
+        "MSR    CPSR_c, r2             \n\t"
+
+        /* ---- Normal exception return ---- */
+        "1:                             \n\t"
+        "LDMIA  sp!, {r0-r3, r12, pc}^ \n\t"
+
+        /* Literal pool for LDR =symbol references */
+        ".ltorg                         \n\t"
+    );
+}
+
+/**
+ * @brief  Prove IRQ-driven preemptive task switch
+ *
+ * Loads sentinel values into R4-R11, enables IRQs, and busy-waits.
+ * The preemption ISR fires, switches to Task B (which runs and
+ * switches back), then returns to this busy-wait loop. After the
+ * loop, verifies all registers, SP, and that Task B actually ran.
+ *
+ * @return TRUE if preemption succeeded with full register preservation
+ *
+ * @note   Must be called from the launched task (System mode).
+ *         Reuses bringup_reg_sentinels from test 3.
+ */
+static boolean bringup_test_irq_preemption(void)
+{
+    uint32 after[8];
+    uint32 spBefore;
+    uint32 spAfter;
+    uint32 irqsBefore;
+    uint32 irqsAfter;
+    boolean pass;
+    uint32 i;
+    uintptr_t stackTop;
+
+    sc_sci_puts("[BRINGUP-5] IRQ-driven preemption...\r\n");
+
+    /* Prepare Task B's initial context */
+    bringup_preempt_ctx_b.r4  = 0u;
+    bringup_preempt_ctx_b.r5  = 0u;
+    bringup_preempt_ctx_b.r6  = 0u;
+    bringup_preempt_ctx_b.r7  = 0u;
+    bringup_preempt_ctx_b.r8  = 0u;
+    bringup_preempt_ctx_b.r9  = 0u;
+    bringup_preempt_ctx_b.r10 = 0u;
+    bringup_preempt_ctx_b.r11 = 0u;
+    bringup_preempt_ctx_b.lr  = (uint32)(uintptr_t)&bringup_preempt_task_b_entry;
+    stackTop = (uintptr_t)&bringup_preempt_b_stack[sizeof(bringup_preempt_b_stack)];
+    bringup_preempt_ctx_b.sp  = (uint32)(stackTop & ~(uintptr_t)7u);
+
+    bringup_preempt_b_ran = FALSE;
+    bringup_preempt_count = 0u;
+    bringup_preempt_flag = 0u;
+    bringup_rti_irq_count = 0u;
+
+    /* Map preemption ISR to VIM ch2 */
+    vimChannelMap(2u, 2u, (t_isrFuncPTR)&bringup_preempt_isr);
+    vimEnableInterrupt(2u, SYS_IRQ);
+    rtiREG1->SETINTENA = (uint32)1u;
+
+    /* Arm preemption — next IRQ will trigger it */
+    bringup_preempt_flag = 1u;
+
+    irqsBefore = bringup_rti_irq_count;
+
+    /* Load sentinels, enable IRQ, busy-wait, disable IRQ.
+     * During the wait, the preemption ISR fires and switches to
+     * Task B, then back — transparent to this code path. */
+    __asm__ volatile(
+        "MOV    %[spb], sp          \n\t"
+        "LDR    r4, [%[sen], #0]    \n\t"
+        "LDR    r5, [%[sen], #4]    \n\t"
+        "LDR    r6, [%[sen], #8]    \n\t"
+        "LDR    r7, [%[sen], #12]   \n\t"
+        "LDR    r8, [%[sen], #16]   \n\t"
+        "LDR    r9, [%[sen], #20]   \n\t"
+        "LDR    r10, [%[sen], #24]  \n\t"
+        "LDR    r11, [%[sen], #28]  \n\t"
+        "CPSIE  i                   \n\t"
+        "MOV    r0, %[cnt]          \n\t"
+        "1:                         \n\t"
+        "SUBS   r0, r0, #1          \n\t"
+        "BNE    1b                  \n\t"
+        "CPSID  i                   \n\t"
+        "STR    r4, [%[aft], #0]    \n\t"
+        "STR    r5, [%[aft], #4]    \n\t"
+        "STR    r6, [%[aft], #8]    \n\t"
+        "STR    r7, [%[aft], #12]   \n\t"
+        "STR    r8, [%[aft], #16]   \n\t"
+        "STR    r9, [%[aft], #20]   \n\t"
+        "STR    r10, [%[aft], #24]  \n\t"
+        "STR    r11, [%[aft], #28]  \n\t"
+        "MOV    %[spa], sp          \n\t"
+        : [spb] "=&r" (spBefore), [spa] "=&r" (spAfter)
+        : [sen] "r" (bringup_reg_sentinels), [aft] "r" (after),
+          [cnt] "r" ((uint32)0x00800000u)
+        : "r0", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+          "memory"
+    );
+
+    irqsAfter = bringup_rti_irq_count;
+
+    /* Restore polled mode */
+    rtiREG1->CLEARINTENA = (uint32)1u;
+    vimDisableInterrupt(2u);
+    rtiREG1->INTFLAG = (uint32)1u;
+
+    /* Verify register preservation */
+    pass = TRUE;
+    for (i = 0u; i < 8u; i++) {
+        if (bringup_reg_sentinels[i] != after[i]) {
+            pass = FALSE;
+            sc_sci_puts("[BRINGUP-5] R");
+            sc_sci_put_uint(i + 4u);
+            sc_sci_puts(" MISMATCH: 0x");
+            bringup_put_hex(bringup_reg_sentinels[i]);
+            sc_sci_puts(" -> 0x");
+            bringup_put_hex(after[i]);
+            sc_sci_puts("\r\n");
+        }
+    }
+
+    /* Verify SP preservation */
+    if (spBefore != spAfter) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-5] SP MISMATCH: 0x");
+        bringup_put_hex(spBefore);
+        sc_sci_puts(" -> 0x");
+        bringup_put_hex(spAfter);
+        sc_sci_puts("\r\n");
+    }
+
+    /* Verify Task B ran */
+    if (bringup_preempt_b_ran == FALSE) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-5] FAIL - Task B did not run\r\n");
+    }
+
+    /* Report */
+    sc_sci_puts("[BRINGUP-5] IRQs: ");
+    sc_sci_put_uint(irqsAfter - irqsBefore);
+    sc_sci_puts(", preemptions: ");
+    sc_sci_put_uint(bringup_preempt_count);
+    sc_sci_puts("\r\n");
+
+    if ((irqsAfter - irqsBefore) == 0u) {
+        sc_sci_puts("[BRINGUP-5] FAIL - no IRQs fired\r\n");
+        return FALSE;
+    }
+
+    sc_sci_puts(pass ? "[BRINGUP-5] PASS\r\n" : "[BRINGUP-5] FAIL\r\n");
+    return pass;
+}
+
+/* ==================================================================
+ * Test 6: FIQ does not break IRQ-return ownership
+ *
+ * Called from inside the launched task (test 2). Proves:
+ *   - FIQ can fire during an IRQ handler (including the preemption path)
+ *   - FIQ handler correctly uses banked FIQ registers (R8_fiq-R12_fiq,
+ *     SP_fiq, LR_fiq, SPSR_fiq) without corrupting System/IRQ state
+ *   - SPSR_irq is NOT corrupted by FIQ — only accessible from IRQ mode,
+ *     and FIQ mode has its own SPSR_fiq
+ *   - Task registers (R4-R11, SP) survive IRQ+FIQ concurrent firing
+ *
+ * Uses RTI compare0 as IRQ (preemption ISR, same as test 5) and
+ * RTI compare1 as FIQ (simple counter). Both fire at different rates
+ * during the busy-wait. FIQ can preempt the IRQ handler at any point
+ * including during the mode-switch preemption path.
+ *
+ * ARM register banking guarantees safety:
+ *   - FIQ-banked: R8_fiq-R12_fiq, SP_fiq, LR_fiq, SPSR_fiq
+ *   - IRQ-banked: SP_irq, LR_irq, SPSR_irq
+ *   - FIQ mode cannot access or corrupt IRQ-banked registers
+ *   - R0-R7 are shared but __attribute__((interrupt("FIQ"))) saves them
+ * ================================================================== */
+
+static volatile uint32 bringup_fiq_count = 0u;
+
+/**
+ * @brief  FIQ handler for RTI compare1 — increments counter, acknowledges
+ *
+ * @note   Uses __attribute__((interrupt("FIQ"))) so compiler generates
+ *         proper save/restore of shared R0-R7 and SUBS PC, LR, #4 return.
+ *         FIQ-banked R8-R12 are separate from System/IRQ R8-R12.
+ *         FIQ sets F=1 on entry (prevents nested FIQ).
+ */
+void __attribute__((interrupt("FIQ"))) bringup_fiq_isr(void)
+{
+    bringup_fiq_count++;
+    rtiREG1->INTFLAG = 2u;  /* W1C: acknowledge compare1 (bit 1) */
+}
+
+/**
+ * @brief  Task B entry for FIQ test — prints and switches back
+ *
+ * @note   Separate from test 5's entry so UART output identifies test 6.
+ */
+__attribute__((used))
+static void bringup_fiq_task_b_entry(void)
+{
+    sc_sci_puts("[BRINGUP-6] Task B preempted in (FIQ+IRQ)!\r\n");
+    bringup_preempt_b_ran = TRUE;
+    bringup_preempt_count++;
+
+    /* Switch back to ISR */
+    bringup_switch_context(&bringup_preempt_ctx_b, &bringup_preempt_ctx_a);
+
+    /* Subsequent preemptions */
+    for (;;) {
+        bringup_preempt_count++;
+        bringup_switch_context(&bringup_preempt_ctx_b, &bringup_preempt_ctx_a);
+    }
+}
+
+/**
+ * @brief  Prove FIQ does not break IRQ preemption path
+ *
+ * Combines IRQ-driven preemption (test 5) with concurrent FIQ.
+ * Uses RTI compare0 as IRQ (VIM ch2) and RTI compare1 as FIQ (VIM ch3).
+ * Both fire during the busy-wait. Verifies that FIQ cannot corrupt
+ * SPSR_irq, R4-R11, or SP across the combined IRQ+FIQ interrupt storm.
+ *
+ * @return TRUE if all registers preserved and both IRQ+FIQ fired
+ *
+ * @note   Must be called from the launched task (System mode).
+ *         Reuses bringup_preempt_isr and bringup_preempt_ctx_a/b from test 5.
+ */
+static boolean bringup_test_fiq_ownership(void)
+{
+    uint32 after[8];
+    uint32 spBefore;
+    uint32 spAfter;
+    uint32 irqsBefore;
+    uint32 irqsAfter;
+    boolean pass;
+    uint32 i;
+    uintptr_t stackTop;
+    uint32 fiqPeriod;
+
+    sc_sci_puts("[BRINGUP-6] FIQ does not break IRQ-return ownership...\r\n");
+
+    /* Prepare Task B's initial context (fresh for test 6) */
+    bringup_preempt_ctx_b.r4  = 0u;
+    bringup_preempt_ctx_b.r5  = 0u;
+    bringup_preempt_ctx_b.r6  = 0u;
+    bringup_preempt_ctx_b.r7  = 0u;
+    bringup_preempt_ctx_b.r8  = 0u;
+    bringup_preempt_ctx_b.r9  = 0u;
+    bringup_preempt_ctx_b.r10 = 0u;
+    bringup_preempt_ctx_b.r11 = 0u;
+    bringup_preempt_ctx_b.lr  = (uint32)(uintptr_t)&bringup_fiq_task_b_entry;
+    stackTop = (uintptr_t)&bringup_preempt_b_stack[sizeof(bringup_preempt_b_stack)];
+    bringup_preempt_ctx_b.sp  = (uint32)(stackTop & ~(uintptr_t)7u);
+
+    bringup_preempt_b_ran = FALSE;
+    bringup_preempt_count = 0u;
+    bringup_preempt_flag = 0u;
+    bringup_rti_irq_count = 0u;
+    bringup_fiq_count = 0u;
+
+    /* Map preemption ISR to VIM ch2 as IRQ (same ISR as test 5) */
+    vimChannelMap(2u, 2u, (t_isrFuncPTR)&bringup_preempt_isr);
+    vimEnableInterrupt(2u, SYS_IRQ);
+
+    /* Configure RTI compare1 for FIQ at ~70% of compare0's period.
+     * Different rate avoids phase-lock with compare0. */
+    rtiREG1->COMPCTRL &= ~(uint32)(1u << 4u);  /* compare1 uses counter block 0 */
+    fiqPeriod = (rtiREG1->CMP[0u].UDCPx * 7u) / 10u;
+    if (fiqPeriod == 0u) { fiqPeriod = 1u; }
+    rtiREG1->CMP[1u].COMPx = rtiREG1->CNT[0u].FRCx + fiqPeriod;
+    rtiREG1->CMP[1u].UDCPx = fiqPeriod;
+    rtiREG1->INTFLAG = 2u;  /* Clear any pending compare1 flag */
+
+    /* Map FIQ ISR to VIM ch3 as FIQ */
+    vimChannelMap(3u, 3u, (t_isrFuncPTR)&bringup_fiq_isr);
+    vimEnableInterrupt(3u, SYS_FIQ);
+
+    /* Enable both compare0 and compare1 interrupts */
+    rtiREG1->SETINTENA = 3u;  /* bits 0+1 */
+
+    /* Arm preemption — next IRQ triggers task switch */
+    bringup_preempt_flag = 1u;
+
+    irqsBefore = bringup_rti_irq_count;
+
+    /* Same busy-wait as test 5, but enable BOTH IRQ and FIQ.
+     * FIQ can fire at any point including during the IRQ
+     * preemption path's mode switches. */
+    __asm__ volatile(
+        "MOV    %[spb], sp          \n\t"
+        "LDR    r4, [%[sen], #0]    \n\t"
+        "LDR    r5, [%[sen], #4]    \n\t"
+        "LDR    r6, [%[sen], #8]    \n\t"
+        "LDR    r7, [%[sen], #12]   \n\t"
+        "LDR    r8, [%[sen], #16]   \n\t"
+        "LDR    r9, [%[sen], #20]   \n\t"
+        "LDR    r10, [%[sen], #24]  \n\t"
+        "LDR    r11, [%[sen], #28]  \n\t"
+        "CPSIE  if                  \n\t"   /* Enable BOTH IRQ and FIQ */
+        "MOV    r0, %[cnt]          \n\t"
+        "1:                         \n\t"
+        "SUBS   r0, r0, #1          \n\t"
+        "BNE    1b                  \n\t"
+        "CPSID  if                  \n\t"   /* Disable BOTH IRQ and FIQ */
+        "STR    r4, [%[aft], #0]    \n\t"
+        "STR    r5, [%[aft], #4]    \n\t"
+        "STR    r6, [%[aft], #8]    \n\t"
+        "STR    r7, [%[aft], #12]   \n\t"
+        "STR    r8, [%[aft], #16]   \n\t"
+        "STR    r9, [%[aft], #20]   \n\t"
+        "STR    r10, [%[aft], #24]  \n\t"
+        "STR    r11, [%[aft], #28]  \n\t"
+        "MOV    %[spa], sp          \n\t"
+        : [spb] "=&r" (spBefore), [spa] "=&r" (spAfter)
+        : [sen] "r" (bringup_reg_sentinels), [aft] "r" (after),
+          [cnt] "r" ((uint32)0x00800000u)
+        : "r0", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11",
+          "memory"
+    );
+
+    irqsAfter = bringup_rti_irq_count;
+
+    /* Restore polled mode — disable both compare0 and compare1 */
+    rtiREG1->CLEARINTENA = 3u;  /* bits 0+1 */
+    vimDisableInterrupt(2u);
+    vimDisableInterrupt(3u);
+    rtiREG1->INTFLAG = 3u;  /* Clear both pending flags */
+
+    /* Verify register preservation */
+    pass = TRUE;
+    for (i = 0u; i < 8u; i++) {
+        if (bringup_reg_sentinels[i] != after[i]) {
+            pass = FALSE;
+            sc_sci_puts("[BRINGUP-6] R");
+            sc_sci_put_uint(i + 4u);
+            sc_sci_puts(" MISMATCH: 0x");
+            bringup_put_hex(bringup_reg_sentinels[i]);
+            sc_sci_puts(" -> 0x");
+            bringup_put_hex(after[i]);
+            sc_sci_puts("\r\n");
+        }
+    }
+
+    /* Verify SP preservation */
+    if (spBefore != spAfter) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-6] SP MISMATCH: 0x");
+        bringup_put_hex(spBefore);
+        sc_sci_puts(" -> 0x");
+        bringup_put_hex(spAfter);
+        sc_sci_puts("\r\n");
+    }
+
+    /* Verify Task B ran */
+    if (bringup_preempt_b_ran == FALSE) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-6] FAIL - Task B did not run\r\n");
+    }
+
+    /* Report */
+    sc_sci_puts("[BRINGUP-6] IRQs: ");
+    sc_sci_put_uint(irqsAfter - irqsBefore);
+    sc_sci_puts(", FIQs: ");
+    sc_sci_put_uint(bringup_fiq_count);
+    sc_sci_puts(", preemptions: ");
+    sc_sci_put_uint(bringup_preempt_count);
+    sc_sci_puts("\r\n");
+
+    if ((irqsAfter - irqsBefore) == 0u) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-6] FAIL - no IRQs fired\r\n");
+    }
+
+    if (bringup_fiq_count == 0u) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-6] FAIL - no FIQs fired\r\n");
+    }
+
+    sc_sci_puts(pass ? "[BRINGUP-6] PASS\r\n" : "[BRINGUP-6] FAIL\r\n");
+    return pass;
+}
+
+/* ==================================================================
  * Test 2: Prove first-task context launch via direct MSR+BX
  *
  * Builds a synthetic initial frame on a dedicated stack, then launches
@@ -529,6 +1036,16 @@ static void bringup_first_task_entry(void)
 
     /* Test 4: two-task cooperative switch */
     if (bringup_test_two_task_switch() == FALSE) {
+        allPass = FALSE;
+    }
+
+    /* Test 5: IRQ-driven preemption */
+    if (bringup_test_irq_preemption() == FALSE) {
+        allPass = FALSE;
+    }
+
+    /* Test 6: FIQ does not break IRQ-return ownership */
+    if (bringup_test_fiq_ownership() == FALSE) {
         allPass = FALSE;
     }
 

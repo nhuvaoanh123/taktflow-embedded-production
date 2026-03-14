@@ -86,5 +86,6 @@ boolean hw_dcan_error_check(void);
 void    esm_enable_group1_channel(uint8 channel);
 void    esm_clear_flag(uint8 group, uint8 channel);
 boolean esm_is_flag_set(uint8 group, uint8 channel);
+void    esm_set_runtime_mode(void);
 
 #endif /* SC_HW_H */
