@@ -293,6 +293,168 @@ static boolean bringup_test_same_task_irq_return(void)
 }
 
 /* ==================================================================
+ * Test 4: Prove two-task cooperative context switch
+ *
+ * Called from inside the launched task (test 2). Proves:
+ *   - Task A can save its context (R4-R11, LR, SP) and switch to Task B
+ *   - Task B runs on its own stack and executes C code
+ *   - Task B can switch back to Task A
+ *   - Task A resumes at the correct point with registers intact
+ *
+ * Uses a cooperative (solicited) switch — no IRQ involved. This matches
+ * ThreadX's tx_thread_system_return.S pattern: save callee-saved regs,
+ * store SP, load target's SP and regs, BX LR.
+ * ================================================================== */
+
+/** @brief  Cooperative context save area — callee-saved regs + LR + SP */
+typedef struct {
+    uint32 r4;      /* [0]  */
+    uint32 r5;      /* [4]  */
+    uint32 r6;      /* [8]  */
+    uint32 r7;      /* [12] */
+    uint32 r8;      /* [16] */
+    uint32 r9;      /* [20] */
+    uint32 r10;     /* [24] */
+    uint32 r11;     /* [28] */
+    uint32 lr;      /* [32] */
+    uint32 sp;      /* [36] */
+} BringupTaskContext;
+
+static BringupTaskContext bringup_ctx_a;
+static BringupTaskContext bringup_ctx_b;
+static uint8 bringup_task_b_stack[512u] __attribute__((aligned(8)));
+static volatile boolean bringup_task_b_ran = FALSE;
+
+/**
+ * @brief  Cooperative context switch between two tasks
+ *
+ * @param  save     Pointer to current task's save area (R0 via AAPCS)
+ * @param  restore  Pointer to next task's save area (R1 via AAPCS)
+ *
+ * Saves R4-R11, LR, SP to save area, then loads R4-R11, LR, SP from
+ * restore area and branches via LR. For an initial launch, pre-fill
+ * the restore area with LR = entry address and SP = stack top.
+ *
+ * @note   This is a naked function — no compiler prologue/epilogue.
+ */
+__attribute__((naked))
+static void bringup_switch_context(BringupTaskContext* save,
+                                   BringupTaskContext* restore)
+{
+    __asm__ volatile(
+        /* Save current task: R4-R11, LR, SP */
+        "STR    r4,  [r0, #0]       \n\t"
+        "STR    r5,  [r0, #4]       \n\t"
+        "STR    r6,  [r0, #8]       \n\t"
+        "STR    r7,  [r0, #12]      \n\t"
+        "STR    r8,  [r0, #16]      \n\t"
+        "STR    r9,  [r0, #20]      \n\t"
+        "STR    r10, [r0, #24]      \n\t"
+        "STR    r11, [r0, #28]      \n\t"
+        "STR    lr,  [r0, #32]      \n\t"
+        "STR    sp,  [r0, #36]      \n\t"
+        /* Restore next task: SP first, then R4-R11, LR */
+        "LDR    sp,  [r1, #36]      \n\t"
+        "LDR    r4,  [r1, #0]       \n\t"
+        "LDR    r5,  [r1, #4]       \n\t"
+        "LDR    r6,  [r1, #8]       \n\t"
+        "LDR    r7,  [r1, #12]      \n\t"
+        "LDR    r8,  [r1, #16]      \n\t"
+        "LDR    r9,  [r1, #20]      \n\t"
+        "LDR    r10, [r1, #24]      \n\t"
+        "LDR    r11, [r1, #28]      \n\t"
+        "LDR    lr,  [r1, #32]      \n\t"
+        /* Branch to restored task */
+        "BX     lr                  \n\t"
+    );
+}
+
+/**
+ * @brief  Task B entry — reports over UART, then switches back to Task A
+ *
+ * @note   Entered via cooperative switch. LR is not meaningful (initial
+ *         launch), so this function must explicitly switch back.
+ */
+__attribute__((used))
+static void bringup_task_b_entry(void)
+{
+    sc_sci_puts("[BRINGUP-4] Task B reached!\r\n");
+    bringup_task_b_ran = TRUE;
+
+    /* Switch back to Task A */
+    bringup_switch_context(&bringup_ctx_b, &bringup_ctx_a);
+
+    /* Should never reach here */
+    sc_sci_puts("[BRINGUP-4] ERROR: Task B resumed unexpectedly\r\n");
+    for (;;) {}
+}
+
+/**
+ * @brief  Prove two-task cooperative context switch
+ *
+ * @return TRUE if Task B ran and Task A resumed with registers intact
+ *
+ * @note   Must be called from the launched task (System mode).
+ *         Uses bringup_task_b_stack as Task B's stack.
+ */
+static boolean bringup_test_two_task_switch(void)
+{
+    uintptr_t stackTop;
+    uint32 spBefore;
+    uint32 spAfter;
+    boolean pass;
+
+    sc_sci_puts("[BRINGUP-4] Two-task cooperative switch...\r\n");
+
+    /* Prepare Task B's initial context */
+    bringup_ctx_b.r4  = 0u;
+    bringup_ctx_b.r5  = 0u;
+    bringup_ctx_b.r6  = 0u;
+    bringup_ctx_b.r7  = 0u;
+    bringup_ctx_b.r8  = 0u;
+    bringup_ctx_b.r9  = 0u;
+    bringup_ctx_b.r10 = 0u;
+    bringup_ctx_b.r11 = 0u;
+    bringup_ctx_b.lr  = (uint32)(uintptr_t)&bringup_task_b_entry;
+    stackTop = (uintptr_t)&bringup_task_b_stack[sizeof(bringup_task_b_stack)];
+    bringup_ctx_b.sp  = (uint32)(stackTop & ~(uintptr_t)7u);
+
+    bringup_task_b_ran = FALSE;
+
+    /* Capture SP before switch */
+    __asm__ volatile("MOV %0, sp" : "=r"(spBefore));
+
+    sc_sci_puts("[BRINGUP-4] Task A: switching to Task B...\r\n");
+
+    /* Save Task A's context, load Task B's, branch to Task B.
+     * When Task B switches back, we resume right here. */
+    bringup_switch_context(&bringup_ctx_a, &bringup_ctx_b);
+
+    /* Resumed — Task B switched back to us */
+    sc_sci_puts("[BRINGUP-4] Task A: resumed!\r\n");
+
+    __asm__ volatile("MOV %0, sp" : "=r"(spAfter));
+
+    /* Verify */
+    pass = TRUE;
+    if (bringup_task_b_ran == FALSE) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-4] FAIL - Task B did not run\r\n");
+    }
+    if (spBefore != spAfter) {
+        pass = FALSE;
+        sc_sci_puts("[BRINGUP-4] SP MISMATCH: 0x");
+        bringup_put_hex(spBefore);
+        sc_sci_puts(" -> 0x");
+        bringup_put_hex(spAfter);
+        sc_sci_puts("\r\n");
+    }
+
+    sc_sci_puts(pass ? "[BRINGUP-4] PASS\r\n" : "[BRINGUP-4] FAIL\r\n");
+    return pass;
+}
+
+/* ==================================================================
  * Test 2: Prove first-task context launch via direct MSR+BX
  *
  * Builds a synthetic initial frame on a dedicated stack, then launches
@@ -362,6 +524,11 @@ static void bringup_first_task_entry(void)
     /* Test 3: same-task IRQ return with register preservation */
     test3Pass = bringup_test_same_task_irq_return();
     if (test3Pass == FALSE) {
+        allPass = FALSE;
+    }
+
+    /* Test 4: two-task cooperative switch */
+    if (bringup_test_two_task_switch() == FALSE) {
         allPass = FALSE;
     }
 

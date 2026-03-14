@@ -111,7 +111,7 @@ Current status:
 - `Model-tested`: yes
 - `Build-tested`: yes
 - `Spec-backed`: partly
-- `Target-verified`: partial (RTI IRQ — PASS, first-task launch — PASS, same-task IRQ return — PASS, 2026-03-14)
+- `Target-verified`: partial (RTI IRQ — PASS, first-task launch — PASS, same-task IRQ return — PASS, two-task switch — PASS, 2026-03-14)
 
 Current passing checks:
 
@@ -293,13 +293,26 @@ Step 4 — Prove same-task IRQ return with register preservation: [DONE — TARG
 - All register load/store and IRQ enable/disable in a single inline asm block to prevent compiler from using R4-R11 during the test window
 - Proves `__attribute__((interrupt("IRQ")))` ISR correctly saves/restores SPSR, scratch registers, and returns via `subs pc, lr, #4`
 
+Step 5 — Prove two-task cooperative context switch: [DONE — TARGET VERIFIED]
+
+- Test: `bringup_test_two_task_switch()` in `Os_Port_Tms570_Bringup.c`
+  - Called from inside the launched task (bringup_first_task_entry)
+  - Allocates 512-byte aligned stack for Task B
+  - Prepares Task B's initial context: R4-R11=0, LR=entry, SP=stack top
+  - `bringup_switch_context()` (naked function): saves R4-R11, LR, SP to save area, loads from target, BX LR
+  - Task B prints over UART, sets `bringup_task_b_ran` flag, switches back to Task A
+  - Task A verifies it resumed at the correct point with SP intact
+- **Hardware result**: Task B reached, Task A resumed, SP preserved — PASS
+- Matches ThreadX `tx_thread_system_return.S` solicited switch pattern: save callee-saved regs only (no R0-R3)
+- BringupTaskContext struct: {R4, R5, R6, R7, R8, R9, R10, R11, LR, SP} = 40 bytes
+
 Bring-up order (remaining):
 
 1. [DONE] Prove RTI compare0 fires + VIM channel 2 routes to IRQ — TARGET VERIFIED 2026-03-14.
 2. [DONE] Prove first-task launch — TARGET VERIFIED 2026-03-14.
 3. [DONE] Prove same-task IRQ return — TARGET VERIFIED 2026-03-14.
-4. Prove two-task switch.
-5. Prove IRQ-driven preemption.
+4. [DONE] Prove two-task cooperative switch — TARGET VERIFIED 2026-03-14.
+5. Prove IRQ-driven preemption (IRQ triggers task switch, not just same-task return).
 6. Prove FIQ does not break IRQ-return ownership.
 
 ## What Not To Do Next Session
