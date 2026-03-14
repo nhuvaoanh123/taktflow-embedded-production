@@ -163,8 +163,8 @@ def audit(repo_root: Path) -> List[Finding]:
             "Compare actual feedback against the effective output angle after rate limiting.",
         )
 
-    # 6) ESM init status.
-    sc_main = repo_root / "firmware/sc/src/sc_main.c"
+    # 6) ESM init status — verify SC_ESM_Init is called unconditionally.
+    sc_main = repo_root / "firmware/ecu/sc/src/sc_main.c"
     sc_main_lines = read_lines(sc_main)
     l_esm_guard = find_first(sc_main_lines, r"#ifdef\s+SC_ESM_ENABLED")
     l_esm_call = find_first(sc_main_lines, r"SC_ESM_Init\(\)")
@@ -179,6 +179,18 @@ def audit(repo_root: Path) -> List[Finding]:
             "ESM lockstep init is compile-time optional",
             "SC_ESM_Init is guarded by SC_ESM_ENABLED with TODO note in startup path.",
             "Resolve root cause and enforce ESM init policy for hardware builds; document waiver if temporarily disabled.",
+        )
+    elif not l_esm_call:
+        seq = add(
+            findings,
+            seq,
+            "high",
+            "safety-mechanism",
+            sc_main.relative_to(repo_root).as_posix(),
+            0,
+            "SC_ESM_Init not found in sc_main.c",
+            "ESM lockstep monitoring requires SC_ESM_Init() call in startup path.",
+            "Add SC_ESM_Init() to module initialization in sc_main.c.",
         )
 
     # 7) MPU presence note (informational pass/fail style).
