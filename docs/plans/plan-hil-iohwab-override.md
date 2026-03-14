@@ -1,6 +1,6 @@
 # Plan: HIL IoHwAb Override Mode
 
-**Status**: PENDING APPROVAL
+**Status**: IN PROGRESS — phases 1–4 DONE, phase 5 pending bench flash
 **Branch**: `feature/hil-iohwab-override`
 **Safety**: SWR-BSW-014 (IoHwAb injection path)
 **Traces**: TSR-030, TSR-031
@@ -89,11 +89,11 @@ With E2E (CRC8 + alive counter) matching the DBC spec.
 
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | IoHwAb override variables + API | PENDING |
-| 2 | Sensor feeder HIL paths | PENDING |
-| 3 | Makefile HIL flag | PENDING |
-| 4 | Pi rest-bus script | PENDING |
-| 5 | Build + flash + verify | PENDING |
+| 1 | IoHwAb override variables + API | DONE |
+| 2 | Sensor feeder HIL paths | DONE |
+| 3 | Makefile HIL flag | DONE |
+| 4 | Pi rest-bus script | DONE |
+| 5 | Build + flash + verify | PENDING (requires bench) |
 
 ## Files Modified
 
