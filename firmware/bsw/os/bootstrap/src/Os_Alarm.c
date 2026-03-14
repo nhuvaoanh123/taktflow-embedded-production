@@ -108,6 +108,9 @@ static boolean os_bootstrap_ready_task_requires_dispatch(void)
     return (boolean)(os_tcb[next_task].CurrentPriority < os_tcb[os_current_task].CurrentPriority);
 }
 
+/* os_bootstrap_complete_port_dispatches and os_bootstrap_drain_to_idle are
+ * only used by Os_TestAdvanceCounter / Os_TestRunToIdle (test harness). */
+#if defined(UNIT_TEST)
 static StatusType os_bootstrap_complete_port_dispatches(void)
 {
     StatusType status = E_OS_NOFUNC;
@@ -137,6 +140,7 @@ static void os_bootstrap_drain_to_idle(void)
         }
     } while (progressed == TRUE);
 }
+#endif /* UNIT_TEST */
 
 StatusType GetAlarmBase(AlarmType AlarmID, AlarmBaseRefType Info)
 {
@@ -303,11 +307,26 @@ StatusType CancelAlarm(AlarmType AlarmID)
 
 boolean Os_BootstrapProcessCounterTick(void)
 {
+    boolean dispatch_needed;
     os_counter_value = os_counter_increment_one(os_counter_value);
     os_alarm_process_current_tick();
-    return os_bootstrap_ready_task_requires_dispatch();
+    dispatch_needed = os_bootstrap_ready_task_requires_dispatch();
+
+#if defined(PLATFORM_STM32) || defined(PLATFORM_TMS570)
+    /* On hardware, stage the port dispatch target before returning.
+     * The caller will fire PENDSVSET; PendSV needs SelectedNextTask set. */
+    if (dispatch_needed == TRUE) {
+        TaskType next = os_select_next_ready_task();
+        if (next != INVALID_TASK) {
+            (void)Os_Port_SelectConfiguredTask(next);
+        }
+    }
+#endif
+
+    return dispatch_needed;
 }
 
+#if defined(UNIT_TEST)
 static void os_bootstrap_advance_counter(TickType Ticks)
 {
     while (Ticks > 0u) {
@@ -324,7 +343,6 @@ static void os_bootstrap_advance_counter(TickType Ticks)
     }
 }
 
-#if defined(UNIT_TEST)
 void Os_TestAdvanceCounter(TickType Ticks)
 {
     os_bootstrap_advance_counter(Ticks);

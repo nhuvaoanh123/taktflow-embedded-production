@@ -64,7 +64,7 @@ typedef void (*Os_ErrorHookType)(StatusType Error);
 typedef void (*Os_ShutdownHookType)(StatusType Error);
 typedef void* TrustedFunctionParameterRefType;
 typedef StatusType (*Os_TrustedFunctionType)(TrustedFunctionParameterRefType Params);
-#if defined(UNIT_TEST)
+#if defined(UNIT_TEST) || defined(OS_BOOTSTRAP_BRINGUP)
 typedef void (*Os_TestIsrHandlerType)(void);
 #endif
 
@@ -213,7 +213,7 @@ boolean Os_BootstrapProcessCounterTick(void);
 void Os_BootstrapEnterIsr2(void);
 void Os_BootstrapExitIsr2(void);
 
-#if defined(UNIT_TEST)
+#if defined(UNIT_TEST) || defined(OS_BOOTSTRAP_BRINGUP)
 void Os_TestReset(void);
 StatusType Os_TestConfigureTasks(const Os_TaskConfigType* Config, uint8 TaskCount);
 StatusType Os_TestConfigureResources(const Os_ResourceConfigType* Config, uint8 ResourceCount);
@@ -232,6 +232,7 @@ StatusType Os_TestRunReadyTasks(void);
 StatusType Os_TestCompletePortDispatches(void);
 StatusType Os_TestRunToIdle(void);
 TaskType Os_TestGetCurrentTask(void);
+StatusType Os_TestSetCurrentTaskRunning(TaskType TaskID);
 uint32 Os_TestGetReadyBitmap(void);
 uint8 Os_TestGetPendingActivations(TaskType TaskID);
 uint32 Os_TestGetDispatchCount(void);

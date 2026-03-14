@@ -22,6 +22,7 @@
 #include "stm32g4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "Os_Port_Stm32.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -84,7 +85,33 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  {
+    extern void Dbg_Uart_Print(const char *str);
+    extern void bringup_put_hex(unsigned int val);
+    volatile unsigned int *cfsr = (volatile unsigned int *)0xE000ED28u;
+    volatile unsigned int *hfsr = (volatile unsigned int *)0xE000ED2Cu;
+    unsigned int psp_val, lr_val;
+    __asm__ volatile("MRS %0, PSP" : "=r"(psp_val));
+    __asm__ volatile("MOV %0, LR" : "=r"(lr_val));
+    Dbg_Uart_Print("\r\n!!! HARDFAULT !!!\r\n");
+    Dbg_Uart_Print("CFSR="); bringup_put_hex(*cfsr);
+    Dbg_Uart_Print(" HFSR="); bringup_put_hex(*hfsr);
+    Dbg_Uart_Print(" LR="); bringup_put_hex(lr_val);
+    Dbg_Uart_Print("\r\nPSP="); bringup_put_hex(psp_val);
+    Dbg_Uart_Print("\r\n");
+    if (lr_val & 0x4u) {
+      unsigned int *frame = (unsigned int *)psp_val;
+      Dbg_Uart_Print("R0="); bringup_put_hex(frame[0]);
+      Dbg_Uart_Print(" R1="); bringup_put_hex(frame[1]);
+      Dbg_Uart_Print(" R2="); bringup_put_hex(frame[2]);
+      Dbg_Uart_Print(" R3="); bringup_put_hex(frame[3]);
+      Dbg_Uart_Print("\r\nR12="); bringup_put_hex(frame[4]);
+      Dbg_Uart_Print(" LR="); bringup_put_hex(frame[5]);
+      Dbg_Uart_Print(" PC="); bringup_put_hex(frame[6]);
+      Dbg_Uart_Print(" xPSR="); bringup_put_hex(frame[7]);
+      Dbg_Uart_Print("\r\n");
+    }
+  }
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -164,18 +191,7 @@ void DebugMon_Handler(void)
   /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
-/**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
+/* PendSV_Handler is provided by Os_Port_Stm32_Asm.S (OSEK context switch) */
 
 /**
   * @brief This function handles System tick timer.
@@ -187,7 +203,9 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  Os_PortEnterIsr2();
+  Os_Port_Stm32_TickIsr();
+  Os_PortExitIsr2();
   /* USER CODE END SysTick_IRQn 1 */
 }
 

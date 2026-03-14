@@ -16,7 +16,7 @@
  * ================================================================== */
 
 static const PduR_RoutingTableType bcm_pdur_routing[] = {
-    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com) */
+    /* RxPduId (CanIf),                            Destination,       UpperPduId (Com/Dcm) */
     { BCM_COM_RX_ESTOP_BROADCAST,  PDUR_DEST_COM,  BCM_COM_RX_ESTOP_BROADCAST },   /* 0x001 EStop_Broadcast */
     { BCM_COM_RX_CVC_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_CVC_HEARTBEAT },   /* 0x010 CVC_Heartbeat */
     { BCM_COM_RX_FZC_HEARTBEAT,  PDUR_DEST_COM,  BCM_COM_RX_FZC_HEARTBEAT },   /* 0x011 FZC_Heartbeat */
@@ -40,7 +40,7 @@ static const PduR_RoutingTableType bcm_pdur_routing[] = {
     { BCM_COM_RX_BODY_CONTROL_CMD,  PDUR_DEST_COM,  BCM_COM_RX_BODY_CONTROL_CMD },   /* 0x350 Body_Control_Cmd */
     { BCM_COM_RX_DTC_BROADCAST,  PDUR_DEST_COM,  BCM_COM_RX_DTC_BROADCAST },   /* 0x500 DTC_Broadcast */
     { BCM_COM_RX_UDS_RESP_TCU,  PDUR_DEST_COM,  BCM_COM_RX_UDS_RESP_TCU },   /* 0x644 UDS_Resp_TCU */
-    { BCM_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_COM,  BCM_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request */
+    { BCM_COM_RX_UDS_FUNC_REQUEST,  PDUR_DEST_DCM,  BCM_COM_RX_UDS_FUNC_REQUEST },   /* 0x7DF UDS_Func_Request → Dcm */
     { BCM_COM_RX_UDS_PHYS_REQ_CVC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_CVC },   /* 0x7E0 UDS_Phys_Req_CVC */
     { BCM_COM_RX_UDS_PHYS_REQ_FZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_FZC },   /* 0x7E1 UDS_Phys_Req_FZC */
     { BCM_COM_RX_UDS_PHYS_REQ_RZC,  PDUR_DEST_COM,  BCM_COM_RX_UDS_PHYS_REQ_RZC },   /* 0x7E2 UDS_Phys_Req_RZC */

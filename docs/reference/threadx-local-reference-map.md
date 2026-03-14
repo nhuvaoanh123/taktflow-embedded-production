@@ -34,9 +34,20 @@ Purpose:
 
 ### TMS570LC43x / Cortex-R5 Port
 
-| Our topic | ThreadX file | Why it matters |
+Current local vendor-tree note:
+
+- the local vendor copy under
+  `d:\workspace_ccstheia\taktflow-embedded-production\private\vendor\threadx-master`
+  does contain `ports/cortex_r5`
+- use the exact local `ports/cortex_r5/gnu/*` files first for new TMS570
+  low-level decisions
+- keep the matching local `ports/arm11/gnu/*` files as a historical
+  cross-check for the earlier bootstrap slices that were shaped before the
+  vendor tree was tucked into the repo
+
+| Our topic | Local verified ThreadX file | Why it matters |
 |---|---|---|
-| Port contract | `threadx-master/ports/cortex_r5/gnu/inc/tx_port.h` | Separate IRQ/FIQ build options and interrupt-mask assumptions. |
+| Port contract | `threadx-master/ports/cortex_r5/gnu/inc/tx_port.h` | Port-owned types, interrupt rules, and architectural constants for the direct local Cortex-R5 port. |
 | First schedule | `threadx-master/ports/cortex_r5/gnu/src/tx_thread_schedule.S` | Initial branch into first runnable task. |
 | IRQ context save | `threadx-master/ports/cortex_r5/gnu/src/tx_thread_context_save.S` | Interrupt entry, nested-save split, and system-stack transfer pattern. |
 | IRQ context restore | `threadx-master/ports/cortex_r5/gnu/src/tx_thread_context_restore.S` | Final-return branches for nested return, resume current, and switch task. |
@@ -70,7 +81,7 @@ Important caveat:
 - It does not give the same level of direct Cortex-R5 MPU/module-manager
   material as it gives for ARMv7-M.
 - For TMS570 protection work, use:
-  - the exact local Cortex-R5 GNU interrupt/context files for bootstrap
+  - the exact local `arm11/gnu` interrupt/context files for bootstrap
     exception-path study
   - ARMv7-M module-manager files for protection-model ideas only
 
@@ -78,12 +89,12 @@ Important caveat:
 
 | Our repo area | ThreadX reference start point |
 |---|---|
-| `firmware/bsw/os/bootstrap/src/Os_Scheduler.c` | `common/src/tx_thread_system_resume.c`, `ports/cortex_m4/gnu/src/tx_thread_schedule.S`, `ports/cortex_r5/gnu/src/tx_thread_schedule.S` |
+| `firmware/bsw/os/bootstrap/src/Os_Scheduler.c` | `common/src/tx_thread_system_resume.c`, `ports/cortex_m4/gnu/src/tx_thread_schedule.S`, `ports/arm11/gnu/src/tx_thread_schedule.S` |
 | `firmware/bsw/os/bootstrap/src/Os_Stack.c` | `common/src/tx_thread_stack_analyze.c`, `common/src/tx_thread_stack_error_handler.c` |
 | `firmware/bsw/os/bootstrap/src/Os_Memory.c` | `ports_arch/ARMv7-M/threadx_modules/common/module_manager/src/txm_module_manager_mm_register_setup.c`, `txm_module_manager_memory_fault_handler.c` |
-| `firmware/bsw/os/bootstrap/port/src/Os_Port_TaskBinding.c` | `common/src/tx_thread_create.c`, `ports/cortex_m4/gnu/src/tx_thread_stack_build.S`, `ports/cortex_r5/gnu/src/tx_thread_stack_build.S` |
+| `firmware/bsw/os/bootstrap/port/src/Os_Port_TaskBinding.c` | `common/src/tx_thread_create.c`, `ports/cortex_m4/gnu/src/tx_thread_stack_build.S`, `ports/arm11/gnu/src/tx_thread_stack_build.S` |
 | `firmware/platform/stm32/src/Os_Port_Stm32.c` and `Os_Port_Stm32_Asm.S` | `ports/cortex_m4/gnu/*` |
-| `firmware/platform/tms570/src/Os_Port_Tms570.c` and `Os_Port_Tms570_Asm.S` | `ports/cortex_r5/gnu/*` |
+| `firmware/platform/tms570/src/Os_Port_Tms570.c` and `Os_Port_Tms570_Asm.S` | `ports/cortex_r5/gnu/*` locally available now; keep `ports/arm11/gnu/*` as a secondary comparison reference for earlier bootstrap slices |
 
 ### Guardrails
 

@@ -20,13 +20,15 @@
 extern void    esm_enable_group1_channel(uint8 channel);
 extern void    esm_clear_flag(uint8 group, uint8 channel);
 extern boolean esm_is_flag_set(uint8 group, uint8 channel);
+extern void    esm_set_runtime_mode(void);
 
 /* ==================================================================
  * Constants
  * ================================================================== */
 
 #define ESM_GROUP1              1u
-#define ESM_CHANNEL_LOCKSTEP    2u     /* Lockstep compare error */
+#define ESM_CHANNEL_LOCKSTEP    2u     /* CCM-R5F lockstep compare error */
+#define ESM_CHANNEL_DCC1       21u    /* DCC1 clock comparator error */
 
 /* ==================================================================
  * Module State
@@ -43,8 +45,33 @@ void SC_ESM_Init(void)
 {
     esm_error_active = FALSE;
 
-    /* Enable ESM group 1 channel 2 for lockstep compare error */
+    /* Clear residual ESM Group 1 flags left over from startup.
+     * Channel 2 (lockstep) may be flagged after JTAG debug reset.
+     * Channel 21 (DCC1) is a nuisance flag from HALCoGen clock check. */
+    esm_clear_flag(ESM_GROUP1, ESM_CHANNEL_LOCKSTEP);
+    esm_clear_flag(ESM_GROUP1, ESM_CHANNEL_DCC1);
+
+    /* Verify lockstep channel is clean before enabling.
+     * If the CCM-R5F error is persistent (not cleared by write-1-to-clear),
+     * enabling EEPAPR1 would assert nERROR → Group 3 ISR → halt.
+     * In that case, latch error but do NOT enable — let the watchdog
+     * feed continue (startup BIST already passed). */
+    if (esm_is_flag_set(ESM_GROUP1, ESM_CHANNEL_LOCKSTEP) != FALSE) {
+        esm_error_active = TRUE;
+        return;
+    }
+
+    /* Enable ESM Group 1 Channel 2 for nERROR pin assertion.
+     * If lockstep error occurs at runtime:
+     *   Channel 2 flag → EEPAPR1[2] → nERROR low → ESM Group 3
+     *   → esmGroup3Notification() → SC_ESM_HighLevelInterrupt()
+     *   → relay off + halt → watchdog reset */
     esm_enable_group1_channel(ESM_CHANNEL_LOCKSTEP);
+
+    /* Signal to esmGroup3Notification that startup is complete.
+     * From this point, Group 3 errors trigger safety response
+     * instead of clear-and-continue. */
+    esm_set_runtime_mode();
 }
 
 void SC_ESM_HighLevelInterrupt(void)

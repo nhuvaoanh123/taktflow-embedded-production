@@ -819,9 +819,10 @@ class ScenarioExecutor:
         while time.monotonic() < deadline:
             history = self._can.get_message_history(CAN_DTC_BROADCAST)
             for _, msg in history:
-                if len(msg.data) >= 4:
-                    code = msg.data[0] | (msg.data[1] << 8)
-                    source = msg.data[2]
+                if len(msg.data) >= 5:
+                    # DTC_Broadcast: [0-2] 24-bit BE code, [3] status, [4] source
+                    code = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
+                    source = msg.data[4]
                     if code == dtc_code:
                         if ecu_source is None or source == ecu_source:
                             return VerdictEvidence(

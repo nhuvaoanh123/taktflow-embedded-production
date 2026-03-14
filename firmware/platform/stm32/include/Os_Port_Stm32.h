@@ -74,6 +74,7 @@ void Os_Port_Stm32_SynchronizeCurrentTask(TaskType TaskID);
 void Os_Port_Stm32_TickIsr(void);
 void Os_Port_Stm32_ObserveKernelDispatch(TaskType TaskID);
 void Os_Port_Stm32_StartFirstTaskAsm(void);
+void Os_Port_Stm32_MarkFirstTaskStarted(uintptr_t ActivePsp);
 void Os_Port_Stm32_PendSvHandler(void);
 void Os_Port_Stm32_SysTickHandler(void);
 

@@ -15,14 +15,15 @@ requires_mqtt: true
 
 setup:
   - action: wait_state
-    state: SAFE_STOP
+    state: RUN
     timeout: 20
     description: "Wait for system steady state"
 
 steps:
   - action: inject_mqtt
     topic: "taktflow/command/plant_inject"
-    payload: '{"fault":"brake_fault"}'
+    payload:
+      type: brake_fault
     description: "Inject brake fault via MQTT"
   - action: wait
     seconds: 5
@@ -34,10 +35,9 @@ verdicts:
     dtc_code: 0xE202
     description: "DTC 0xE202 broadcast for brake fault"
   - type: vehicle_state
-    can_id: 0x100
-    expected_state:
+    expected:
       - SAFE_STOP
-    timeout_ms: 5000
+    within_ms: 5000
     description: "Vehicle state transitions to SAFE_STOP within 5s"
 
 teardown:

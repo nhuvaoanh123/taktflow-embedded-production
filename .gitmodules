@@ -1,0 +1,3 @@
+[submodule "scorehsm"]
+	path = scorehsm
+	url = https://github.com/nhuvaoanh123/scorehsm
