@@ -1,1 +1,0 @@
-"""RTE model unit tests"""

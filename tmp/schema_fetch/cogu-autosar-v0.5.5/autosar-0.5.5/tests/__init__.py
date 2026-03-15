@@ -1,3 +1,0 @@
-"""
-Python AUTOSAR unit tests
-"""

@@ -50,6 +50,10 @@ docker/certs/
 
 # Temp debug/experiment directories
 .tmp_*/
+tmp/
+
+# Generated codegen output (reproducible via tools/arxmlgen)
+generated/
 
 # CubeMX generated projects with build artifacts
 firmware/ecu/rzc_f4/
