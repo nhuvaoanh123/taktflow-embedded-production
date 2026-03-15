@@ -206,7 +206,7 @@ services:
         condition: service_started
     environment:
       - CAN_INTERFACE=vcan1
-      - GODOT_HOST=${GODOT_HOST:-192.168.0.158}
+      - GODOT_HOST=${GODOT_HOST:-192.168.0.105}
       - BRIDGE_CARS=1
       - BRIDGE_RATE=100
       - BRIDGE_VCAN_START=0
