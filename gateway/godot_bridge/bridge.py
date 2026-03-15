@@ -78,6 +78,8 @@ DATA_IDS = {
     CAN_ID_MOTOR_CURRENT:   0x06,
     CAN_ID_MOTOR_TEMP:      0x07,
     CAN_ID_BATTERY_STATUS:  0x08,
+    CAN_ID_FZC_HB:          0x03,  # FZC heartbeat E2E DataID
+    CAN_ID_RZC_HB:          0x04,  # RZC heartbeat E2E DataID
 }
 
 # Vehicle states
@@ -258,6 +260,24 @@ class CarBridge:
 
     # ── CAN TX (sensor feedback to ECUs) ─────────────────────
 
+    def send_heartbeats(self) -> None:
+        """Send fake heartbeat frames so CVC sees FZC/RZC/SC as alive.
+        Workaround for firmware regression where ECUs don't TX heartbeats."""
+        if not self.can_bus:
+            return
+
+        # Heartbeat format: E2E bytes 0-1, byte 2 = ECU_ID, byte 3 = [fault:4|state:4]
+        # CVC_HB=0x010 (ECU_ID=0x01), FZC_HB=0x011 (0x02), RZC_HB=0x012 (0x03)
+        vs = self.vehicle_state & 0x0F  # current vehicle state
+        for can_id, ecu_id, data_id in [
+            (CAN_ID_FZC_HB, 0x02, 0x03),
+            (CAN_ID_RZC_HB, 0x03, 0x04),
+        ]:
+            payload = bytes([ecu_id, (0x00 << 4) | vs, 0, 0, 0, 0])
+            data = e2e_pack(can_id, payload, self.get_alive(can_id))
+            # e2e_pack expects DataID in DATA_IDS — add temporarily
+            self._can_send(can_id, data[:8])
+
     def send_sensor_can(self) -> None:
         """Send virtual sensor data to ECUs (replaces plant_sim).
         Only sends 0x600 (FZC sensors) and 0x601 (RZC sensors).
@@ -366,6 +386,7 @@ class CarBridge:
         """One bridge cycle: poll inputs, send outputs."""
         self.poll_can()
         self.poll_godot_sensors()
+        self.send_heartbeats()
         self.send_sensor_can()
         self.send_actuator_to_godot()
         self.send_pedal_spi()
