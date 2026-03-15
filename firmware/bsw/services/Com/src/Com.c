@@ -13,6 +13,10 @@
 #include "SchM.h"
 #include "Det.h"
 
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
+
 /* ---- Internal State ---- */
 
 static const Com_ConfigType*  com_config = NULL_PTR;
