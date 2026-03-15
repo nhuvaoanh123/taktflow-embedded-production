@@ -200,14 +200,14 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
     SchM_Enter_Com_COM_EXCLUSIVE_AREA_0();
 
 #ifdef SIL_DIAG
-    /* Temporary debug: confirm heartbeat PDUs reach Com */
-    if (ComRxPduId <= 1u) {
-        static uint32 com_rx_hb_dbg_cnt = 0u;
-        com_rx_hb_dbg_cnt++;
-        if ((com_rx_hb_dbg_cnt % 100u) == 1u) {
-            fprintf(stderr, "[COM_DBG] RxInd pdu=%u len=%u b0=0x%02X cnt=%u\n",
+    /* Temporary debug: confirm ANY PDU reaches Com */
+    {
+        static uint32 com_rx_dbg_total = 0u;
+        com_rx_dbg_total++;
+        if (com_rx_dbg_total <= 3u) {
+            fprintf(stderr, "[COM_DBG] RxInd pdu=%u len=%u total=%u\n",
                     (unsigned)ComRxPduId, (unsigned)PduInfoPtr->SduLength,
-                    (unsigned)PduInfoPtr->SduDataPtr[0], (unsigned)com_rx_hb_dbg_cnt);
+                    (unsigned)com_rx_dbg_total);
         }
     }
 #endif
