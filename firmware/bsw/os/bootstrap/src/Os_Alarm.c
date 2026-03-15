@@ -331,6 +331,7 @@ boolean Os_BootstrapProcessCounterTick(void)
     return os_bootstrap_ready_task_requires_dispatch();
 }
 
+#if defined(UNIT_TEST)
 static void os_bootstrap_advance_counter(TickType Ticks)
 {
     while (Ticks > 0u) {
@@ -347,7 +348,6 @@ static void os_bootstrap_advance_counter(TickType Ticks)
     }
 }
 
-#if defined(UNIT_TEST)
 void Os_TestAdvanceCounter(TickType Ticks)
 {
     os_bootstrap_advance_counter(Ticks);
