@@ -1,0 +1,274 @@
+# =============================================================================
+# Makefile.stm32f4 — ARM Cortex-M4 target build for STM32F413ZH (NUCLEO-F413ZH)
+#
+# Port of the RZC ECU from STM32G474RE (FDCAN) to STM32F413ZH (bxCAN).
+# Uses STM32F4 HAL from CubeMX-generated project and bxCAN MCAL driver.
+#
+# Run from project root:
+#   make -f firmware/platform/stm32f4/Makefile.stm32f4 TARGET=rzc_f4
+#   make -f firmware/platform/stm32f4/Makefile.stm32f4 TARGET=rzc_f4 flash
+#   make -f firmware/platform/stm32f4/Makefile.stm32f4 TARGET=rzc_f4 size
+#   make -f firmware/platform/stm32f4/Makefile.stm32f4 TARGET=rzc_f4 clean
+#
+# Output:  build/stm32f4/<TARGET>.elf, build/stm32f4/<TARGET>.bin
+# =============================================================================
+
+# --- Toolchain ---
+PREFIX  = arm-none-eabi-
+CC      = $(PREFIX)gcc
+AS      = $(PREFIX)gcc -x assembler-with-cpp
+CP      = $(PREFIX)objcopy
+SZ      = $(PREFIX)size
+OCD     = openocd
+
+# --- MCU flags (STM32F413ZH = Cortex-M4 with FPU) ---
+MCU_FLAGS  = -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+
+# --- Compiler flags ---
+CFLAGS  = $(MCU_FLAGS)
+CFLAGS += -Wall -Wextra -Werror -std=c99
+CFLAGS += -DPLATFORM_STM32 -DSTM32F413xx -DUSE_HAL_DRIVER -DCANTP_ENABLED
+CFLAGS += -fdata-sections -ffunction-sections
+
+# --- Build mode ---
+ifdef RELEASE
+  CFLAGS += -Os -DNDEBUG
+else
+  CFLAGS += -Og -g3 -DDEBUG
+endif
+
+ifdef DIAG
+  CFLAGS += -DSIL_DIAG
+endif
+
+ifdef HIL
+  CFLAGS += -DPLATFORM_HIL
+endif
+
+# --- OS bootstrap bring-up tests (pass BRINGUP=1 to enable) ---
+ifdef BRINGUP
+  CFLAGS += -DOS_BOOTSTRAP_BRINGUP
+endif
+
+# --- Validate TARGET ---
+ifndef TARGET
+  $(error TARGET is required. Usage: make -f firmware/platform/stm32f4/Makefile.stm32f4 TARGET=rzc_f4)
+endif
+
+VALID_TARGETS = rzc_f4
+ifeq ($(filter $(TARGET),$(VALID_TARGETS)),)
+  $(error Invalid TARGET='$(TARGET)'. Must be one of: $(VALID_TARGETS))
+endif
+
+# --- Directories ---
+FW        = firmware
+BSW       = $(FW)/bsw
+ECU       = $(FW)/ecu
+PLAT_F4   = $(FW)/platform/stm32f4
+PLAT_G4   = $(FW)/platform/stm32
+BUILD_DIR = build/stm32f4
+
+# --- CubeMX generated project paths (F413ZH) ---
+CUBEMX_DIR  = $(ECU)/rzc_f4/cuberzccf4fg
+HAL_DIR     = $(CUBEMX_DIR)/Drivers/STM32F4xx_HAL_Driver
+CMSIS_DIR   = $(CUBEMX_DIR)/Drivers/CMSIS
+CUBEMX_INC  = $(CUBEMX_DIR)/Core/Inc
+CUBEMX_SRC  = $(CUBEMX_DIR)/Core/Src
+
+# --- Linker script and startup ---
+LDSCRIPT    = $(CUBEMX_DIR)/STM32F413XX_FLASH.ld
+STARTUP     = $(CUBEMX_DIR)/startup_stm32f413xx.s
+
+# --- BSW include paths ---
+CFLAGS += -I$(ECU)/rzc/cfg/platform_target
+CFLAGS += -I$(BSW)/include
+CFLAGS += -I$(BSW)/mcal/Can/include
+CFLAGS += -I$(BSW)/mcal/Spi/include
+CFLAGS += -I$(BSW)/mcal/Adc/include
+CFLAGS += -I$(BSW)/mcal/Dio/include
+CFLAGS += -I$(BSW)/mcal/Pwm/include
+CFLAGS += -I$(BSW)/mcal/Gpt/include
+CFLAGS += -I$(BSW)/mcal/Uart/include
+CFLAGS += -I$(BSW)/ecual/CanIf/include
+CFLAGS += -I$(BSW)/ecual/PduR/include
+CFLAGS += -I$(BSW)/ecual/IoHwAb/include
+CFLAGS += -I$(BSW)/services/Com/include
+CFLAGS += -I$(BSW)/services/Det/include
+CFLAGS += -I$(BSW)/services/Dem/include
+CFLAGS += -I$(BSW)/services/E2E/include
+CFLAGS += -I$(BSW)/services/WdgM/include
+CFLAGS += -I$(BSW)/services/SchM/include
+CFLAGS += -I$(BSW)/services/Dcm/include
+CFLAGS += -I$(BSW)/services/BswM/include
+CFLAGS += -I$(BSW)/services/NvM/include
+CFLAGS += -I$(BSW)/services/CanTp/include
+CFLAGS += -I$(BSW)/rte/include
+CFLAGS += -I$(BSW)/os/include
+CFLAGS += -I$(BSW)/os/bootstrap/include
+CFLAGS += -I$(BSW)/os/bootstrap/port/include
+CFLAGS += -I$(BSW)/os/bootstrap/src
+CFLAGS += -I$(PLAT_G4)/include
+CFLAGS += -I$(ECU)/rzc/include
+
+# CubeMX / HAL include paths (F4)
+CFLAGS += -I$(CUBEMX_INC)
+CFLAGS += -I$(HAL_DIR)/Inc
+CFLAGS += -I$(HAL_DIR)/Inc/Legacy
+CFLAGS += -I$(CMSIS_DIR)/Device/ST/STM32F4xx/Include
+CFLAGS += -I$(CMSIS_DIR)/Include
+
+# --- Linker flags ---
+LDFLAGS  = $(MCU_FLAGS)
+LDFLAGS += -T$(LDSCRIPT)
+LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref
+LDFLAGS += --specs=nano.specs --specs=nosys.specs
+LDFLAGS += -lm
+
+# --- Shared BSW sources ---
+# Uses bxCAN driver instead of FDCAN, and F4 hw file instead of G4
+BSW_SRCS = \
+    $(BSW)/mcal/Can/src/Can.c \
+    $(BSW)/mcal/Spi/src/Spi.c \
+    $(BSW)/mcal/Adc/src/Adc.c \
+    $(BSW)/mcal/Dio/src/Dio.c \
+    $(BSW)/mcal/Pwm/src/Pwm.c \
+    $(PLAT_F4)/src/Can_Hw_STM32F4.c \
+    $(PLAT_G4)/src/Gpt_Hw_STM32.c \
+    $(PLAT_G4)/src/Dio_Hw_STM32.c \
+    $(PLAT_G4)/src/Adc_Hw_STM32.c \
+    $(PLAT_G4)/src/Pwm_Hw_STM32.c \
+    $(PLAT_G4)/src/Spi_Hw_STM32.c \
+    $(BSW)/ecual/CanIf/src/CanIf.c \
+    $(BSW)/ecual/PduR/src/PduR.c \
+    $(BSW)/ecual/IoHwAb/src/IoHwAb.c \
+    $(BSW)/services/Com/src/Com.c \
+    $(BSW)/services/Dcm/src/Dcm.c \
+    $(BSW)/services/Dem/src/Dem.c \
+    $(BSW)/services/E2E/src/E2E.c \
+    $(BSW)/services/E2E/src/E2E_Sm.c \
+    $(BSW)/services/WdgM/src/WdgM.c \
+    $(BSW)/services/BswM/src/BswM.c \
+    $(BSW)/services/NvM/src/NvM.c \
+    $(BSW)/services/Det/src/Det.c \
+    $(BSW)/services/SchM/src/SchM.c \
+    $(BSW)/services/CanTp/src/CanTp.c \
+    $(BSW)/rte/src/Rte.c \
+    $(BSW)/os/bootstrap/src/Os_Core.c \
+    $(BSW)/os/bootstrap/src/Os_Task.c \
+    $(BSW)/os/bootstrap/src/Os_Scheduler.c \
+    $(BSW)/os/bootstrap/src/Os_Resource.c \
+    $(BSW)/os/bootstrap/src/Os_Event.c \
+    $(BSW)/os/bootstrap/src/Os_Alarm.c \
+    $(BSW)/os/bootstrap/src/Os_Application.c \
+    $(BSW)/os/bootstrap/src/Os_Ioc.c \
+    $(BSW)/os/bootstrap/src/Os_Memory.c \
+    $(BSW)/os/bootstrap/src/Os_Stack.c \
+    $(BSW)/os/bootstrap/port/src/Os_Port_TaskBinding.c \
+    $(PLAT_G4)/src/Os_Port_Stm32.c \
+    $(PLAT_G4)/src/Os_Port_Stm32_Bringup.c
+
+# --- CubeMX HAL sources (STM32F4xx) ---
+HAL_SRCS = \
+    $(HAL_DIR)/Src/stm32f4xx_hal.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_cortex.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_rcc.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_rcc_ex.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_gpio.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_exti.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_pwr.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_pwr_ex.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_can.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_dma.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_dma_ex.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_flash.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_flash_ex.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_flash_ramfunc.c \
+    $(HAL_DIR)/Src/stm32f4xx_hal_uart.c
+
+# CubeMX-generated init code
+CUBEMX_SRCS = \
+    $(CUBEMX_SRC)/system_stm32f4xx.c \
+    $(CUBEMX_SRC)/stm32f4xx_hal_msp.c \
+    $(CUBEMX_SRC)/stm32f4xx_it.c
+
+# --- ECU sources: RZC application code + F4 hw backend ---
+# Reuses RZC SWC/cfg sources, replaces hw file with F4 variant
+ECU_SRCS_ALL = $(wildcard $(ECU)/rzc/src/*.c) $(wildcard $(ECU)/rzc/cfg/*.c)
+ECU_SRCS = $(filter-out %_posix.c %_tms570.c,$(ECU_SRCS_ALL))
+ECU_HW   = $(PLAT_F4)/src/rzc_f4_hw_stm32f4.c
+
+# --- All application sources (our code, compiled with -Werror) ---
+OUR_SRCS = $(BSW_SRCS) $(ECU_SRCS) $(ECU_HW)
+
+# --- Vendor sources (HAL/CubeMX, compiled without -Werror) ---
+VENDOR_SRCS = $(HAL_SRCS) $(CUBEMX_SRCS)
+
+# --- OS port assembly (uppercase .S for cpp preprocessing) ---
+OS_ASM_SRCS = $(PLAT_G4)/src/Os_Port_Stm32_Asm.S
+
+# --- Object files ---
+OUR_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(OUR_SRCS))
+VENDOR_OBJS = $(patsubst %.c,$(BUILD_DIR)/vendor/%.o,$(VENDOR_SRCS))
+ASM_OBJS    = $(patsubst %.s,$(BUILD_DIR)/%.o,$(STARTUP))
+OS_ASM_OBJS = $(patsubst %.S,$(BUILD_DIR)/%.o,$(OS_ASM_SRCS))
+ALL_OBJS    = $(OUR_OBJS) $(VENDOR_OBJS) $(ASM_OBJS) $(OS_ASM_OBJS)
+
+# --- Output files ---
+ELF = $(BUILD_DIR)/$(TARGET).elf
+BIN = $(BUILD_DIR)/$(TARGET).bin
+MAP = $(BUILD_DIR)/$(TARGET).map
+
+# --- Flash budget (80% of 1536KB = 1258291 bytes) ---
+FLASH_BUDGET = 1258291
+
+# =============================================================================
+# Targets
+# =============================================================================
+
+.PHONY: all flash size clean
+
+all: $(BIN)
+	@echo "=== Built $(ELF) and $(BIN) ==="
+
+$(ELF): $(ALL_OBJS) | $(BUILD_DIR)
+	$(CC) $(ALL_OBJS) $(LDFLAGS) -o $@
+
+$(BIN): $(ELF)
+	$(CP) -O binary $< $@
+
+# Our code: full warnings + -Werror
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Vendor code (HAL/CubeMX): warnings but no -Werror
+VENDOR_CFLAGS = $(filter-out -Werror,$(CFLAGS)) -Wno-unused-parameter
+$(BUILD_DIR)/vendor/%.o: %.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(CC) $(VENDOR_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(AS) $(MCU_FLAGS) -c $< -o $@
+
+# --- Assemble OS port (.S uppercase, cpp preprocessing) ---
+$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(AS) $(MCU_FLAGS) -c $< -o $@
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+flash: $(BIN)
+	@echo "=== Flashing $(TARGET) via OpenOCD ==="
+	$(OCD) -f board/st_nucleo_f4.cfg \
+		-c "program $(ELF) verify reset exit"
+
+size: $(ELF)
+	@echo "=== Firmware size: $(TARGET) ==="
+	$(SZ) --format=berkeley $(ELF)
+
+clean:
+	rm -rf $(BUILD_DIR)
+	@echo "=== Cleaned STM32F4 build directory ==="

@@ -1,0 +1,7 @@
+add_library(asyncBinding INTERFACE)
+
+target_compile_definitions(asyncBinding INTERFACE SUPPORT_FREERTOS)
+
+target_include_directories(asyncBinding INTERFACE include)
+
+target_link_libraries(asyncBinding INTERFACE runtime)

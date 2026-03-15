@@ -47,3 +47,12 @@ private/
 
 # AWS IoT Core certificates (provisioned per-device)
 docker/certs/
+
+# Temp debug/experiment directories
+.tmp_*/
+
+# CubeMX generated projects with build artifacts
+firmware/ecu/rzc_f4/
+
+# SCORE HSM (separate repo with its own .git)
+scorehsm/
