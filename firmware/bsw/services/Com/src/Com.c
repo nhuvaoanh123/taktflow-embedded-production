@@ -13,9 +13,6 @@
 #include "SchM.h"
 #include "Det.h"
 
-#ifdef SIL_DIAG
-#include <stdio.h>
-#endif
 
 /* ---- Internal State ---- */
 
@@ -198,19 +195,6 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
     }
 
     SchM_Enter_Com_COM_EXCLUSIVE_AREA_0();
-
-#ifdef SIL_DIAG
-    /* Temporary debug: confirm ANY PDU reaches Com */
-    {
-        static uint32 com_rx_dbg_total = 0u;
-        com_rx_dbg_total++;
-        if (com_rx_dbg_total <= 3u) {
-            fprintf(stderr, "[COM_DBG] RxInd pdu=%u len=%u total=%u\n",
-                    (unsigned)ComRxPduId, (unsigned)PduInfoPtr->SduLength,
-                    (unsigned)com_rx_dbg_total);
-        }
-    }
-#endif
 
     /* Reset RX deadline counter — fresh data arrived */
     com_rx_timeout_cnt[ComRxPduId] = 0u;
