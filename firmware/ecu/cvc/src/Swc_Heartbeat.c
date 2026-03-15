@@ -198,10 +198,6 @@ void Swc_Heartbeat_MainFunction(void)
             (void)Com_ReceiveSignal(CVC_COM_SIG_FZC_HB_ALIVE, &fzc_alive);
             (void)Com_ReceiveSignal(CVC_COM_SIG_RZC_HB_ALIVE, &rzc_alive);
 
-            HB_DIAG("poll fzc_alive=%u last=%u rzc_alive=%u last=%u",
-                     (unsigned)fzc_alive, (unsigned)fzc_last_alive,
-                     (unsigned)rzc_alive, (unsigned)rzc_last_alive);
-
             if (fzc_alive != fzc_last_alive) {
                 fzc_rx_flag    = TRUE;
                 fzc_last_alive = fzc_alive;

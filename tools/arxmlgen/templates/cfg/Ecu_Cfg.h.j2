@@ -69,7 +69,9 @@
  * ==================================================================== */
 
 {% for name, value in ecu.e2e_data_ids.items() %}
-#define {{ name }}  {{ value | hex2 }}u
+#ifndef {{ name }}
+  #define {{ name }}  {{ value | hex2 }}u
+#endif
 {% endfor %}
 {% endif %}
 {% if ecu.enums %}
@@ -79,7 +81,9 @@
  * ==================================================================== */
 
 {% for name, value in ecu.enums.items() %}
-#define {{ name }}  {{ "%4d"|format(value) }}u
+#ifndef {{ name }}
+  #define {{ name }}  {{ "%4d"|format(value) }}u
+#endif
 {% endfor %}
 {% endif %}
 {% if ecu.thresholds %}
@@ -89,7 +93,9 @@
  * ==================================================================== */
 
 {% for name, value in ecu.thresholds.items() %}
-#define {{ name }}  {{ "%4d"|format(value) }}u
+#ifndef {{ name }}
+  #define {{ name }}  {{ "%4d"|format(value) }}u
+#endif
 {% endfor %}
 {% endif %}
 
