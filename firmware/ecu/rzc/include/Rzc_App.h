@@ -54,10 +54,11 @@
  * Com Signal IDs for Virtual Sensors (RX from plant-sim, SIL only)
  * ==================================================================== */
 
-#define RZC_COM_SIG_RX_VIRT_MOTOR_CURRENT   18u  /* uint16 LE, mA */
-#define RZC_COM_SIG_RX_VIRT_MOTOR_TEMP      19u  /* uint16 LE, 0.1C */
-#define RZC_COM_SIG_RX_VIRT_BATTERY_VOLTAGE 20u  /* uint16 LE, mV */
-#define RZC_COM_SIG_RX_VIRT_MOTOR_RPM      21u  /* uint16 LE, RPM */
+/* Use generated signal IDs from Rzc_Cfg.h (DBC→ARXML→codegen) */
+#define RZC_COM_SIG_RX_VIRT_MOTOR_CURRENT   RZC_COM_SIG_RZC_VIRTUAL_SENSORS_VSENSOR_MOTOR_CURRENT
+#define RZC_COM_SIG_RX_VIRT_MOTOR_TEMP      RZC_COM_SIG_RZC_VIRTUAL_SENSORS_VSENSOR_MOTOR_TEMP_D_C
+#define RZC_COM_SIG_RX_VIRT_BATTERY_VOLTAGE RZC_COM_SIG_RZC_VIRTUAL_SENSORS_VSENSOR_BATT_VOLTAGE
+#define RZC_COM_SIG_RX_VIRT_MOTOR_RPM       RZC_COM_SIG_RZC_VIRTUAL_SENSORS_VSENSOR_MOTOR_RPM
 
 /* ADC group/channel mapping for virtual sensor injection (SIL) */
 #define RZC_MOTOR_CURRENT_ADC_GROUP    0u

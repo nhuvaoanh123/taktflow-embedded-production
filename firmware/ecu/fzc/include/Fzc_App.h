@@ -61,9 +61,10 @@
  * Com Signal IDs for Virtual Sensors (RX from plant-sim, SIL only)
  * ==================================================================== */
 
-#define FZC_COM_SIG_RX_VIRT_STEER_ANGLE   14u  /* uint16 LE, 14-bit SPI format */
-#define FZC_COM_SIG_RX_VIRT_BRAKE_POS     15u  /* uint16 LE, 0-1000 ADC counts */
-#define FZC_COM_SIG_RX_VIRT_BRAKE_CURRENT 16u  /* uint16 LE, mA               */
+/* Use generated signal IDs from Fzc_Cfg.h (DBC→ARXML→codegen) */
+#define FZC_COM_SIG_RX_VIRT_STEER_ANGLE   FZC_COM_SIG_FZC_VIRTUAL_SENSORS_VSENSOR_STEER_ANGLE_RAW
+#define FZC_COM_SIG_RX_VIRT_BRAKE_POS     FZC_COM_SIG_FZC_VIRTUAL_SENSORS_VSENSOR_BRAKE_POS_ADC
+#define FZC_COM_SIG_RX_VIRT_BRAKE_CURRENT FZC_COM_SIG_FZC_VIRTUAL_SENSORS_VSENSOR_BRAKE_CURRENT
 
 /* ADC group/channel for brake position injection (SIL) */
 #define FZC_BRAKE_ADC_GROUP    3u   /* Must match iohwab_config.BrakePositionAdcGroup */
