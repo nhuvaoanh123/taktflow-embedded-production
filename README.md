@@ -27,19 +27,149 @@
 
 ## Architecture Overview
 
-A **zonal architecture** with a Central Vehicle Controller coordinating front/rear zone controllers, a dedicated lockstep safety controller, and body/instrument/transmission modules running as virtual ECUs in Docker for SIL simulation.
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    CLOUD / REMOTE                                       │
+│                                                                                         │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐          │
+│   │   Grafana     │    │  AWS IoT     │    │  SAP QM      │    │  Godot 3D    │          │
+│   │  Dashboards   │    │  Core        │    │  (Quality)   │    │  Visualizer  │          │
+│   └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘          │
+│          │                   │                   │                   │                   │
+│          └───────────┬───────┴───────────┬───────┘                   │                   │
+│                      │     MQTT 8883     │                           │                   │
+│                      ▼    (TLS + auth)   ▼                           ▼                   │
+│              ┌───────────────┐   ┌───────────────┐          ┌───────────────┐            │
+│              │ cloud_        │   │ sap_qm/       │          │ godot_bridge/ │            │
+│              │ connector/    │   │ sap_qm_mock/  │          │ (Godot ↔ SIL) │            │
+│              └───────┬───────┘   └───────┬───────┘          └───────┬───────┘            │
+│                      │                   │                           │                   │
+│   ┌──────────────────┼───────────────────┼───────────────────────────┼────────────────┐  │
+│   │                  │        GATEWAY LAYER                         │                │  │
+│   │                  ▼                                              ▼                │  │
+│   │          ┌───────────────┐                              ┌───────────────┐        │  │
+│   │          │ mosquitto/    │◄──────── MQTT 1883 ─────────►│ mqtt_bridge/  │        │  │
+│   │          │ (MQTT broker) │         (internal)           │ (MQTT↔CAN)   │        │  │
+│   │          └───────────────┘                              └───────┬───────┘        │  │
+│   │                                                                 │                │  │
+│   │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐       │                │  │
+│   │  │ diagnostics/  │  │ ml_inference/ │  │ ws_bridge/    │       │                │  │
+│   │  │ (UDS server)  │  │ (anomaly det) │  │ (WebSocket    │       │                │  │
+│   │  │               │  │               │  │  → dashboard) │       │                │  │
+│   │  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘       │                │  │
+│   │          │                  │                   │               │                │  │
+│   │          └──────────┬───────┴───────────┬───────┘               │                │  │
+│   │                     ▼                   ▼                       ▼                │  │
+│   │             ┌─────────────────────────────────────────────┐                      │  │
+│   │             │              can_gateway/                   │                      │  │
+│   │             │         (CAN ↔ cloud bridge)                │                      │  │
+│   │             │  Routes CAN frames to/from all services     │                      │  │
+│   │             └────────────────────┬────────────────────────┘                      │  │
+│   │                                  │                                               │  │
+│   │  ┌───────────────┐               │              ┌───────────────┐                │  │
+│   │  │ plant_sim_py/ │               │              │ fault_inject/ │                │  │
+│   │  │ (vehicle      │               │              │ (test fault   │                │  │
+│   │  │  physics)     ├───────────────┤──────────────┤  scenarios)   │                │  │
+│   │  │ motor/brake/  │               │              │ pedal_udp,    │                │  │
+│   │  │ steer/battery │               │              │ E-Stop, etc   │                │  │
+│   │  └───────────────┘               │              └───────────────┘                │  │
+│   │                                  │                                               │  │
+│   └──────────────────────────────────┼───────────────────────────────────────────────┘  │
+│                                      │                                                  │
+└──────────────────────────────────────┼──────────────────────────────────────────────────┘
+                                       │
+                          CAN 500 kbit/s (vCAN or physical)
+                          E2E Profile P01 (CRC-8 + alive counter)
+                                       │
+        ┌──────────────────────────────┬┴──────────────────────────────┐
+        │                              │                               │
+        ▼                              ▼                               ▼
+┌──── FRONT ZONE ────┐    ┌──── CENTRAL ─────┐    ┌──── REAR ZONE ────┐
+│                     │    │                   │    │                    │
+│  ┌───────────────┐  │    │  ┌─────────────┐  │    │  ┌──────────────┐ │
+│  │  FZC (ASIL D) │  │    │  │ CVC (ASIL D)│  │    │  │ RZC (ASIL C) │ │
+│  │  STM32F407    │  │    │  │ STM32F407   │  │    │  │ STM32F407    │ │
+│  │               │  │    │  │              │  │    │  │              │ │
+│  │ Swc_Steering  │  │    │  │ Swc_Vehicle  │  │    │  │ Swc_Motor    │ │
+│  │ Swc_Brake     │  │    │  │ Swc_Heartbeat│  │    │  │ Swc_RearSens │ │
+│  │ Swc_Lidar     │  │    │  │ Swc_Coord   │  │    │  │ Swc_Traction │ │
+│  │               │  │    │  │              │  │    │  │              │ │
+│  │ BSW: Com,E2E, │  │    │  │ BSW: Com,E2E│  │    │  │ BSW: Com,E2E │ │
+│  │ WdgM,Dem,Dcm  │  │    │  │ WdgM,Dem,Dcm│  │    │  │ WdgM,Dem,Dcm │ │
+│  └───────────────┘  │    │  └─────────────┘  │    │  └──────────────┘ │
+│                     │    │                   │    │                    │
+└─────────────────────┘    └───────────────────┘    └──────────────────┘
+        │                              │                        │
+        │         ┌────────────────────┤                        │
+        │         │                    │                        │
+        │         ▼                    │                        │
+        │  ┌──────────────┐            │                        │
+        │  │ SC (ASIL D)  │            │                        │
+        │  │ TMS570LS0432 │◄───────────┼────────────────────────┘
+        │  │ (lockstep)   │            │          heartbeat monitoring
+        │  │              │            │
+        │  │ Monitors:    │    watchdog │
+        │  │  heartbeats  │────────────┘
+        │  │  alive cnts  │
+        │  │  FTTI budget │    If ANY heartbeat lost or alive counter stale:
+        │  │              │    ──► SAFE STATE (torque cutoff, steer neutral)
+        │  └──────────────┘
+        │
+        │
+┌───────┴──────── BODY / COMFORT (Docker vECUs, SIL) ──────────────────┐
+│                                                                       │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐               │
+│  │ BCM (QM)    │    │ ICU (QM)    │    │ TCU (ASIL B)│               │
+│  │ C++ / CMake │    │ C++ / CMake │    │ C++ / CMake │               │
+│  │             │    │             │    │             │               │
+│  │ Lights,     │    │ Dashboard,  │    │ Gear logic, │               │
+│  │ doors,      │    │ telemetry   │    │ torque req  │               │
+│  │ comfort     │    │ display     │    │ routing     │               │
+│  └─────────────┘    └─────────────┘    └─────────────┘               │
+│                                                                       │
+│  Containerized in Docker — same BSW interfaces, POSIX MCAL            │
+│  Runs identically in SIL (local) and on Netcup VPS (live demo)       │
+└───────────────────────────────────────────────────────────────────────┘
 
-| ECU | Role | Target MCU | ASIL | Description |
-|-----|------|------------|------|-------------|
-| **CVC** | Central Vehicle Controller | STM32F407 | D | Master coordinator — aggregates zone data, runs vehicle-level logic, issues commands |
-| **FZC** | Front Zone Controller | STM32F407 | D | Steering, braking, front lidar — safety-critical actuation path |
-| **RZC** | Rear Zone Controller | STM32F407 | C | Rear motor control, rear sensors — traction and stability |
-| **SC** | Safety Controller | TMS570LS0432 | D | Lockstep CPU watchdog — monitors heartbeats, enforces safe-state transitions |
-| **BCM** | Body Control Module | Docker (vECU) | QM | Lights, doors, comfort — non-safety functions |
-| **ICU** | Instrument Cluster Unit | Docker (vECU) | QM | Dashboard display, telemetry visualization |
-| **TCU** | Transmission Control Unit | Docker (vECU) | B | Gear selection logic, torque request routing |
 
-**Communication**: All ECUs communicate over CAN 500 kbit/s with AUTOSAR E2E Profile P01 protection (CRC-8 + alive counter) on safety-relevant messages.
+┌─── VERIFICATION ENVIRONMENTS ─────────────────────────────────────────┐
+│                                                                       │
+│  SIL (Software-in-the-Loop)          HIL (Hardware-in-the-Loop)       │
+│  ┌─────────────────────────┐         ┌─────────────────────────┐      │
+│  │ Docker Compose           │         │ Raspberry Pi 4           │      │
+│  │ 7 vECUs + gateway +     │         │ MCP2515 CAN (500k)       │      │
+│  │ plant sim + MQTT broker  │         │ Physical STM32 + TMS570  │      │
+│  │                          │         │ Real CAN bus wiring       │      │
+│  │ vCAN bus (socketcan)     │         │                           │      │
+│  │ ci: nightly + on-push    │         │ ci: nightly               │      │
+│  │ live: sil.taktflow-      │         │ bench: 192.168.0.195      │      │
+│  │   systems.com            │         │                           │      │
+│  └─────────────────────────┘         └─────────────────────────┘      │
+│                                                                       │
+│  MIL (Model-in-the-Loop)            PIL (Processor-in-the-Loop)       │
+│  ┌─────────────────────────┐         ┌─────────────────────────┐      │
+│  │ Python plant models      │         │ Real MCU running firmware │      │
+│  │ Control algorithm         │         │ Simulated plant via CAN   │      │
+│  │ validation before C code │         │ Validates timing + HW     │      │
+│  └─────────────────────────┘         └─────────────────────────┘      │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+### How data flows through the system
+
+1. **Physical sensors** (or plant simulator) generate signals → ECU SWCs read via RTE
+2. **SWCs process** vehicle logic (steering angle, motor torque, brake pressure)
+3. **Com packs** signals into CAN frames with E2E protection (CRC-8 + alive counter)
+4. **CAN bus** carries frames between ECUs at 500 kbit/s
+5. **SC monitors** heartbeats from all safety ECUs — any miss within FTTI budget → safe state
+6. **CAN gateway** bridges CAN frames to the cloud layer via MQTT
+7. **Cloud connector** publishes telemetry to Grafana dashboards and AWS IoT
+8. **SAP QM** connector feeds quality events (DEM faults, anomalies) into SAP for traceability
+9. **ML inference** runs anomaly detection on signal streams — flags deviations before faults occur
+10. **WebSocket bridge** streams live CAN data to the web dashboard at `sil.taktflow-systems.com`
+11. **Diagnostics server** exposes UDS (ISO 14229) for fault readout, ECU reset, and flash programming
+12. **Fault injection** service simulates sensor failures, CAN bus-off, E-Stop for verification scenarios
 
 ---
 
