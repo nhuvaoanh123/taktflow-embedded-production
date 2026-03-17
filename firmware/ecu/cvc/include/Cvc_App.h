@@ -174,10 +174,7 @@
 #define CVC_PEDAL_SENSOR1_FAIL     3u
 #define CVC_PEDAL_SENSOR2_FAIL     4u
 
-/* Additional vehicle states */
-#define CVC_STATE_LIMP             6u
-#define CVC_STATE_SHUTDOWN         7u
-#define CVC_STATE_COUNT            8u
+/* Vehicle states now defined in generated Cvc_Cfg.h (from DBC enum) */
 
 /* Pedal configuration */
 #define CVC_PEDAL_RAMP_LIMIT            5u
