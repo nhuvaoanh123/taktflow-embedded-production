@@ -77,10 +77,13 @@ void IoHwAb_Init(const IoHwAb_ConfigType* ConfigPtr)
     iohwab_config = ConfigPtr;
     iohwab_initialized = TRUE;
 
-    /* Clear injection buffers */
+    /* Initialize injection buffers to safe neutral defaults.
+     * Steering uses 14-bit SPI format: 8191 = center = 0°.
+     * All other sensors: 0 = safe (no current, no temp, no brake). */
     for (i = 0u; i < IOHWAB_SENSOR_COUNT; i++) {
         iohwab_sensor_values[i] = 0u;
     }
+    iohwab_sensor_values[IOHWAB_SENSOR_STEERING] = 8191u;  /* 14-bit center = 0° */
     for (i = 0u; i < IOHWAB_PIN_COUNT; i++) {
         iohwab_pin_states[i] = STD_LOW;
     }
