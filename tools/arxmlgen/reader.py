@@ -677,6 +677,10 @@ class ArxmlReader:
             if "thresholds" in ecu_data:
                 ecu.thresholds.update(ecu_data["thresholds"])
 
+            # RTE aliases — map application-level names to generated signal names
+            if "rte_aliases" in ecu_data:
+                ecu.rte_aliases.update(ecu_data["rte_aliases"])
+
             # Runnable scheduling — override ARXML runnables or create from sidecar
             if "runnables" in ecu_data:
                 runnable_overrides = ecu_data["runnables"]

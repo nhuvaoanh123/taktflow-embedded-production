@@ -56,6 +56,19 @@
 {% endfor %}
 {% endfor %}
 #define {{ ecu.prefix }}_COM_SIG_COUNT  {{ "%4d"|format(ns.com_id) }}u
+{% if ecu.rte_aliases %}
+
+/* ====================================================================
+ * RTE Signal Aliases (application-level → generated signal IDs)
+ * These map SWC-friendly names to the DBC-derived signal IDs above.
+ * SWC code uses: Rte_Read(RZC_SIG_BATTERY_MV, &val)
+ * which resolves to: Rte_Read(RZC_SIG_BATTERY_STATUS_BATTERY_VOLTAGE_M_V, &val)
+ * ==================================================================== */
+
+{% for alias_name, gen_signal in ecu.rte_aliases.items() %}
+#define {{ alias_name }}  {{ ecu.prefix }}_SIG_{{ gen_signal | upper_snake }}
+{% endfor %}
+{% endif %}
 {% if ecu.dtc_events %}
 
 /* ====================================================================

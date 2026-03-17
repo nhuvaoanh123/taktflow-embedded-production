@@ -280,6 +280,31 @@ ecus:
       RZC_BATTERY_CRITICAL_MV: 2000
       RZC_ENCODER_TIMEOUT: 50
 
+    # RTE signal aliases — maps application-level names to DBC signal names.
+    # Codegen emits: #define RZC_SIG_BATTERY_MV  RZC_SIG_BATTERY_STATUS_BATTERY_VOLTAGE_M_V
+    rte_aliases:
+      RZC_SIG_TORQUE_CMD:       Torque_Request_TorqueRequest
+      RZC_SIG_TORQUE_ECHO:      Motor_Current_TorqueEcho
+      RZC_SIG_MOTOR_SPEED:      Motor_Status_MotorSpeed_RPM
+      RZC_SIG_MOTOR_DIR:        Motor_Status_MotorDirection
+      RZC_SIG_MOTOR_ENABLE:     Motor_Status_MotorEnable
+      RZC_SIG_MOTOR_FAULT:      Motor_Status_MotorFaultStatus
+      RZC_SIG_CURRENT_MA:       Motor_Current_Current_mA
+      RZC_SIG_OVERCURRENT:      Motor_Current_OvercurrentFlag
+      RZC_SIG_TEMP1_DC:         Motor_Temperature_WindingTemp1_C
+      RZC_SIG_TEMP2_DC:         Motor_Temperature_WindingTemp2_C
+      RZC_SIG_DERATING_PCT:     Motor_Temperature_DeratingPercent
+      RZC_SIG_BATTERY_MV:       Battery_Status_BatteryVoltage_mV
+      RZC_SIG_BATTERY_STATUS:   Battery_Status_BatteryStatus
+      RZC_SIG_VEHICLE_STATE:    Vehicle_State_VehicleState
+      RZC_SIG_ESTOP_ACTIVE:     EStop_Broadcast_EStop_Active
+      RZC_SIG_FAULT_MASK:       Vehicle_State_FaultMask
+      RZC_SIG_SELF_TEST_RESULT: RZC_Heartbeat_FaultStatus
+      RZC_SIG_HEARTBEAT_ALIVE:  RZC_Heartbeat_E2E_AliveCounter
+      RZC_SIG_SAFETY_STATUS:    SC_Status_RelayState
+      RZC_SIG_CMD_TIMEOUT:      Torque_Request_PedalFault
+      RZC_SIG_BATTERY_SOC:      Battery_Status_BatteryStatus
+
     runnables:
       Swc_CurrentMonitor_MainFunction:
         period_ms: 1
