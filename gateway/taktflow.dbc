@@ -90,7 +90,7 @@ BO_ 258 Steer_Command: 8 CVC
  SG_ E2E_DataID : 0|4@1+ (1,0) [0|15] "" FZC
  SG_ E2E_AliveCounter : 4|4@1+ (1,0) [0|15] "" FZC
  SG_ E2E_CRC8 : 8|8@1+ (1,0) [0|255] "" FZC
- SG_ SteerAngleCmd : 16|16@1+ (0.01,-45.0) [-45.0|45.0] "deg" FZC
+ SG_ SteerAngleCmd : 16|16@1- (0.01,0) [-45.0|45.0] "deg" FZC
  SG_ SteerRateLimit : 32|8@1+ (0.2,0) [0|51.0] "deg/s" FZC
  SG_ VehicleState : 40|4@1+ (1,0) [0|5] "" FZC
 
