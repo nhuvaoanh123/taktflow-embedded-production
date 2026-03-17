@@ -482,7 +482,18 @@ void Swc_Motor_MainFunction(void)
     }
 
     /* ----------------------------------------------------------
-     * Step 14: Write outputs to RTE
+     * Step 14: Integrate external overcurrent from CurrentMonitor
+     * ---------------------------------------------------------- */
+    {
+        uint32 overcurrent_flag = 0u;
+        (void)Rte_Read(RZC_SIG_OVERCURRENT, &overcurrent_flag);
+        if (overcurrent_flag != 0u) {
+            Motor_Fault = RZC_MOTOR_OVERCURRENT;
+        }
+    }
+
+    /* ----------------------------------------------------------
+     * Step 15: Write outputs to RTE
      * ---------------------------------------------------------- */
     (void)Rte_Write(RZC_SIG_TORQUE_ECHO, (uint32)((uint16)Motor_AbsSint16(derated_torque)));
     (void)Rte_Write(RZC_SIG_MOTOR_DIR, (uint32)Motor_Direction);
