@@ -108,6 +108,14 @@ Create `scripts/validate-pipeline.sh`:
 - **Round 1** (pipeline fixes): 0/18 → 3/18 — SIL-001, SIL-016, SIL-017
 - **Round 2** (compose filename fix): 3/18 → 6/18 — +SIL-005, SIL-009, SIL-015
 - **Round 3** (HARA CAN timeout + SIL-004 expectation): 6/18 → 7/18 — +SIL-004
+- **Round 4** (codegen signal ID fix): signal IDs now match between Cfg.h and Com_Cfg
+  - Root cause: Ecu_Cfg.h.j2 template deduplicated by signal name, skipping com_id increment for duplicates (DTC_Broadcast TX/RX has 6 duplicate signal names). Com_Cfg.c always increments → IDs diverge by 6.
+  - Fix: always increment com_id, comment out duplicate #defines
+
+**Remaining blockers (next session)**:
+- **fault_inject MQTT publish** doesn't reach plant-sim (paho-mqtt event loop issue) — blocks SIL-006,007,008,010,011,012
+- **E-Stop UDP recv** in Spi_Posix not triggered — blocks SIL-003,013
+- **Pedal→motor chain** — blocks SIL-002
 
 | Category | Scenarios | Root Cause | Fix |
 |----------|-----------|------------|-----|
