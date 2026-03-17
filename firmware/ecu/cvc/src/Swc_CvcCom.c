@@ -370,6 +370,17 @@ void Swc_CvcCom_BridgeRxToRte(void)
     /* Read fault signals from Com shadow buffers */
     (void)Com_ReceiveSignal(CVC_COM_SIG_BRAKE_FAULT_FAULT_TYPE, &brake_fault_val);
     (void)Com_ReceiveSignal(CVC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE, &motor_cutoff_val);
+#ifdef SIL_DIAG
+    {
+        static uint8 prev_mc = 0xFFu;
+        if (motor_cutoff_val != prev_mc) {
+            fprintf(stderr, "[BRIDGE] mc=%u bf=%u sig=%u\n",
+                    motor_cutoff_val, brake_fault_val,
+                    (unsigned)CVC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE);
+            prev_mc = motor_cutoff_val;
+        }
+    }
+#endif
     (void)Com_ReceiveSignal(CVC_COM_SIG_SC_STATUS_RELAY_STATE, &sc_relay_byte3);
     /* Com extracts the 1-bit RelayState signal as 0 or 1.
      * 1=energized (OK), 0=de-energized (killed).
