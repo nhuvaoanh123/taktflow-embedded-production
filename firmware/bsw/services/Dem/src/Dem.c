@@ -253,9 +253,8 @@ void Dem_MainFunction(void)
     for (i = 0u; i < DEM_MAX_EVENTS; i++) {
         SchM_Enter_Dem_DEM_EXCLUSIVE_AREA_0();
 
-        /* Only broadcast newly confirmed DTCs that haven't been sent yet */
-        if (((dem_events[i].statusByte & DEM_STATUS_CONFIRMED_DTC) != 0u) &&
-            (dem_broadcast_sent[i] == 0u))
+        /* Broadcast confirmed DTCs (limiter disabled for debug) */
+        if ((dem_events[i].statusByte & DEM_STATUS_CONFIRMED_DTC) != 0u)
         {
             dtc_code = dem_dtc_codes[i];
 
