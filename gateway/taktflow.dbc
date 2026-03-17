@@ -4,7 +4,7 @@ NS_ :
 
 BS_:
 
-BU_: CVC FZC RZC SC BCM ICU TCU Tester
+BU_: CVC FZC RZC SC BCM ICU TCU Tester Plant_Sim
 
 BO_ 1 EStop_Broadcast: 4 CVC
  SG_ E2E_DataID : 0|4@1+ (1,0) [0|15] "" SC,FZC,RZC,BCM,ICU,TCU
@@ -243,12 +243,12 @@ BO_ 2026 UDS_Resp_RZC: 8 RZC
 BO_ 1604 UDS_Resp_TCU: 8 TCU
  SG_ UDS_Data : 0|64@1+ (1,0) [0|0] "" Tester
 
-BO_ 1536 FZC_Virtual_Sensors: 8 Vector__XXX
+BO_ 1536 FZC_Virtual_Sensors: 8 Plant_Sim
  SG_ VSensor_SteerAngle_Raw : 0|16@1+ (1,0) [0|16383] "" FZC
  SG_ VSensor_BrakePos_ADC : 16|16@1+ (1,0) [0|1000] "" FZC
  SG_ VSensor_BrakeCurrent : 32|16@1+ (1,0) [0|65535] "mA" FZC
 
-BO_ 1537 RZC_Virtual_Sensors: 8 Vector__XXX
+BO_ 1537 RZC_Virtual_Sensors: 8 Plant_Sim
  SG_ VSensor_MotorCurrent : 0|16@1+ (1,0) [0|65535] "mA" RZC
  SG_ VSensor_MotorTemp_dC : 16|16@1+ (1,0) [0|2000] "" RZC
  SG_ VSensor_BattVoltage : 32|16@1+ (1,0) [0|20000] "mV" RZC
