@@ -75,10 +75,10 @@ The `Com_RxIndication(22, ...)` is called but the signal unpack loop iterates ov
 
 **BUT**: the Com config was generated with `RZC_COM_RX_RZC_VIRTUAL_SENSORS = 22`. The generated `Com_Cfg_Rzc.c` uses this define. If the generated file uses the define (not a literal 22), AND the define resolves correctly at compile time, then `sig[170].PduId = 22`. The `Com_RxIndication(22)` loop should find it.
 
-**Possible causes**:
-1. `com_rx_pdu_buf` array size too small for PDU 22 (buffer overflow / out of bounds)
-2. `com_config->signalCount` doesn't reach 170 (uint8 overflow — but 218 < 256)
-3. The CanIf → PduR → Com chain breaks silently (PduR routing not found)
-4. `Can_MainFunction_Read()` not called frequently enough (misses frames)
+**ROOT CAUSE FOUND (2026-03-17)**:
+`COM_MAX_PDUS = 16u` in `Com.h`. PDU 22 (0x601) >= 16 → `Com_RxIndication`
+returns `DET_E_PARAM_VALUE` immediately. Frame silently dropped.
+Also `com_rx_pdu_buf[16]` — any write to index >= 16 is out-of-bounds.
 
-**Next step**: Add fprintf in `Com_RxIndication` for PDU 22 to confirm it's called.
+**Fix**: Increased `COM_MAX_PDUS` to 48, `COM_MAX_SIGNALS` to 256 with `#ifndef` guards.
+This affects ALL ECUs — every PDU >= 16 was broken across the entire system.

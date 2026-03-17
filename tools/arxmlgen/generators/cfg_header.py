@@ -42,6 +42,10 @@ class CfgHeaderGenerator:
                 if not r.is_init and r.period_ms > 0:
                     runnable_count += 1
 
+        # Total Com signal count (TX + RX signals across all PDUs)
+        com_signal_count = sum(len(p.signals) for p in ecu.tx_pdus) + \
+                           sum(len(p.signals) for p in ecu.rx_pdus)
+
         context = {
             "ecu": ecu,
             "filename": f"{ecu.prefix.capitalize()}_Cfg.h",
@@ -51,6 +55,7 @@ class CfgHeaderGenerator:
             "ecu_app_signals": ecu_app_signals,
             "sig_count": sig_count,
             "runnable_count": runnable_count,
+            "com_signal_count": com_signal_count,
         }
 
         content = engine.render("cfg/Ecu_Cfg.h.j2", context)
