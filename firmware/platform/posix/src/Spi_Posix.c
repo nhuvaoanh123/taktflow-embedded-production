@@ -189,6 +189,8 @@ Std_ReturnType Spi_Hw_Transmit(uint8 Channel, const uint16* TxBuf,
             uint16 cmd = (uint16)udp_buf[0]
                        | ((uint16)udp_buf[1] << 8u);
 
+            fprintf(stderr, "[SPI] UDP cmd=0x%04X\n", cmd);
+
             if (cmd == SPI_ESTOP_ACTIVATE)
             {
                 IoHwAb_Inject_SetDigitalPin(IOHWAB_PIN_ESTOP, STD_HIGH);
