@@ -29,6 +29,9 @@
 #include "Com.h"
 #include "IoHwAb.h"
 #include "IoHwAb_Inject.h"
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 
 /* ==================================================================
  * Module State
@@ -83,6 +86,19 @@ void Swc_RzcSensorFeeder_MainFunction(void)
     (void)Com_ReceiveSignal(RZC_COM_SIG_RX_VIRT_MOTOR_CURRENT,   &motor_current);
     (void)Com_ReceiveSignal(RZC_COM_SIG_RX_VIRT_MOTOR_TEMP,      &motor_temp);
     (void)Com_ReceiveSignal(RZC_COM_SIG_RX_VIRT_BATTERY_VOLTAGE, &battery_voltage);
+
+#ifdef SIL_DIAG
+    {
+        static uint32 prev_batt = 0u;
+        if (battery_voltage != prev_batt) {
+            fprintf(stderr, "[VSENSOR] batt=%u (sig=%u valid=%u)\n",
+                    (unsigned)battery_voltage,
+                    (unsigned)RZC_COM_SIG_RX_VIRT_BATTERY_VOLTAGE,
+                    (unsigned)SensorFeeder_DataValid);
+            prev_batt = battery_voltage;
+        }
+    }
+#endif
 
     /* Hold nominal defaults until plant-sim sends real data on CAN 0x601.
      * Com shadow buffer defaults to 0.  Plant-sim sends battery_voltage in
