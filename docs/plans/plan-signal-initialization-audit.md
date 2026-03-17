@@ -102,6 +102,18 @@ Create `scripts/validate-pipeline.sh`:
 2. CI step: regenerate → diff → fail if generated files changed without committing
 3. CI step: build all ECUs before Docker build (catches compile errors early)
 
+## Full Suite Baseline (2026-03-17)
+
+**3/18 PASS (16.7%)**: SIL-001, SIL-016, SIL-017
+
+| Category | Scenarios | Root Cause | Fix |
+|----------|-----------|------------|-----|
+| Wrong compose filename | SIL-004, 005, 009, 015 | Verdict checker hardcodes `docker-compose.yml` | Change to `docker-compose.dev.yml` |
+| No DTC broadcast | SIL-006, 007, 008, 011, 012 | Dem→Com→CAN DTC chain not wired | Trace Dem_ReportErrorStatus → DTC_Broadcast |
+| No state transition | SIL-002, 003, 006-008, 010, 012 | Fault injection doesn't trigger VSM events | Trace fault_inject → CAN → CVC/FZC/RZC |
+| Motor RPM=0 | SIL-002 | Pedal→torque→motor chain broken | Trace SPI pedal → CVC → Torque_Request → RZC |
+| Gateway DTC | SIL-018 | SAP QM mock doesn't see DTCs | Depends on DTC broadcast fix |
+
 ## Definition of Done
 
 - [ ] SIL-001 passes on VPS (Netcup)
