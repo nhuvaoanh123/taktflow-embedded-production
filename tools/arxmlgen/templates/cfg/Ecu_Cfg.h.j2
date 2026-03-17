@@ -38,8 +38,10 @@
 {% if sig.name not in ns.seen_sigs %}
 #define {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }}  {{ "%4d"|format(ns.com_id) }}u   /* TX {{ pdu.name }} */
 {% set ns.seen_sigs = ns.seen_sigs + [sig.name] %}
-{% set ns.com_id = ns.com_id + 1 %}
+{% else %}
+/* {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }} = {{ "%4d"|format(ns.com_id) }}u   TX {{ pdu.name }} (dup, ID only) */
 {% endif %}
+{% set ns.com_id = ns.com_id + 1 %}
 {% endfor %}
 {% endfor %}
 {% for pdu in ecu.rx_pdus %}
@@ -47,8 +49,10 @@
 {% if sig.name not in ns.seen_sigs %}
 #define {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }}  {{ "%4d"|format(ns.com_id) }}u   /* RX {{ pdu.name }} */
 {% set ns.seen_sigs = ns.seen_sigs + [sig.name] %}
-{% set ns.com_id = ns.com_id + 1 %}
+{% else %}
+/* {{ ecu.prefix }}_COM_SIG_{{ sig.name | upper_snake }} = {{ "%4d"|format(ns.com_id) }}u   RX {{ pdu.name }} (dup, ID only) */
 {% endif %}
+{% set ns.com_id = ns.com_id + 1 %}
 {% endfor %}
 {% endfor %}
 #define {{ ecu.prefix }}_COM_SIG_COUNT  {{ "%4d"|format(ns.com_id) }}u
