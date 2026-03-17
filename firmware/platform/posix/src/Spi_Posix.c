@@ -20,6 +20,8 @@
 
 #include "Platform_Types.h"
 #include "Std_Types.h"
+#include "IoHwAb_Inject.h"
+#include "IoHwAb_Posix.h"
 
 /* ---- POSIX headers for UDP pedal override ---- */
 #include <sys/socket.h>
@@ -30,8 +32,10 @@
 #include <string.h>
 #include <stdio.h>
 
-/* ---- UDP pedal override constants ---- */
+/* ---- UDP override constants ---- */
 #define SPI_OVERRIDE_CLEAR  0xFFFFu  /**< Packet value to clear override    */
+#define SPI_ESTOP_ACTIVATE  0xE500u  /**< UDP cmd: activate E-Stop DIO pin  */
+#define SPI_ESTOP_CLEAR     0xE5FFu  /**< UDP cmd: clear E-Stop DIO pin     */
 #define SPI_OVERRIDE_STEP   11u      /**< Oscillation step — must be >= stuckThreshold (10) */
 #define SPI_OVERRIDE_RANGE  40u      /**< Max offset from target angle       */
 
@@ -185,7 +189,15 @@ Std_ReturnType Spi_Hw_Transmit(uint8 Channel, const uint16* TxBuf,
             uint16 cmd = (uint16)udp_buf[0]
                        | ((uint16)udp_buf[1] << 8u);
 
-            if (cmd == SPI_OVERRIDE_CLEAR)
+            if (cmd == SPI_ESTOP_ACTIVATE)
+            {
+                IoHwAb_Inject_SetDigitalPin(IOHWAB_PIN_ESTOP, STD_HIGH);
+            }
+            else if (cmd == SPI_ESTOP_CLEAR)
+            {
+                IoHwAb_Inject_SetDigitalPin(IOHWAB_PIN_ESTOP, STD_LOW);
+            }
+            else if (cmd == SPI_OVERRIDE_CLEAR)
             {
                 spi_override_target = SPI_OVERRIDE_CLEAR;
                 spi_override_offset = 0u;

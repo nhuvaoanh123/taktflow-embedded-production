@@ -29,6 +29,8 @@ def _scaled_sleep(seconds: float) -> None:
 from .pedal_udp import (
     clear_pedal_override,
     pedal_pct_to_angle,
+    send_estop_activate,
+    send_estop_clear,
     send_pedal_override,
 )
 from .plant_inject import (
@@ -623,19 +625,15 @@ def can_loss() -> str:
 
 
 def estop() -> str:
-    """Send E-Stop frame (0x001) with EStop_Active=1.
+    """Activate E-Stop via UDP DIO pin injection to CVC.
 
-    The CVC broadcasts EStop to all ECUs.  All actuators are disabled,
-    motor is de-energized, brakes are applied (emergency mode), and the
-    vehicle enters SAFE_STOP state.
+    CVC reads E-Stop from IoHwAb DIO pin, not from CAN RX.
+    The UDP packet triggers IoHwAb_Inject_SetDigitalPin(ESTOP, HIGH)
+    in the CVC's Spi_Posix UDP listener (port 9100).
+    CVC then broadcasts EStop_Broadcast (0x001) to all ECUs.
     """
-    bus = _get_bus()
-    try:
-        # Send E-Stop active with source=1 (CAN_request)
-        _send(bus, CAN_ESTOP, _estop_frame(active=True, source=1))
-    finally:
-        bus.shutdown()
-    return "E-Stop activated: EStop_Active=1, source=CAN_request"
+    send_estop_activate()
+    return "E-Stop activated via UDP DIO injection"
 
 
 log = logging.getLogger("fault_inject")
@@ -787,6 +785,7 @@ def reset() -> str:
     """
     import concurrent.futures
     clear_pedal_override()
+    send_estop_clear()
     _clear_nvm_files()
 
     client = docker.from_env()
