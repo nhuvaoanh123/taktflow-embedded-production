@@ -651,10 +651,10 @@ log = logging.getLogger("fault_inject")
 # Phase 2: SC (needs FZC/RZC heartbeats during its 5s grace)
 # Phase 3: 2s sleep (let SC stabilize)
 # Phase 4: CVC (needs SC relay OK + FZC/RZC heartbeats)
+_PLANT_CONTAINER = "docker-plant-sim-1"
 _ZONE_CONTAINERS = [
     "docker-fzc-1", "docker-rzc-1",
     "docker-bcm-1", "docker-icu-1", "docker-tcu-1",
-    "docker-plant-sim-1",
 ]
 _SC_CONTAINER = "docker-sc-1"
 _CVC_CONTAINER = "docker-cvc-1"
@@ -674,7 +674,7 @@ def _clear_nvm_files() -> None:
     Deleting the NvM files ensures a truly clean reset with no DTC carryover.
     """
     client = docker.from_env()
-    all_containers = _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
+    all_containers = _ZONE_CONTAINERS + [_PLANT_CONTAINER, _SC_CONTAINER, _CVC_CONTAINER]
     for name in all_containers:
         try:
             c = client.containers.get(name)
@@ -703,14 +703,10 @@ def _reset_all_containers() -> list[str]:
     import concurrent.futures
 
     client = docker.from_env()
-    all_ecu_names = _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
+    all_ecu_names = [_PLANT_CONTAINER] + _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
     restarted: list[str] = []
 
-    # Phase 1: stop ALL containers in parallel.  Use stop() (not kill()) so
-    # Docker's restart_policy does NOT auto-restart them — the phased start
-    # in Phase 2-4 controls the ordering (SC must send SC_Status before CVC
-    # boots, otherwise CVC's Com RX timeout zeros the relay shadow buffer
-    # and CVC interprets it as SC relay killed).
+    # Phase 1: stop ALL containers in parallel.
     def _stop_container(name: str) -> None:
         try:
             c = client.containers.get(name)
@@ -725,7 +721,20 @@ def _reset_all_containers() -> list[str]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         pool.map(_stop_container, all_ecu_names)
 
-    # Phase 2: start zone controllers + plant-sim (heartbeat senders first)
+    # Phase 2a: start plant-sim FIRST — must publish neutral CAN frames
+    # BEFORE zone controllers boot, otherwise FZC reads stale brake/steer
+    # values and triggers plausibility faults on the first cycle.
+    try:
+        c = client.containers.get(_PLANT_CONTAINER)
+        c.start()
+        restarted.append(_PLANT_CONTAINER)
+    except Exception as exc:
+        log.warning("Failed to start %s: %s", _PLANT_CONTAINER, exc)
+
+    # Wait for plant-sim to publish at least one neutral physics cycle
+    _scaled_sleep(1)
+
+    # Phase 2b: start zone controllers (heartbeat senders)
     for name in _ZONE_CONTAINERS:
         try:
             c = client.containers.get(name)
