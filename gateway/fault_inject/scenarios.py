@@ -703,9 +703,11 @@ def _reset_all_containers() -> list[str]:
     import concurrent.futures
 
     client = docker.from_env()
-    # Plant-sim is NOT restarted — MQTT reset already cleared its physics.
-    # Only restart ECU firmware containers (stateless C binaries).
-    all_ecu_names = _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
+    # Plant-sim IS restarted — MQTT reset alone isn't sufficient because
+    # CVC may still be sending stale commands (e.g. steer=-45° from SAFE_STOP)
+    # between the MQTT reset and the container kill, causing plant-sim to
+    # re-track to stale values. Restarting plant-sim ensures clean physics.
+    all_ecu_names = _ZONE_CONTAINERS + [_PLANT_CONTAINER, _SC_CONTAINER, _CVC_CONTAINER]
     restarted: list[str] = []
 
     # Phase 1: stop ALL ECU containers in parallel.
@@ -725,10 +727,21 @@ def _reset_all_containers() -> list[str]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         pool.map(_stop_container, all_ecu_names)
 
+    # Phase 2a: start plant-sim FIRST so it publishes neutral sensors
+    # before zone ECUs boot and read them
+    try:
+        c = client.containers.get(_PLANT_CONTAINER)
+        c.start()
+        restarted.append(_PLANT_CONTAINER)
+    except docker.errors.NotFound:
+        log.warning("Container %s not found — skipping start", _PLANT_CONTAINER)
+    except Exception as exc:
+        log.warning("Failed to start %s: %s", _PLANT_CONTAINER, exc)
+
     # Brief pause — let plant-sim's neutral frames propagate on CAN bus
     _scaled_sleep(1)
 
-    # Phase 2: start zone controllers (heartbeat senders)
+    # Phase 2b: start zone controllers (heartbeat senders)
     for name in _ZONE_CONTAINERS:
         try:
             c = client.containers.get(name)
