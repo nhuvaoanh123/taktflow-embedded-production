@@ -102,9 +102,12 @@ Create `scripts/validate-pipeline.sh`:
 2. CI step: regenerate → diff → fail if generated files changed without committing
 3. CI step: build all ECUs before Docker build (catches compile errors early)
 
-## Full Suite Baseline (2026-03-17)
+## Full Suite Progress (2026-03-17)
 
-**3/18 PASS (16.7%)**: SIL-001, SIL-016, SIL-017
+**Start: 0/18 → Current: 7/18 (38.9%)**
+- **Round 1** (pipeline fixes): 0/18 → 3/18 — SIL-001, SIL-016, SIL-017
+- **Round 2** (compose filename fix): 3/18 → 6/18 — +SIL-005, SIL-009, SIL-015
+- **Round 3** (HARA CAN timeout + SIL-004 expectation): 6/18 → 7/18 — +SIL-004
 
 | Category | Scenarios | Root Cause | Fix |
 |----------|-----------|------------|-----|
