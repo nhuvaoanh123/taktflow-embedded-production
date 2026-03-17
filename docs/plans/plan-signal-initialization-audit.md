@@ -65,7 +65,13 @@ The production SIL test suite cannot pass SIL-001 (Normal Startup) because multi
 4. ✅ Monolithic SWC skeletons (`Swc_CVC.c`, `Swc_FZC.c`, `Swc_RZC.c`) must be deleted after regen — they clash with individual SWC files
 5. **TODO**: Add `cantools` to Dockerfile.vecu builder stage
 6. **TODO**: Add `.gitignore` for monolithic SWC skeletons (or fix codegen to skip them)
-7. **TODO**: Docker build + SIL-001 test
+7. **BLOCKER**: VehicleState enum mismatch between DBC and sidecar:
+   - DBC: `0=INIT 1=RUN 2=DEGRADED 3=LIMP 4=SAFE_STOP 5=SHUTDOWN`
+   - Sidecar: `0=INIT 1=SELF_TEST 2=RUN 3=DEGRADED 4=SAFE_STOP 5=FAULT`
+   - CVC sends raw=2 (firmware RUN), test decodes as DEGRADED (DBC enum)
+   - Fix: align sidecar to DBC, make SELF_TEST an internal constant (not CAN-visible)
+   - Same issue likely exists for FZC/RZC state enums
+8. **TODO**: Docker build + SIL-001 test after enum fix
 
 ### Phase 4: Plant-Sim Alignment
 
