@@ -766,24 +766,61 @@ def _reset_all_containers() -> list[str]:
 def reset() -> str:
     """Power-cycle reset: restart ECU containers to clear all latched faults.
 
-    1. Clears the SPI pedal override
-    2. Publishes MQTT reset (ML detector + ws_bridge + plant-sim clear state)
-    3. Restarts all ECU + plant-sim containers (clears latched firmware faults)
+    Order is critical — plant-sim must be at neutral BEFORE any ECU boots:
+    1. Kill ALL ECU containers — stops stale CAN commands (brake=100%, steer=-45°)
+    2. Reset plant-sim via MQTT — with no ECUs sending, physics settles to neutral
+    3. Wait 1s for plant-sim to publish neutral CAN frames on vcan0
+    4. Start ECU containers in phased order — they read neutral on first cycle
     """
+    import concurrent.futures
     clear_pedal_override()
+    _clear_nvm_files()
 
-    # Publish MQTT reset command for ML detector, ws_bridge, and plant-sim
+    client = docker.from_env()
+    all_ecu_names = _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
+
+    # Phase 1: Kill ALL ECU containers (plant-sim stays running)
+    def _stop(name):
+        try:
+            client.containers.get(name).stop(timeout=2)
+        except Exception:
+            pass
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        pool.map(_stop, all_ecu_names)
+
+    # Phase 2: Reset plant-sim physics — ECUs are dead, no one fights the reset
     if _mqtt_client is not None:
         reset_payload = json.dumps({"action": "reset", "ts": time.time()})
         _mqtt_client.publish("taktflow/command/reset", reset_payload, qos=1)
         reset_plant_faults(_mqtt_client)
 
-    # Clear NvM persistence files before restart — prevents stale DTC data
-    # from overflowing into Com/RTE buffers on next boot (NvM overflow bug)
-    _clear_nvm_files()
+    # Phase 3: Wait for plant-sim to settle at neutral (brake=0%, steer=0°)
+    _scaled_sleep(2)
 
-    # Power-cycle: stop ALL then start in order (no stale-data race)
-    restarted = _reset_all_containers()
+    # Phase 4: Start zone controllers (heartbeat senders)
+    restarted = []
+    for name in _ZONE_CONTAINERS:
+        try:
+            client.containers.get(name).start()
+            restarted.append(name)
+        except Exception as exc:
+            log.warning("Failed to start %s: %s", name, exc)
+
+    # Phase 5: Start SC (needs heartbeats)
+    try:
+        client.containers.get(_SC_CONTAINER).start()
+        restarted.append(_SC_CONTAINER)
+    except Exception as exc:
+        log.warning("Failed to start %s: %s", _SC_CONTAINER, exc)
+
+    # Phase 6: Wait for SC to boot, then start CVC
+    _scaled_sleep(2)
+    try:
+        client.containers.get(_CVC_CONTAINER).start()
+        restarted.append(_CVC_CONTAINER)
+    except Exception as exc:
+        log.warning("Failed to start %s: %s", _CVC_CONTAINER, exc)
+
     log.info("Power-cycle reset: restarted %d containers", len(restarted))
 
     return f"Power-cycle reset: {len(restarted)} containers restarted"
