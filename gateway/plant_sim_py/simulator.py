@@ -188,12 +188,12 @@ class PlantSimulator:
             self.brake.fault = True
             log.info("Injected brake fault")
         elif cmd_type == "reset":
-            self.motor.reset_faults()
-            self.steering.clear_fault()
-            self.brake.clear_fault()
-            self.battery.clear_override()
+            self.motor.reset_state()
+            self.steering.reset_state()
+            self.brake.reset_state()
+            self.battery.reset_state()
             self._active_dtcs.clear()
-            log.info("Plant faults cleared via MQTT reset")
+            log.info("Plant FULL RESET — all physics returned to power-on defaults")
 
     def _next_alive(self, msg_id: int) -> int:
         val = self._alive.get(msg_id, 0)
