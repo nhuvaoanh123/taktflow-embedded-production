@@ -37,6 +37,9 @@
  * ================================================================== */
 
 #include "IoHwAb.h"
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 #include "Rte.h"
 #include "Dem.h"
 
@@ -490,6 +493,17 @@ void Swc_Motor_MainFunction(void)
         if (overcurrent_flag != 0u) {
             Motor_Fault = RZC_MOTOR_OVERCURRENT;
         }
+#ifdef SIL_DIAG
+        {
+            static uint32 prev_oc = 0xFFu;
+            if (overcurrent_flag != prev_oc) {
+                fprintf(stderr, "[MOTOR] oc=%u fault=%u sig=%u\n",
+                        (unsigned)overcurrent_flag, Motor_Fault,
+                        (unsigned)RZC_SIG_OVERCURRENT);
+                prev_oc = overcurrent_flag;
+            }
+        }
+#endif
     }
 
     /* ----------------------------------------------------------
