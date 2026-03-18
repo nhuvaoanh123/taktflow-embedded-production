@@ -285,3 +285,19 @@ void Swc_Heartbeat_RxIndication(uint8 ecuId)
         /* Unknown ECU ID — ignore */
     }
 }
+
+/**
+ * @brief  Reset comm status to OK — called when post-INIT grace expires
+ *
+ * Clears stale TIMEOUT status accumulated during Docker boot transient
+ * so the first post-grace cycle doesn't immediately trigger CAN_TMO_S.
+ */
+void Swc_Heartbeat_ResetCommStatus(void)
+{
+    fzc_comm_status = CVC_COMM_OK;
+    rzc_comm_status = CVC_COMM_OK;
+    fzc_timeout_count = 0u;
+    rzc_timeout_count = 0u;
+    (void)Rte_Write(CVC_SIG_FZC_COMM_STATUS, (uint32)CVC_COMM_OK);
+    (void)Rte_Write(CVC_SIG_RZC_COMM_STATUS, (uint32)CVC_COMM_OK);
+}

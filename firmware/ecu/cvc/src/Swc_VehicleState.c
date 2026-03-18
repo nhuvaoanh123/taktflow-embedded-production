@@ -746,6 +746,14 @@ void Swc_VehicleState_MainFunction(void)
                 VSM_DIAG("post-INIT grace remaining: %u", (unsigned)post_init_grace_counter);
             }
 #endif
+            /* When grace expires, reset heartbeat comm status so stale
+             * timeouts accumulated during Docker boot don't immediately
+             * trigger CAN_TMO_S on the first post-grace cycle. */
+            if (post_init_grace_counter == 0u)
+            {
+                extern void Swc_Heartbeat_ResetCommStatus(void);
+                Swc_Heartbeat_ResetCommStatus();
+            }
         }
 
         if (suppress_faults == FALSE)
