@@ -681,8 +681,11 @@ class ArxmlReader:
             if "rte_aliases" in ecu_data:
                 ecu.rte_aliases.update(ecu_data["rte_aliases"])
 
-            # Extra RTE signal slots for ECU-internal signals
-            if "rte_internal_signal_count" in ecu_data:
+            # ECU-internal RTE signals (named list or legacy count)
+            if "rte_internal_signals" in ecu_data:
+                ecu.rte_internal_signals = list(ecu_data["rte_internal_signals"])
+                ecu.rte_internal_signal_count = len(ecu.rte_internal_signals)
+            elif "rte_internal_signal_count" in ecu_data:
                 ecu.rte_internal_signal_count = int(ecu_data["rte_internal_signal_count"])
 
             # Runnable scheduling — override ARXML runnables or create from sidecar
