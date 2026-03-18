@@ -296,8 +296,6 @@ void Swc_Heartbeat_ResetCommStatus(void)
 {
     fzc_comm_status = CVC_COMM_OK;
     rzc_comm_status = CVC_COMM_OK;
-    fzc_timeout_count = 0u;
-    rzc_timeout_count = 0u;
     /* Force SM to VALID — skip the MIN_OK_INIT window requirement.
      * The grace period already absorbed the boot transient; heartbeats
      * are now arriving normally.  Without this, SM starts in INIT and
