@@ -28,21 +28,32 @@ Every SWC file must carry metadata that answers:
 | `@period` | Cyclic execution period | AUTOSAR TIMING-EVENT | `@period 10ms` |
 | `@wcet` | Worst-case execution time budget | ISO 26262 Part 6 §7.4.14 | `@wcet 200us` |
 
-### Interface tags (in file header or function header)
+### Data flow tags (in file header or function header)
 
 | Tag | Purpose | Standard | Example |
 |-----|---------|----------|---------|
-| `@consumes` | R-port signals read by this SWC | AUTOSAR R-PORT-PROTOTYPE | `@consumes IoHwAb_ReadBatteryVoltage` |
-| `@produces` | P-port signals written by this SWC | AUTOSAR P-PORT-PROTOTYPE | `@produces RZC_SIG_BATTERY_MV, RZC_SIG_BATTERY_STATUS` |
-| `@triggers` | What event triggers execution | AUTOSAR TIMING-EVENT / INIT-EVENT | `@triggers Rte_MainFunction 10ms cyclic` |
+| `@consumes` | R-port signals read by this SWC | AUTOSAR R-PORT-PROTOTYPE | `@consumes RZC_SIG_TEMP_FAULT (from Swc_TempMonitor)` |
+| `@produces` | P-port signals written by this SWC | AUTOSAR P-PORT-PROTOTYPE | `@produces RZC_SIG_BATTERY_MV → Swc_RzcCom → CAN 0x303` |
 
-### Contract tags (in function header)
+### Call chain tags (on EVERY function)
 
 | Tag | Purpose | Standard | Example |
 |-----|---------|----------|---------|
-| `@pre` | Precondition | ISO 26262 Part 6 §8.4.3 | `@pre Swc_Battery_Init() called, IoHwAb initialized` |
-| `@post` | Postcondition | ISO 26262 Part 6 §8.4.3 | `@post RZC_SIG_BATTERY_MV updated with 4-sample average` |
-| `@invariant` | Must always hold | ISO 26262 Part 6 §8.4.3 | `@invariant 0 <= battery_mV <= 20000` |
+| `@calledby` | Who calls this function, and when | Call graph traceability | `@calledby Rte_MainFunction every 10ms (Rte_Cfg_Rzc.c entry 4)` |
+| `@calls` | What this function calls (BSW APIs, other SWCs) | Call graph traceability | `@calls IoHwAb_ReadBatteryVoltage, Rte_Write, Dem_ReportErrorStatus` |
+| `@triggers` | What event starts execution | AUTOSAR TIMING-EVENT | `@triggers TIMING-EVENT 10ms (ARXML: Swc_Battery_InternalBehavior)` |
+| `@notifies` | What downstream is affected when this runs | Event chain | `@notifies Swc_RzcCom (reads RZC_SIG_BATTERY_MV next 20ms cycle)` |
+| `@task` | OS task this runs in, with priority | AUTOSAR OS task mapping | `@task Task_10ms priority=3 (0=lowest)` |
+| `@deadline` | Must complete within this time | ISO 26262 timing constraint | `@deadline 1ms (period=10ms, utilization budget=10%)` |
+| `@order` | Execution order within same task/period | Runnable scheduling | `@order 4 of 12 in Task_10ms (after CurrentMonitor, before RzcCom)` |
+
+### Contract tags (on EVERY function)
+
+| Tag | Purpose | Standard | Example |
+|-----|---------|----------|---------|
+| `@pre` | Precondition — must be true BEFORE call | ISO 26262 Part 6 §8.4.3 | `@pre Swc_Battery_Init() called, IoHwAb initialized` |
+| `@post` | Postcondition — guaranteed true AFTER call | ISO 26262 Part 6 §8.4.3 | `@post RZC_SIG_BATTERY_MV updated with 4-sample average` |
+| `@invariant` | Must always hold during execution | ISO 26262 Part 6 §8.4.3 | `@invariant 0 <= battery_mV <= 20000` |
 | `@safe_state` | What happens on failure | ISO 26262 Part 4 §6 | `@safe_state Report DTC, hold last known good value` |
 
 ### Fault/DTC tags
@@ -59,7 +70,7 @@ Every SWC file must carry metadata that answers:
 | `@verifies` | Requirements verified by this test | Doxygen built-in, ASPICE SWE.4 | `@verifies SSR-RZC-006` |
 | `@covers` | Code coverage target | ASPICE SWE.4 | `@covers Swc_Battery_MainFunction` |
 
-## Example: Complete SWC Header
+## Example: Complete SWC File Header
 
 ```c
 /**
@@ -75,18 +86,85 @@ Every SWC file must carry metadata that answers:
  * @wcet        50us (measured on STM32F446RE @ 180MHz)
  *
  * @consumes    IoHwAb_ReadBatteryVoltage (from Swc_RzcSensorFeeder on SIL)
- * @produces    RZC_SIG_BATTERY_MV       (uint16, 0-20000 mV)
- *              RZC_SIG_BATTERY_STATUS   (uint8, enum: 0=crit_UV..4=crit_OV)
- *              RZC_SIG_BATTERY_SOC      (uint8, 0-100 %)
+ * @produces    RZC_SIG_BATTERY_MV       (uint16, 0-20000 mV)  → Swc_RzcCom → CAN 0x303
+ *              RZC_SIG_BATTERY_STATUS   (uint8, enum)          → Swc_RzcSafety, Swc_RzcCom
+ *              RZC_SIG_BATTERY_SOC      (uint8, 0-100 %)       → Swc_RzcCom → CAN 0x303
  * @reports     RZC_DTC_BATTERY (0x00E401) when avg_mV < 8000 for 3 cycles
  * @detects     undervoltage (<8000mV), overvoltage (>16000mV)
  * @safe_state  Hold last known good SOC, report DTC, set status to critical
+ */
+```
+
+## Example: Complete Function Header (with call chain)
+
+```c
+/**
+ * @brief   Cyclic battery monitoring — read, average, detect, report
  *
- * @pre         Swc_Battery_Init() called. IoHwAb initialized.
- * @post        RTE signals updated. DTC reported if threshold exceeded.
+ * @calledby    Rte_MainFunction every 10ms (Rte_Cfg_Rzc.c entry 8, task 0x02)
+ * @calls       IoHwAb_ReadBatteryVoltage — reads ADC (SIL: from Swc_RzcSensorFeeder)
+ *              Dem_ReportErrorStatus     — when avg < 8000mV or avg > 16000mV
+ *              Rte_Write                 — RZC_SIG_BATTERY_MV, _STATUS, _SOC
+ * @notifies    Swc_RzcCom (reads BATTERY_MV next 200ms cycle → packs CAN 0x303)
+ *              Swc_RzcSafety (reads BATTERY_STATUS next 10ms cycle → fault mask)
+ *              CVC Swc_VehicleState (receives CAN 0x303 → Com→RTE auto-bind → reads status)
+ *
+ * @pre         Swc_Battery_Init() called. IoHwAb initialized. SensorFeeder running.
+ * @post        RZC_SIG_BATTERY_MV = 4-sample moving average of IoHwAb voltage.
+ *              RZC_SIG_BATTERY_STATUS = threshold evaluation with hysteresis.
+ *              DTC reported if DISABLE_LOW or DISABLE_HIGH for 3 consecutive calls.
  * @invariant   0 <= Batt_Voltage_mV <= 20000
  *              0 <= Batt_Soc <= 100
+ *              Batt_AvgIndex < RZC_BATT_AVG_WINDOW
  */
+void Swc_Battery_MainFunction(void)
+```
+
+## Example: Full Call Chain for One Safety Path
+
+```
+SG-001: Prevent unintended motor movement during overcurrent
+
+Swc_RzcSensorFeeder_MainFunction()
+  @calledby  Rte_MainFunction 10ms
+  @calls     Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_VSENSOR_MOTOR_CURRENT)
+             IoHwAb_Inject_SetSensorValue(IOHWAB_INJECT_MOTOR_CURRENT)
+  @notifies  Swc_CurrentMonitor (reads IoHwAb next 1ms cycle)
+
+Swc_CurrentMonitor_MainFunction()
+  @calledby  Rte_MainFunction 1ms
+  @calls     IoHwAb_ReadMotorCurrent()
+             Rte_Write(RZC_SIG_OVERCURRENT)
+             Dem_ReportErrorStatus(RZC_DTC_OVERCURRENT)
+  @notifies  Swc_Motor (reads RZC_SIG_OVERCURRENT next 10ms cycle)
+             Dem_MainFunction (broadcasts DTC on CAN 0x500 next 100ms cycle)
+
+Swc_Motor_MainFunction()
+  @calledby  Rte_MainFunction 10ms
+  @calls     Rte_Read(RZC_SIG_OVERCURRENT)
+             Rte_Read(RZC_SIG_TEMP_FAULT)
+             Rte_Write(RZC_SIG_MOTOR_FAULT)
+             Motor_DisableOutputs()
+  @notifies  Swc_RzcCom (reads RZC_SIG_MOTOR_FAULT next 20ms → CAN 0x300 byte 7)
+
+Swc_RzcCom_TransmitSchedule()
+  @calledby  main.c 10ms task
+  @calls     Rte_Read(RZC_SIG_MOTOR_FAULT)
+             E2E_Protect()
+             PduR_Transmit(RZC_COM_TX_MOTOR_STATUS)
+  @notifies  CVC (receives CAN 0x300 via Com→RTE auto-bind)
+
+CVC Swc_CvcCom_BridgeRxToRte()
+  @calledby  main.c 10ms task
+  @calls     Com_ReceiveSignal(CVC_COM_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS)
+             Rte_Write(CVC_SIG_MOTOR_FAULT_RZC)
+  @notifies  Swc_VehicleState (reads CVC_SIG_MOTOR_FAULT_RZC next 10ms cycle)
+
+CVC Swc_VehicleState_MainFunction()
+  @calledby  Rte_MainFunction 10ms
+  @calls     Rte_Read(CVC_SIG_MOTOR_FAULT_RZC)
+             Swc_VehicleState_OnEvent(CVC_EVT_MOTOR_CUTOFF)
+  @notifies  Vehicle enters SAFE_STOP → CAN 0x100 VehicleState=4
 ```
 
 ## Example: Test File Header
