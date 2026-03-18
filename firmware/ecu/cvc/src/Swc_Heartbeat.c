@@ -298,6 +298,8 @@ void Swc_Heartbeat_ResetCommStatus(void)
     rzc_comm_status = CVC_COMM_OK;
     fzc_timeout_count = 0u;
     rzc_timeout_count = 0u;
+    E2E_Sm_Init(&fzc_sm_state);
+    E2E_Sm_Init(&rzc_sm_state);
     (void)Rte_Write(CVC_SIG_FZC_COMM_STATUS, (uint32)CVC_COMM_OK);
     (void)Rte_Write(CVC_SIG_RZC_COMM_STATUS, (uint32)CVC_COMM_OK);
 }
