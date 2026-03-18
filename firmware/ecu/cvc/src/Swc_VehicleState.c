@@ -224,6 +224,9 @@ static uint16 safe_stop_clear_count;
  *          value stays at 0 (transparent — guards always pass). */
 static uint16 post_init_grace_counter;
 
+/** @brief  CAN timeout debounce — must see 50 consecutive timeout cycles (500ms) */
+static uint16 can_tmo_debounce;
+
 /** @brief  Fault latch array — TRUE if that fault triggered SAFE_STOP */
 static uint8  fault_latched[CVC_LATCH_COUNT];
 
@@ -273,6 +276,7 @@ void Swc_VehicleState_Init(void)
     init_hold_counter      = 0u;
     safe_stop_clear_count  = 0u;
     post_init_grace_counter = 0u;
+    can_tmo_debounce        = 0u;
     creep_debounce_count    = 0u;
 
     for (i = 0u; i < CVC_FAULT_CONFIRM_COUNT; i++)
@@ -596,16 +600,25 @@ void Swc_VehicleState_MainFunction(void)
         Swc_VehicleState_OnEvent(CVC_EVT_SC_KILL);
     }
 
-    /* CAN communication faults (suppressed during post-INIT grace) */
+    /* CAN communication faults (debounced: 50 consecutive timeout cycles = 500ms) */
     if (post_init_grace_counter == 0u)
     {
-        if ((fzc_comm == CVC_COMM_TIMEOUT) && (rzc_comm == CVC_COMM_TIMEOUT))
+        if ((fzc_comm == CVC_COMM_TIMEOUT) || (rzc_comm == CVC_COMM_TIMEOUT))
         {
-            Swc_VehicleState_OnEvent(CVC_EVT_CAN_TIMEOUT_DUAL);
+            can_tmo_debounce++;
         }
-        else if ((fzc_comm == CVC_COMM_TIMEOUT) || (rzc_comm == CVC_COMM_TIMEOUT))
+        else
         {
-            if ((current_state == CVC_STATE_RUN) || (current_state == CVC_STATE_DEGRADED))
+            can_tmo_debounce = 0u;
+        }
+
+        if (can_tmo_debounce >= 50u)
+        {
+            if ((fzc_comm == CVC_COMM_TIMEOUT) && (rzc_comm == CVC_COMM_TIMEOUT))
+            {
+                Swc_VehicleState_OnEvent(CVC_EVT_CAN_TIMEOUT_DUAL);
+            }
+            else if ((current_state == CVC_STATE_RUN) || (current_state == CVC_STATE_DEGRADED))
             {
                 Swc_VehicleState_OnEvent(CVC_EVT_CAN_TIMEOUT_SINGLE);
             }
