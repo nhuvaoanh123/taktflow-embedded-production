@@ -24,6 +24,9 @@
 #include "Com.h"
 #include "E2E.h"
 #include "Dem.h"
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 
 /* ====================================================================
  * Internal constants
@@ -88,6 +91,17 @@ void Swc_EStop_MainFunction(void)
         /* Fail-safe: treat read failure as E-stop active */
         pin_state = STD_HIGH;
     }
+
+#ifdef SIL_DIAG
+    {
+        static uint8 prev_pin = 0xFFu;
+        if (pin_state != prev_pin) {
+            fprintf(stderr, "[ESTOP] pin=%u ret=%u active=%u\n",
+                    pin_state, ret, active);
+            prev_pin = pin_state;
+        }
+    }
+#endif
 
     /* --- 2. Debounce logic ---------------------------------------- */
     if (active == FALSE) {
