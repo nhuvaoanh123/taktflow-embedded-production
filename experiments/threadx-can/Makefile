@@ -98,6 +98,20 @@ C_SOURCES += \
   $(FW)/ecu/fzc/cfg/Rte_Cfg_Fzc.c \
   $(FW)/ecu/fzc/src/Swc_Heartbeat.c
 
+# ---- Step 8: UDS Diagnostics ----
+C_SOURCES += \
+  $(FW)/bsw/services/CanTp/src/CanTp.c \
+  $(FW)/bsw/services/Dcm/src/Dcm.c \
+  $(FW)/bsw/services/E2E/src/E2E.c \
+  $(FW)/bsw/services/E2E/src/E2E_Sm.c \
+  $(FW)/bsw/services/BswM/src/BswM.c \
+  $(FW)/bsw/services/Dem/src/Dem.c \
+  $(FW)/bsw/services/WdgM/src/WdgM.c \
+  $(FW)/ecu/fzc/cfg/Dcm_Cfg_Fzc.c \
+  $(FW)/ecu/fzc/cfg/E2E_Cfg_Fzc.c \
+  $(FW)/ecu/fzc/cfg/PduR_Cfg_Fzc.c \
+  $(FW)/ecu/fzc/cfg/CanIf_Cfg_Fzc.c
+
 # Assembly sources
 ASM_SOURCES = \
   STM32CubeIDE/Application/Startup/startup_stm32g474retx.s \
@@ -128,6 +142,10 @@ INCLUDES = \
   -I$(FW)/bsw/services/Dem/include \
   -I$(FW)/bsw/services/E2E/include \
   -I$(FW)/bsw/services/WdgM/include \
+  -I$(FW)/bsw/services/Dcm/include \
+  -I$(FW)/bsw/services/BswM/include \
+  -I$(FW)/bsw/services/CanTp/include \
+  -I$(FW)/bsw/services/NvM/include \
   -I$(FW)/bsw/rte/include \
   -I$(FW)/bsw/ecual/IoHwAb/include \
   -I$(FW)/ecu/fzc/include \

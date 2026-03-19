@@ -36,6 +36,12 @@
 #include "Det.h"
 #include "Fzc_Cfg.h"
 #include "Swc_Heartbeat.h"
+#include "CanTp.h"
+#include "Dcm.h"
+#include "E2E.h"
+#include "BswM.h"
+#include "Dem.h"
+#include "WdgM.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,37 +76,14 @@ static const Can_ConfigType exp_can_config = {
     .controllerId = 0u,
 };
 
-/* Minimal CanIf config: 1 TX PDU (heartbeat 0x011), no RX routing
- * (full FZC config is too large for this experiment, but we use
- *  the FZC Com/Rte configs which reference FZC PDU IDs) */
-static const CanIf_TxPduConfigType exp_canif_tx[] = {
-    { 0x011u, FZC_COM_TX_FZC_HEARTBEAT, 8u, 0u },   /* Heartbeat */
-    { 0x200u, FZC_COM_TX_STEERING_STATUS, 8u, 0u },  /* Steering (stub) */
-    { 0x201u, FZC_COM_TX_BRAKE_STATUS, 8u, 0u },     /* Brake (stub) */
-    { 0x210u, FZC_COM_TX_BRAKE_FAULT, 8u, 0u },      /* Brake fault (stub) */
-    { 0x211u, FZC_COM_TX_MOTOR_CUTOFF_REQ, 8u, 0u }, /* Motor cutoff (stub) */
-    { 0x220u, FZC_COM_TX_LIDAR_DISTANCE, 8u, 0u },   /* Lidar (stub) */
-    { 0x500u, FZC_COM_TX_DTC_BROADCAST, 8u, 0u },    /* DTC (stub) */
-    { 0x7E9u, FZC_COM_TX_UDS_RESP_FZC, 8u, 0u },    /* UDS (stub) */
-};
+/* Step 7 experiment configs removed — now using full FZC generated configs */
 
-static const CanIf_ConfigType exp_canif_config = {
-    .txPduConfig = exp_canif_tx,
-    .txPduCount  = (uint8)(sizeof(exp_canif_tx) / sizeof(exp_canif_tx[0])),
-    .rxPduConfig = NULL_PTR,
-    .rxPduCount  = 0u,
-    .e2eRxCheck  = NULL_PTR,
-};
-
-/* PduR: no RX routing needed for experiment */
-static const PduR_ConfigType exp_pdur_config = {
-    .routingTable = NULL_PTR,
-    .routingCount = 0u,
-};
-
-/* Com and Rte configs are the full FZC configs from generated code */
-extern const Com_ConfigType fzc_com_config;
-extern const Rte_ConfigType fzc_rte_config;
+/* Full FZC configs from generated code */
+extern const Com_ConfigType   fzc_com_config;
+extern const Rte_ConfigType   fzc_rte_config;
+extern const Dcm_ConfigType   fzc_dcm_config;
+extern const CanIf_ConfigType fzc_canif_config;
+extern const PduR_ConfigType  fzc_pdur_config;
 
 /* USER CODE END PV */
 
@@ -184,28 +167,37 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
    * ==================================================================== */
 
   /* 7a: Det + Can MCAL + SchM */
+  /* Step 7a: Det + Can */
   Det_Init();
   Can_Init(&exp_can_config);
 
-  /* 7b: CanIf */
-  CanIf_Init(&exp_canif_config);
+  /* Step 7b: CanIf (full FZC config) */
+  CanIf_Init(&fzc_canif_config);
 
-  /* 7c: PduR + Com */
-  PduR_Init(&exp_pdur_config);
+  /* Step 7c: PduR + Com (full FZC configs) */
+  PduR_Init(&fzc_pdur_config);
   Com_Init(&fzc_com_config);
+  E2E_Init();
 
-  /* 7d: Rte + Swc_Heartbeat */
+  /* Step 8: UDS diagnostics */
+  Dem_Init(NULL_PTR);
+  CanTp_Init(NULL_PTR);
+  Dcm_Init(&fzc_dcm_config);
+  BswM_Init(NULL_PTR);
+  WdgM_Init(NULL_PTR);
+
+  /* Step 7d: Rte + Swc_Heartbeat */
   Rte_Init(&fzc_rte_config);
   Swc_Heartbeat_Init();
 
   /* Start CAN controller via BSW API */
   (void)Can_SetControllerMode(0u, CAN_CS_STARTED);
 
-  /* Create periodic CAN TX timer — 1000 ticks = 1 second (at 1000Hz) */
-  tx_timer_create(&can_periodic_timer, "CAN_TX", CAN_Periodic_Callback,
-                  0, 1000, 1000, TX_AUTO_ACTIVATE);
+  /* 10ms periodic timer for BSW cyclic services */
+  tx_timer_create(&can_periodic_timer, "BSW_10MS", CAN_Periodic_Callback,
+                  0, 10, 10, TX_AUTO_ACTIVATE);
 
-  /* Step 7d: 1ms periodic timer for RTE scheduler */
+  /* 1ms periodic timer for RTE scheduler */
   tx_timer_create(&bsw_1ms_timer, "BSW_1MS", BSW_1ms_Callback,
                   0, 1, 1, TX_AUTO_ACTIVATE);
 
@@ -421,12 +413,15 @@ static void CAN_Periodic_Callback(ULONG arg)
 
   can_tx_count++;
 
-  /* Step 7a: Poll CAN RX via BSW (processes pending frames → CanIf → PduR → Com) */
+  /* Poll CAN RX via BSW */
   Can_MainFunction_Read();
 
-  /* Step 7c: Flush pending Com TX PDUs (Swc_Heartbeat sets tx_pending) */
+  /* BSW 10ms cyclic services */
   Com_MainFunction_Tx();
   Com_MainFunction_Rx();
+  CanTp_MainFunction();
+  Dcm_MainFunction();
+  BswM_MainFunction();
 }
 
 /**
