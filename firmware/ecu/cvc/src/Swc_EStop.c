@@ -99,10 +99,15 @@ void Swc_EStop_MainFunction(void)
         pin_state = STD_HIGH;
     }
 
-    /* Debug: always print on HIGH or when activated */
-    if ((pin_state == STD_HIGH) || (active == TRUE)) {
-        fprintf(stderr, "[ESTOP] pin=%u ret=%u active=%u deb=%u\n",
-                pin_state, ret, active, debounce_counter);
+    /* Debug: print EVERY call for 5 cycles after E-Stop activate */
+    {
+        static uint8 trace_countdown = 0u;
+        if (pin_state != STD_LOW) { trace_countdown = 50u; }
+        if (trace_countdown > 0u) {
+            fprintf(stderr, "[ESTOP] pin=%u ret=%u act=%u deb=%u\n",
+                    pin_state, ret, active, debounce_counter);
+            trace_countdown--;
+        }
     }
 
     /* --- 2. Debounce logic ---------------------------------------- */
