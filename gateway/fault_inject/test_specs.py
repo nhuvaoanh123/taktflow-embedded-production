@@ -162,10 +162,10 @@ TEST_SPECS: list[TestSpec] = [
                 timeout_ms=8000,
             ),
             VerdictCheck(
-                description="Vehicle enters DEGRADED or LIMP",
+                description="Vehicle enters DEGRADED, LIMP, or SAFE_STOP (battery drain cascades)",
                 check_type="vehicle_state",
-                expected="DEGRADED or LIMP",
-                value=[2, 3],  # DEGRADED=2 or LIMP=3
+                expected="DEGRADED, LIMP, or SAFE_STOP",
+                value=[2, 3, 4],  # DEGRADED=2, LIMP=3, or SAFE_STOP=4 (continuous drain cascades)
                 timeout_ms=8000,
             ),
         ],
