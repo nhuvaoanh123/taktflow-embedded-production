@@ -79,13 +79,13 @@ void Bcm_ComBridge_10ms(void)
         (void)Com_SendSignal(BCM_COM_SIG_LIGHT_STATUS_TAIL_LIGHT_ON, &sig_u8);
 
         /* Indicator_State signals → CAN 0x401 */
-        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_LEFT_INDICATOR, &rte_val);
+        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_LEFT_ON, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_LEFT_INDICATOR, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_LEFT_ON, &sig_u8);
 
-        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_RIGHT_INDICATOR, &rte_val);
+        (void)Rte_Read(BCM_SIG_INDICATOR_STATE_RIGHT_ON, &rte_val);
         sig_u8 = (uint8)rte_val;
-        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_RIGHT_INDICATOR, &sig_u8);
+        (void)Com_SendSignal(BCM_COM_SIG_INDICATOR_STATE_RIGHT_ON, &sig_u8);
 
         (void)Rte_Read(BCM_SIG_INDICATOR_STATE_HAZARD_ACTIVE, &rte_val);
         sig_u8 = (uint8)rte_val;

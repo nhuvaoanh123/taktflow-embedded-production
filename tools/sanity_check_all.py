@@ -58,15 +58,15 @@ def main():
     all_sigs = [s.name for m in msgs for s in m.signals]
 
     check("DBC loads without error", True)
-    check("26 messages", len(msgs) == 26, "got %d" % len(msgs))
-    check("158 signals", len(all_sigs) == 158, "got %d" % len(all_sigs))
-    check("7 nodes", len(db.nodes) == 7, "got %d" % len(db.nodes))
+    check("37 messages", len(msgs) == 37, "got %d" % len(msgs))
+    check("174 signals", len(all_sigs) == 174, "got %d" % len(all_sigs))
+    check("8 nodes", len(db.nodes) == 8, "got %d" % len(db.nodes))
 
     dupes = set(s for s in all_sigs if all_sigs.count(s) > 1)
     check("0 duplicate signal names", len(dupes) == 0, "dupes: %s" % dupes)
 
     no_tester = all(n.name not in ("Tester", "Plant_Sim") for n in db.nodes)
-    check("No test nodes", no_tester)
+    check("No test-only nodes", no_tester)
 
     # Signal prefix check
     prefix_errors = 0
@@ -89,7 +89,7 @@ def main():
                     untagged += 1
             except Exception:
                 untagged += 1
-    check("All 158 signals have Owner tag", tagged == 158,
+    check("All 174 signals have Owner tag", tagged == 174,
           "%d tagged, %d untagged" % (tagged, untagged))
 
     # GenSigStartValue check
@@ -101,7 +101,7 @@ def main():
                     has_init += 1
             except Exception:
                 pass
-    check("All signals have GenSigStartValue", has_init == 158,
+    check("All signals have GenSigStartValue", has_init == 174,
           "%d have it" % has_init)
 
     # Standard attributes on messages
@@ -146,12 +146,12 @@ def main():
     rport_count = counts.get("R-PORT-PROTOTYPE", 0)
     sr_count = counts.get("SENDER-RECEIVER-INTERFACE", 0)
 
-    check("I-SIGNAL count matches DBC", isig_count == 158,
-          "ARXML=%d DBC=158" % isig_count)
-    check("I-PDU count matches DBC", ipdu_count == 26,
-          "ARXML=%d DBC=26" % ipdu_count)
-    check("ECU count matches DBC", ecu_count == 7,
-          "ARXML=%d DBC=7" % ecu_count)
+    check("I-SIGNAL count matches DBC", isig_count == 174,
+          "ARXML=%d DBC=174" % isig_count)
+    check("I-PDU count matches DBC", ipdu_count == 37,
+          "ARXML=%d DBC=37" % ipdu_count)
+    check("ECU count matches DBC", ecu_count == 8,
+          "ARXML=%d DBC=8" % ecu_count)
     check("SWC types >= 48", swc_count >= 48,
           "got %d" % swc_count)
     check("Runnables > 0", run_count > 0,

@@ -26,7 +26,7 @@ import subprocess
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(PROJECT_ROOT)
 
-DBC_PATH = "gateway/taktflow_vehicle.dbc"
+DBC_PATH = "gateway/taktflow_vehicle.dbc"  # unified: production + diag + virtual sensors
 SWC_MODEL_PATH = "arxml_v2/swc_model.json"
 ARXML_OUTPUT = "arxml/TaktflowSystem.arxml"
 ARXML_V2_DIR = "arxml_v2"

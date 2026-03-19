@@ -381,14 +381,14 @@ void Swc_CvcCom_BridgeRxToRte(void)
         }
     }
 #endif
-    (void)Com_ReceiveSignal(CVC_COM_SIG_SC_STATUS_RELAY_STATE, &sc_relay_byte3);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_SC_STATUS_RELAY_ENERGIZED, &sc_relay_byte3);
     /* Com extracts the 1-bit RelayState signal as 0 or 1.
      * 1=energized (OK), 0=de-energized (killed).
      * On PDU timeout Com zeros shadow → 0 → kill. */
     {
         (void)Rte_Write(CVC_SIG_SC_RELAY_KILL, (uint32)sc_relay_byte3);
     }
-    (void)Com_ReceiveSignal(CVC_COM_SIG_BATTERY_STATUS_BATTERY_STATUS, &battery_status_val);
+    (void)Com_ReceiveSignal(CVC_COM_SIG_BATTERY_STATUS_LEVEL, &battery_status_val);
     (void)Com_ReceiveSignal(CVC_COM_SIG_STEERING_STATUS_STEER_FAULT_STATUS, &steering_fault_val);
     (void)Com_ReceiveSignal(CVC_COM_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS, &motor_fault_rzc_val);
 

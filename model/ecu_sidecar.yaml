@@ -176,12 +176,12 @@ ecus:
       FZC_SIG_BRAKE_CMD:          Brake_Command_BrakeForceCmd
       FZC_SIG_BRAKE_POS:          Brake_Status_BrakePosition
       FZC_SIG_BRAKE_FAULT:        Brake_Status_BrakeFaultStatus
-      FZC_SIG_LIDAR_DIST:         Lidar_Distance_Distance_cm
+      FZC_SIG_LIDAR_DIST:         Lidar_Distance_Range_cm
       FZC_SIG_LIDAR_SIGNAL:       Lidar_Distance_SignalStrength
       FZC_SIG_LIDAR_ZONE:         Lidar_Distance_ObstacleZone
       FZC_SIG_LIDAR_FAULT:        Lidar_Distance_SensorStatus
       FZC_SIG_VEHICLE_STATE:      Vehicle_State_Mode
-      FZC_SIG_ESTOP_ACTIVE:       EStop_Broadcast_EStop_Active
+      FZC_SIG_ESTOP_ACTIVE:       EStop_Broadcast_Active
       FZC_SIG_MOTOR_CUTOFF:       Motor_Cutoff_Req_RequestType
 
     thresholds:
@@ -315,27 +315,27 @@ ecus:
     # RTE signal aliases — maps application-level names to DBC signal names.
     # Codegen emits: #define RZC_SIG_BATTERY_MV  RZC_SIG_BATTERY_STATUS_BATTERY_VOLTAGE_M_V
     rte_aliases:
-      RZC_SIG_TORQUE_CMD:       Torque_Request_Torque_pct
+      RZC_SIG_TORQUE_CMD:       Torque_Request_Command_pct
       RZC_SIG_TORQUE_ECHO:      Motor_Current_TorqueEcho
       RZC_SIG_MOTOR_SPEED:      Motor_Status_MotorSpeed_RPM
       RZC_SIG_MOTOR_DIR:        Motor_Status_MotorDirection
       RZC_SIG_MOTOR_ENABLE:     Motor_Status_MotorEnable
       RZC_SIG_MOTOR_FAULT:      Motor_Status_MotorFaultStatus
-      RZC_SIG_CURRENT_MA:       Motor_Current_Current_mA
+      RZC_SIG_CURRENT_MA:       Motor_Current_Phase_mA
       RZC_SIG_OVERCURRENT:      Motor_Current_OvercurrentFlag
       RZC_SIG_TEMP1_DC:         Motor_Temperature_WindingTemp1_C
       RZC_SIG_TEMP2_DC:         Motor_Temperature_WindingTemp2_C
       RZC_SIG_DERATING_PCT:     Motor_Temperature_DeratingPercent
       RZC_SIG_BATTERY_MV:       Battery_Status_BatteryVoltage_mV
-      RZC_SIG_BATTERY_STATUS:   Battery_Status_Status
+      RZC_SIG_BATTERY_STATUS:   Battery_Status_Level
       RZC_SIG_VEHICLE_STATE:    Vehicle_State_Mode
-      RZC_SIG_ESTOP_ACTIVE:     EStop_Broadcast_EStop_Active
+      RZC_SIG_ESTOP_ACTIVE:     EStop_Broadcast_Active
       RZC_SIG_FAULT_MASK:       Vehicle_State_FaultMask
       RZC_SIG_SELF_TEST_RESULT: RZC_Heartbeat_FaultStatus
       RZC_SIG_HEARTBEAT_ALIVE:  RZC_Heartbeat_E2E_AliveCounter
       RZC_SIG_SAFETY_STATUS:    SC_Status_RelayEnergized
       RZC_SIG_CMD_TIMEOUT:      Torque_Request_PedalFault
-      RZC_SIG_BATTERY_SOC:      Battery_Status_Status
+      RZC_SIG_BATTERY_SOC:      Battery_Status_Level
 
     runnables:
       Swc_CurrentMonitor_MainFunction:
@@ -428,16 +428,16 @@ ecus:
 
     rte_aliases:
       ICU_SIG_MOTOR_RPM:          Motor_Status_MotorSpeed_RPM
-      ICU_SIG_TORQUE_PCT:         Torque_Request_Torque_pct
+      ICU_SIG_TORQUE_PCT:         Torque_Request_Command_pct
       ICU_SIG_MOTOR_TEMP:         Motor_Temperature_WindingTemp1_C
       ICU_SIG_BATTERY_VOLTAGE:    Battery_Status_BatteryVoltage_mV
       ICU_SIG_VEHICLE_STATE:      Vehicle_State_Mode
-      ICU_SIG_ESTOP_ACTIVE:       EStop_Broadcast_EStop_Active
+      ICU_SIG_ESTOP_ACTIVE:       EStop_Broadcast_Active
       ICU_SIG_HEARTBEAT_CVC:      CVC_Heartbeat_E2E_AliveCounter
       ICU_SIG_HEARTBEAT_FZC:      FZC_Heartbeat_E2E_AliveCounter
       ICU_SIG_HEARTBEAT_RZC:      RZC_Heartbeat_E2E_AliveCounter
       ICU_SIG_OVERCURRENT_FLAG:   Motor_Current_OvercurrentFlag
-      ICU_SIG_DTC_BROADCAST:      DTC_Broadcast_DTC_Number
+      ICU_SIG_DTC_BROADCAST:      DTC_Broadcast_Number
 
     thresholds:
       ICU_RTE_PERIOD_MS: 50
@@ -459,10 +459,10 @@ ecus:
       TCU_SIG_VEHICLE_SPEED:      Motor_Status_MotorSpeed_RPM
       TCU_SIG_MOTOR_TEMP:         Motor_Temperature_WindingTemp1_C
       TCU_SIG_BATTERY_VOLTAGE:    Battery_Status_BatteryVoltage_mV
-      TCU_SIG_MOTOR_CURRENT:      Motor_Current_Current_mA
-      TCU_SIG_TORQUE_PCT:         Torque_Request_Torque_pct
+      TCU_SIG_MOTOR_CURRENT:      Motor_Current_Phase_mA
+      TCU_SIG_TORQUE_PCT:         Torque_Request_Command_pct
       TCU_SIG_MOTOR_RPM:          Motor_Status_MotorSpeed_RPM
-      TCU_SIG_DTC_BROADCAST:      DTC_Broadcast_DTC_Number
+      TCU_SIG_DTC_BROADCAST:      DTC_Broadcast_Number
 
     thresholds:
       TCU_RTE_PERIOD_MS: 10
