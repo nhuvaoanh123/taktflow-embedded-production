@@ -402,19 +402,9 @@ void Swc_CvcCom_BridgeRxToRte(void)
     (void)Rte_Write(CVC_SIG_STEERING_FAULT, (uint32)steering_fault_val);
     (void)Rte_Write(CVC_SIG_MOTOR_FAULT_RZC, (uint32)motor_fault_rzc_val);
 
-    /* SIL E-Stop injection: fault-inject API sends CAN 0x001 with E-Stop
-     * active flag at byte 2.  CVC normally reads E-Stop via GPIO (DIO ch 5).
-     * In SIL, CvcCom_Hw_InjectEstop writes to IoHwAb injection buffer.
-     * On target, this is a no-op (GPIO reads real hardware). */
-    {
-        extern void CvcCom_Hw_InjectEstop(uint8 Level);
-        uint8 estop_inject_val = 0u;
-        /* TODO:SCALE — signal ID 19u is a dev-repo leftover; no dedicated
-         * RX EStop_Inject Com signal exists in production codegen yet.
-         * Harmless on target (CvcCom_Hw_InjectEstop is a no-op). */
-        (void)Com_ReceiveSignal(19u, &estop_inject_val);
-        CvcCom_Hw_InjectEstop((estop_inject_val != 0u) ? 1u : 0u);
-    }
+    /* E-Stop injection: handled by Spi_Hw_PollUdp -> IoHwAb DIO ch 5.
+     * Previous CAN-based injection (Com signal 19u) was resetting DIO5
+     * to LOW every cycle because the signal ID was stale. Removed. */
 }
 
 /* ==================================================================

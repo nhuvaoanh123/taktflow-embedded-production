@@ -376,15 +376,8 @@ void Spi_Hw_PollUdp(void)
     /* Spi_Hw_Transmit drains the UDP socket and returns simulated angle */
     (void)Spi_Hw_Transmit(0u, NULL_PTR, &rx_angle, 1u);
 
-    /* Verify DIO E-Stop channel after drain */
-    {
-        static uint8 prev_dio5 = 0xFFu;
-        uint8 dio5 = Dio_ReadChannel(5u);
-        if (dio5 != prev_dio5) {
-            fprintf(stderr, "[SPI-POLL] DIO5: %u -> %u\n", prev_dio5, dio5);
-            prev_dio5 = dio5;
-        }
-    }
+    /* DIO E-Stop is set by Spi_Hw_Transmit UDP drain (0xE500 cmd).
+     * Stays latched until explicit clear (0xE5FF). */
 
     /* Write the SPI-simulated angle into IoHwAb sensor values so that
      * IoHwAb_ReadPedalAngle() (which reads from injected values, not SPI)
