@@ -334,7 +334,14 @@ void IoHwAb_Inject_SetEncoderValue(uint8 EncoderId, uint32 Count,
 
 void IoHwAb_Inject_SetDigitalPin(uint8 PinId, uint8 Level)
 {
-    /* Write to both Dio (used by IoHwAb.c ReadEStop) and local pin array */
-    Dio_WriteChannel(PinId, Level);
+    /* Write to both Dio (used by IoHwAb.c ReadEStop) and local pin array.
+     * IoHwAb.c reads via Dio_ReadChannel(config->EStopDioChannel) which
+     * may differ from the PinId used here. Also write PinId directly to
+     * Dio so that the configured DIO channel matches. */
+    if ((iohwab_config != NULL_PTR) && (PinId == IOHWAB_PIN_ESTOP)) {
+        Dio_WriteChannel(iohwab_config->EStopDioChannel, Level);
+    } else {
+        Dio_WriteChannel(PinId, Level);
+    }
     IoHwAb_Posix_SetDigitalPin(PinId, Level);
 }
