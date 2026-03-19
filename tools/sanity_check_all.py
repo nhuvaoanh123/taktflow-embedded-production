@@ -195,8 +195,12 @@ def main():
     print("Connector Map Checks")
     print("=" * 60)
 
-    with open(CONNECTOR_MAP_PATH) as f:
-        cmap = json.load(f)
+    if not os.path.isfile(CONNECTOR_MAP_PATH):
+        warn("Connector map not found", "run build_connectors.py first")
+        cmap = {}
+    else:
+        with open(CONNECTOR_MAP_PATH) as f:
+            cmap = json.load(f)
 
     total_conns = sum(len(v) for v in cmap.values())
     check("Connector map has 92 connections", total_conns == 92,
@@ -245,8 +249,12 @@ def main():
     print("Code→DBC Mapping Checks")
     print("=" * 60)
 
-    with open(CODE_TO_DBC_PATH) as f:
-        c2d = json.load(f)
+    if not os.path.isfile(CODE_TO_DBC_PATH):
+        warn("Code→DBC mapping not found", "run map_code_to_dbc.py first")
+        c2d = {}
+    else:
+        with open(CODE_TO_DBC_PATH) as f:
+            c2d = json.load(f)
 
     total_mapped = sum(1 for v in c2d.values() if v not in ("INTERNAL", "UNMAPPED"))
     total_internal = sum(1 for v in c2d.values() if v == "INTERNAL")
