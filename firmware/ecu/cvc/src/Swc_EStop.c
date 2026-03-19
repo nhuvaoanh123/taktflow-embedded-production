@@ -78,6 +78,15 @@ void Swc_EStop_MainFunction(void)
     uint8          pin_state = STD_LOW;
     Std_ReturnType ret;
 
+    {
+        static uint32 call_count = 0u;
+        call_count++;
+        if ((call_count % 1000u) == 1u) {
+            fprintf(stderr, "[ESTOP] alive call=%u init=%u\n",
+                    (unsigned)call_count, (unsigned)initialized);
+        }
+    }
+
     if (initialized == FALSE) {
         return;
     }
