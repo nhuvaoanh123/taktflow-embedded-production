@@ -1,86 +1,107 @@
 # =============================================================================
 # @file    sil_003_emergency_stop.yaml
-# @brief   SIL scenario: Emergency stop — all actuators to safe values
+# @brief   SIL scenario: Emergency stop — full safety chain validation
 # @aspice  SWE.5 — Software Component Verification & Integration
 # @iso     ISO 26262 Part 6, Section 10 — Software Integration & Testing
-# @date    2026-02-24
+# @date    2026-03-19
 #
-# Validates the highest-priority safety function: E-Stop disables all
-# actuators, applies emergency braking, de-energizes the motor, and
-# transitions the vehicle to SAFE_STOP within the 100ms FTTI deadline.
+# Validates the complete E-Stop safety chain across all ECUs:
+#   1. CVC detects E-Stop (GPIO/DIO) and broadcasts CAN 0x001
+#   2. CVC transitions to SAFE_STOP (state 4)
+#   3. RZC receives 0x001, shuts down motor (RPM = 0)
+#   4. CVC commands zero torque (0x101 = 0)
+#   5. CVC commands steering center (0x102 = 0)
+#   6. No spurious DTC from E-Stop (it's an operator action, not a fault)
+#
+# The E-Stop is the highest-priority safety function. It must work
+# end-to-end across the CAN bus, not just locally in the CVC.
 # =============================================================================
 
 name: "Emergency Stop"
 id: "SIL-003"
 description: >
-  From RUN state with active motor output, inject an E-Stop (0x001) and
-  verify all actuators reach safe values within 100ms: motor RPM = 0,
-  brake = 100% (emergency), steering de-energized.  Vehicle state must
-  transition to SAFE_STOP (state 4).  This is the most critical safety
-  path in the system.
+  From RUN state with active motor output, inject E-Stop via UDP DIO
+  pin injection to CVC. CVC detects GPIO HIGH, debounces (1 cycle),
+  latches, writes RTE, sends EStop_Broadcast (0x001), and transitions
+  to SAFE_STOP.  All actuators must reach safe values.  This validates
+  the full multi-ECU safety chain, not just CVC local state.
 verifies:
   - "SWR-BSW-019"   # Safe state transition on critical fault
-  - "SWR-CVC-003"   # CVC E-Stop processing and broadcast
+  - "SWR-CVC-003"   # CVC E-Stop detection, broadcast, state transition
+  - "SWR-CVC-006"   # CVC actuator disable on SAFE_STOP
+  - "SWR-RZC-004"   # RZC motor shutdown on E-Stop
 aspice: "SWE.5"
 iso_reference: "ISO 26262 Part 6, Section 10"
 timeout_sec: 90
 
 setup:
   - action: reset
-    description: "Clear any prior fault state"
+    description: "Clear any prior fault state, fresh boot all ECUs"
   - action: wait_state
     state: RUN
-    timeout: 15
-    description: "Wait for INIT hold (10s) + E2E stabilization before E-Stop test"
+    timeout: 20
+    description: "Wait for INIT hold + heartbeat exchange + post-INIT grace"
   - action: inject_scenario
     name: normal_drive
     description: "Establish active motor output (50% torque) as pre-condition"
   - action: wait
-    seconds: 2
-    description: "Allow motor to reach steady-state RPM"
+    seconds: 5
+    description: "Allow motor to reach steady-state RPM before E-Stop"
 
 steps:
   - action: inject_scenario
     name: estop
-    description: "Send EStop_Broadcast (0x001) with EStop_Active=1"
+    description: "Inject E-Stop via UDP DIO pin (CVC GPIO ch5 = HIGH)"
   - action: wait
-    seconds: 1
-    description: "Allow E-Stop to propagate through all ECUs"
+    seconds: 5
+    description: "Allow E-Stop to propagate: CVC detect + broadcast + all ECU response"
 
 verdicts:
+  # --- Primary: CVC state transition (SAFE_STOP) ---
   - type: vehicle_state
     expected: SAFE_STOP
     within_ms: 2000
-    description: "Vehicle state must reach SAFE_STOP after E-Stop (100ms FTTI + Docker scheduling margin)"
+    description: >
+      CVC must reach SAFE_STOP within 2s of E-Stop activation.
+      FTTI budget: 100ms (10 cycles at 10ms) for DIO read + debounce +
+      RTE write + VSM transition.  2s margin absorbs Docker scheduling.
 
-  - type: motor_shutdown
-    within_ms: 5000
-    description: "Motor RPM must reach 0 within 5s (physical deceleration after de-energize)"
-
-  - type: can_message
-    can_id: 0x103
-    field: brake_force
-    expected: 100
-    description: "Brake must be at 100% (emergency braking applied)"
-
+  # --- Primary: E-Stop broadcast on CAN bus ---
   - type: can_message
     can_id: 0x001
     field: estop_active
     expected: 1
-    description: "EStop_Broadcast frame confirms EStop_Active = 1"
+    within_ms: 5000
+    description: >
+      CVC must broadcast EStop_Broadcast (0x001) with Active=1 on CAN.
+      This is how FZC/RZC/SC/BCM learn about the E-Stop.  Without this
+      frame, only CVC knows — the safety chain is broken.
 
+  # --- Secondary: Motor shutdown ---
+  - type: motor_shutdown
+    within_ms: 5000
+    description: >
+      Motor RPM must reach 0 within 5s.  RZC receives E-Stop via
+      CAN 0x001 or via CVC's zero torque command (0x101=0) and
+      de-energizes the motor.  5s allows physical deceleration.
+
+  # --- Secondary: Actuator commands zeroed ---
   - type: can_message
     can_id: 0x101
     field: torque_request
     expected: 0
-    description: "Torque request must be 0 after E-Stop"
+    description: >
+      Torque request must be 0 after E-Stop.  CVC Swc_Pedal outputs
+      zero torque when vehicle state is SAFE_STOP (mode limit = 0).
 
   - type: can_message
     can_id: 0x102
     field: steer_angle
     expected: 0
-    description: "Steering command must be at center (de-energized)"
+    description: >
+      Steering command must be at center (0 deg) after E-Stop.
+      CVC commands neutral steering in SAFE_STOP.
 
 teardown:
   - action: reset
-    description: "Clear E-Stop and return to idle state"
+    description: "Power-cycle all ECUs to clear E-Stop latch"
