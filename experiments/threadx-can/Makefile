@@ -22,7 +22,11 @@ FLOAT   = -mfloat-abi=hard
 MCU     = $(CPU) -mthumb $(FPU) $(FLOAT)
 
 # Defines
-DEFS    = -DSTM32G474xx -DUSE_HAL_DRIVER -DTX_INCLUDE_USER_DEFINE_FILE
+DEFS    = -DSTM32G474xx -DUSE_HAL_DRIVER -DTX_INCLUDE_USER_DEFINE_FILE \
+          -DPLATFORM_STM32
+
+# Path to production firmware tree (relative to experiment dir)
+FW      = ../../firmware
 
 ##############################################################################
 # Sources
@@ -39,6 +43,11 @@ C_SOURCES  = \
   Src/system_stm32g4xx.c \
   STM32CubeIDE/Application/User/syscalls.c \
   STM32CubeIDE/Application/User/sysmem.c
+
+# Experiment glue sources (ThreadX-compatible SchM + stubs)
+C_SOURCES += \
+  Src/SchM_ThreadX.c \
+  Src/bsw_stubs.c
 
 # HAL drivers (only enabled modules)
 C_SOURCES += \
@@ -64,6 +73,31 @@ C_SOURCES += \
 # ThreadX kernel sources (all .c in common/src)
 C_SOURCES += $(wildcard threadx/common/src/*.c)
 
+# ---- Step 7a: MCAL CAN + platform backend ----
+C_SOURCES += \
+  $(FW)/bsw/mcal/Can/src/Can.c \
+  $(FW)/platform/stm32/src/Can_Hw_STM32.c
+
+# ---- Step 7a: Det (needed by Can.c, CanIf.c, etc.) ----
+C_SOURCES += \
+  $(FW)/bsw/services/Det/src/Det.c
+
+# ---- Step 7b: CanIf ----
+C_SOURCES += \
+  $(FW)/bsw/ecual/CanIf/src/CanIf.c
+
+# ---- Step 7c: Com + PduR + FZC configs ----
+C_SOURCES += \
+  $(FW)/bsw/ecual/PduR/src/PduR.c \
+  $(FW)/bsw/services/Com/src/Com.c \
+  $(FW)/ecu/fzc/cfg/Com_Cfg_Fzc.c
+
+# ---- Step 7d: Rte + Swc_Heartbeat + FZC Rte config ----
+C_SOURCES += \
+  $(FW)/bsw/rte/src/Rte.c \
+  $(FW)/ecu/fzc/cfg/Rte_Cfg_Fzc.c \
+  $(FW)/ecu/fzc/src/Swc_Heartbeat.c
+
 # Assembly sources
 ASM_SOURCES = \
   STM32CubeIDE/Application/Startup/startup_stm32g474retx.s \
@@ -83,7 +117,22 @@ INCLUDES = \
   -IDrivers/CMSIS/Include \
   -IDrivers/CMSIS/Device/ST/STM32G4xx/Include \
   -Ithreadx/common/inc \
-  -Ithreadx/ports/cortex_m4/gnu/inc
+  -Ithreadx/ports/cortex_m4/gnu/inc \
+  -I$(FW)/bsw/include \
+  -I$(FW)/bsw/mcal/Can/include \
+  -I$(FW)/bsw/ecual/CanIf/include \
+  -I$(FW)/bsw/ecual/PduR/include \
+  -I$(FW)/bsw/services/Com/include \
+  -I$(FW)/bsw/services/SchM/include \
+  -I$(FW)/bsw/services/Det/include \
+  -I$(FW)/bsw/services/Dem/include \
+  -I$(FW)/bsw/services/E2E/include \
+  -I$(FW)/bsw/services/WdgM/include \
+  -I$(FW)/bsw/rte/include \
+  -I$(FW)/bsw/ecual/IoHwAb/include \
+  -I$(FW)/ecu/fzc/include \
+  -I$(FW)/ecu/fzc/cfg/platform_target \
+  -I$(FW)/platform/stm32/include
 
 ##############################################################################
 # Compiler / Linker flags
@@ -125,6 +174,10 @@ $(OBJDIRS):
 # C sources — project code (strict warnings)
 $(BUILD)/%.o: %.c | $(OBJDIRS)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# BSW sources from production tree — relax warnings for generated code
+$(BUILD)/$(FW)/%.o: $(FW)/%.c | $(OBJDIRS)
+	$(CC) $(CFLAGS) -Wno-error=unused-parameter -Wno-error=unused-variable -c $< -o $@
 
 # ThreadX kernel C sources — relax unused-parameter
 $(BUILD)/threadx/common/src/%.o: threadx/common/src/%.c | $(OBJDIRS)

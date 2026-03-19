@@ -270,6 +270,10 @@
 
 /* USER CODE BEGIN 2 */
 
+/* Step 7 glue: BSW expects 1000Hz tick (1ms resolution).
+ * Default ThreadX is 100Hz — override to match BSW timing. */
+#define TX_TIMER_TICKS_PER_SECOND  1000
+
 /* USER CODE END 2 */
 
 #endif
