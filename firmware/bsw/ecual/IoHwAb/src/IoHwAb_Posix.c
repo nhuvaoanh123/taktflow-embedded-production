@@ -20,6 +20,7 @@
 #include "IoHwAb.h"
 #include "IoHwAb_Posix.h"
 #include "IoHwAb_Inject.h"
+#include "Dio.h"
 #include "Det.h"
 
 /* ---- Internal State ---- */
@@ -333,5 +334,7 @@ void IoHwAb_Inject_SetEncoderValue(uint8 EncoderId, uint32 Count,
 
 void IoHwAb_Inject_SetDigitalPin(uint8 PinId, uint8 Level)
 {
+    /* Write to both Dio (used by IoHwAb.c ReadEStop) and local pin array */
+    Dio_WriteChannel(PinId, Level);
     IoHwAb_Posix_SetDigitalPin(PinId, Level);
 }

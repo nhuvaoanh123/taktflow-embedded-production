@@ -24,7 +24,6 @@
 #include "Com.h"
 #include "E2E.h"
 #include "Dem.h"
-#include <stdio.h>
 
 /* ====================================================================
  * Internal constants
@@ -78,15 +77,6 @@ void Swc_EStop_MainFunction(void)
     uint8          pin_state = STD_LOW;
     Std_ReturnType ret;
 
-    {
-        static uint32 call_count = 0u;
-        call_count++;
-        if ((call_count % 1000u) == 1u) {
-            fprintf(stderr, "[ESTOP] alive call=%u init=%u\n",
-                    (unsigned)call_count, (unsigned)initialized);
-        }
-    }
-
     if (initialized == FALSE) {
         return;
     }
@@ -97,17 +87,6 @@ void Swc_EStop_MainFunction(void)
     if (ret != E_OK) {
         /* Fail-safe: treat read failure as E-stop active */
         pin_state = STD_HIGH;
-    }
-
-    /* Debug: print EVERY call for 5 cycles after E-Stop activate */
-    {
-        static uint8 trace_countdown = 0u;
-        if (pin_state != STD_LOW) { trace_countdown = 50u; }
-        if (trace_countdown > 0u) {
-            fprintf(stderr, "[ESTOP] pin=%u ret=%u act=%u deb=%u\n",
-                    pin_state, ret, active, debounce_counter);
-            trace_countdown--;
-        }
     }
 
     /* --- 2. Debounce logic ---------------------------------------- */
