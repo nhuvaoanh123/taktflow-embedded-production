@@ -378,9 +378,11 @@ void Spi_Hw_PollUdp(void)
 
     /* Verify DIO E-Stop channel after drain */
     {
+        static uint8 prev_dio5 = 0xFFu;
         uint8 dio5 = Dio_ReadChannel(5u);
-        if (dio5 != 0u) {
-            fprintf(stderr, "[SPI-POLL] DIO5=%u (E-Stop active)\n", dio5);
+        if (dio5 != prev_dio5) {
+            fprintf(stderr, "[SPI-POLL] DIO5: %u -> %u\n", prev_dio5, dio5);
+            prev_dio5 = dio5;
         }
     }
 
