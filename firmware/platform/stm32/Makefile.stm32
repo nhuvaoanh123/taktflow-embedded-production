@@ -46,15 +46,12 @@ ifdef DIAG
   CFLAGS += -DSIL_DIAG
 endif
 
-<<<<<<< Updated upstream
-=======
 # --- ThreadX RTOS (pass THREADX=1 to enable) ---
 ifdef THREADX
   CFLAGS += -DUSE_THREADX -DTX_INCLUDE_USER_DEFINE_FILE -Wno-error=unused-parameter
-  XCUBE_DIR = $(FW)/lib/x-cube-azrtos-g4/Middlewares/ST
-  THREADX_DIR = $(XCUBE_DIR)/threadx
+  THREADX_DIR = $(FW)/lib/threadx
   THREADX_PORT = $(THREADX_DIR)/ports/cortex_m4/gnu
-  CMSIS_RTOS_DIR = $(XCUBE_DIR)/cmsis_rtos_threadx
+  CMSIS_RTOS_DIR = $(FW)/lib/cmsis-rtos-tx
   CMSIS6_DIR = $(FW)/lib/cmsis6/CMSIS/RTOS2/Include
   CFLAGS += -I$(THREADX_DIR)/common/inc
   CFLAGS += -I$(THREADX_PORT)/inc
@@ -62,7 +59,6 @@ ifdef THREADX
   CFLAGS += -I$(CMSIS_RTOS_DIR)
 endif
 
->>>>>>> Stashed changes
 # --- HIL mode (pass HIL=1 to enable IoHwAb sensor override from CAN) ---
 ifdef HIL
   CFLAGS += -DPLATFORM_HIL
@@ -199,7 +195,9 @@ HAL_SRCS = \
     $(HAL_DIR)/Src/stm32g4xx_hal_usart_ex.c \
     $(HAL_DIR)/Src/stm32g4xx_hal_flash.c \
     $(HAL_DIR)/Src/stm32g4xx_hal_flash_ex.c \
-    $(HAL_DIR)/Src/stm32g4xx_hal_flash_ramfunc.c
+    $(HAL_DIR)/Src/stm32g4xx_hal_flash_ramfunc.c \
+    $(HAL_DIR)/Src/stm32g4xx_hal_tim.c \
+    $(HAL_DIR)/Src/stm32g4xx_hal_tim_ex.c
 
 # Nucleo BSP
 BSP_SRCS = \
@@ -208,20 +206,19 @@ BSP_SRCS = \
 # CubeMX-generated init code
 CUBEMX_SRCS = \
     $(CUBEMX_SRC)/system_stm32g4xx.c \
-    $(CUBEMX_SRC)/stm32g4xx_hal_msp.c \
-    $(CUBEMX_SRC)/stm32g4xx_it.c
+    $(CUBEMX_SRC)/stm32g4xx_hal_msp.c
+ifndef THREADX
+  CUBEMX_SRCS += $(CUBEMX_SRC)/stm32g4xx_it.c
+endif
 
 # --- ECU-specific sources (wildcard, excludes *_posix.c) ---
 ECU_SRCS_ALL = $(wildcard $(ECU)/$(TARGET)/src/*.c) $(wildcard $(ECU)/$(TARGET)/cfg/*.c)
 ECU_HW_STM32 = $(wildcard $(PLAT)/src/$(TARGET)_hw_stm32.c)
 ECU_SRCS = $(filter-out %_posix.c %_tms570.c,$(ECU_SRCS_ALL)) $(ECU_HW_STM32)
 
-<<<<<<< Updated upstream
-=======
 # --- ThreadX kernel sources (only when THREADX=1) ---
 ifdef THREADX
 THREADX_SRCS = $(wildcard $(THREADX_DIR)/common/src/*.c) \
-    $(CMSIS_RTOS_DIR)/cmsis_os2.c \
 
 THREADX_ASM_SRCS = \
     $(THREADX_PORT)/src/tx_thread_context_save.S \
@@ -240,14 +237,14 @@ THREADX_SRCS =
 THREADX_ASM_SRCS =
 endif
 
->>>>>>> Stashed changes
 # --- All application sources ---
-APP_SRCS = $(BSW_SRCS) $(HAL_SRCS) $(BSP_SRCS) $(CUBEMX_SRCS) $(ECU_SRCS)
+APP_SRCS = $(BSW_SRCS) $(HAL_SRCS) $(BSP_SRCS) $(CUBEMX_SRCS) $(ECU_SRCS) $(THREADX_SRCS)
 
 # --- Object files ---
 APP_OBJS  = $(patsubst %.c,$(BUILD_DIR)/%.o,$(APP_SRCS))
 ASM_OBJS  = $(patsubst %.s,$(BUILD_DIR)/%.o,$(STARTUP))
-ALL_OBJS  = $(APP_OBJS) $(ASM_OBJS)
+TX_ASM_OBJS = $(patsubst %.S,$(BUILD_DIR)/%.o,$(THREADX_ASM_SRCS))
+ALL_OBJS  = $(APP_OBJS) $(ASM_OBJS) $(TX_ASM_OBJS)
 
 # --- Output files ---
 ELF = $(BUILD_DIR)/$(TARGET).elf
@@ -279,10 +276,15 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# --- Assemble startup ---
+# --- Assemble startup (.s lowercase) ---
 $(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
 	@mkdir -p $(dir $@)
 	$(AS) $(MCU_FLAGS) -c $< -o $@
+
+# --- Assemble ThreadX port (.S uppercase, needs preprocessor) ---
+$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
+	$(AS) $(MCU_FLAGS) -I$(THREADX_PORT)/inc -c $< -o $@
 
 # --- Build directory ---
 $(BUILD_DIR):

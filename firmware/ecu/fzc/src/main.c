@@ -66,17 +66,14 @@
 #include "Det.h"
 
 /* ==================================================================
-<<<<<<< Updated upstream
-=======
  * CMSIS-RTOS2 (ThreadX backend via CMSIS adapter)
  * ================================================================== */
 
 #ifdef USE_THREADX
-#include "cmsis_os2.h"
+#include "tx_api.h"
 #endif
 
 /* ==================================================================
->>>>>>> Stashed changes
  * External Configuration (defined in cfg/ files)
  * ================================================================== */
 
@@ -384,8 +381,6 @@ static uint8 Main_RunSelfTest(void)
 static volatile uint32 tick_us;
 
 /* ==================================================================
-<<<<<<< Updated upstream
-=======
  * ThreadX Timer Callbacks (USE_THREADX only)
  * ================================================================== */
 
@@ -398,7 +393,7 @@ static volatile uint32 tick_us;
  * @note   Executes in ThreadX timer thread context.
  *         Dispatches all RTE runnables configured at 1ms period.
  */
-void Timer_1ms_Callback(void *arg)
+void Timer_1ms_Callback(ULONG arg)
 {
     (void)arg;
     Rte_MainFunction();
@@ -410,7 +405,7 @@ void Timer_1ms_Callback(void *arg)
  *
  * @note   Executes in ThreadX timer thread context.
  */
-void Timer_10ms_Callback(void *arg)
+void Timer_10ms_Callback(ULONG arg)
 {
     (void)arg;
     Dcm_MainFunction();
@@ -424,7 +419,7 @@ void Timer_10ms_Callback(void *arg)
  *
  * @note   Executes in timer service thread context.
  */
-void Timer_100ms_Callback(void *arg)
+void Timer_100ms_Callback(ULONG arg)
 {
     (void)arg;
     WdgM_MainFunction();
@@ -438,7 +433,7 @@ void Timer_100ms_Callback(void *arg)
  * @note   Calls Main_Hw_DebugPrintStatus with current kernel tick.
  *         UART print on STM32, no-op on POSIX.
  */
-void Timer_5s_Callback(void *arg)
+void Timer_5s_Callback(ULONG arg)
 {
     (void)arg;
     Main_Hw_DebugPrintStatus(Main_Hw_GetTick());
@@ -447,7 +442,6 @@ void Timer_5s_Callback(void *arg)
 #endif /* USE_THREADX */
 
 /* ==================================================================
->>>>>>> Stashed changes
  * Main Entry Point
  * ================================================================== */
 
@@ -459,10 +453,12 @@ void Timer_5s_Callback(void *arg)
  */
 int main(void)
 {
+#ifndef USE_THREADX
     uint32 last_1ms_us   = 0u;
     uint32 last_10ms_us  = 0u;
     uint32 last_100ms_us = 0u;
     uint32 last_5s_us    = 0u;
+#endif
     uint8  self_test_result;
 
     /* ---- Step 1: Hardware initialization ---- */
@@ -537,29 +533,22 @@ int main(void)
     }
 
     /* ---- Step 7: Start SysTick (1ms period = 1000us) ---- */
+    /* SysTick needed for HAL timeouts during init.
+     * ThreadX will reconfigure SysTick in _tx_initialize_low_level.S later. */
     Main_Hw_SysTickInit(1000u);
     Det_ReportRuntimeError(DET_MODULE_FZC_MAIN, 0u, MAIN_API_RUN, DET_E_DBG_SYSTICK_START);
 
-<<<<<<< Updated upstream
-    /* ---- Step 8: Main loop ---- */
-=======
     /* ---- Step 8: Main loop / RTOS kernel ---- */
 
 #ifdef USE_THREADX
-    /* Initialize CMSIS-RTOS2 kernel (ThreadX underneath) */
-    osKernelInitialize();
-
-    /* Create BSW cyclic timers */
-    osTimerNew(Timer_1ms_Callback,   osTimerPeriodic, NULL, NULL);
-    osTimerNew(Timer_10ms_Callback,  osTimerPeriodic, NULL, NULL);
-    osTimerNew(Timer_100ms_Callback, osTimerPeriodic, NULL, NULL);
-    osTimerNew(Timer_5s_Callback,    osTimerPeriodic, NULL, NULL);
-
-    /* Start kernel — never returns */
-    osKernelStart();
+    /* Start ThreadX kernel — never returns.
+     * tx_kernel_enter() calls:
+     *   1. _tx_initialize_low_level() — our .S file, configures SysTick
+     *   2. tx_application_define()   — creates BSW periodic timers
+     *   3. ThreadX scheduler         — runs timer callbacks at configured periods */
+    tx_kernel_enter();
 #else
     /* Original bare-metal polling loop */
->>>>>>> Stashed changes
     for (;;)
     {
         Main_Hw_Wfi();
@@ -598,6 +587,7 @@ int main(void)
             Main_Hw_DebugPrintStatus(tick_us);
         }
     }
+#endif /* USE_THREADX */
 
     /* MISRA: unreachable but satisfies compiler */
     return 0;

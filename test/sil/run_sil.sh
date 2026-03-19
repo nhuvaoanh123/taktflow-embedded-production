@@ -219,11 +219,8 @@ info "Results will be saved to: $RUN_RESULTS_DIR"
 # ---------------------------------------------------------------------------
 header "Starting SIL Platform"
 
-info "Building ECU images (no cache — ensures latest firmware)"
-DOCKER_BUILDKIT=0 docker compose -f "$COMPOSE_FILE" build --no-cache 2>&1 | tee "$RUN_RESULTS_DIR/docker_build.log"
-
 info "Bringing up Docker services from $COMPOSE_FILE"
-docker compose -f "$COMPOSE_FILE" up -d 2>&1 | tee "$RUN_RESULTS_DIR/docker_startup.log"
+docker compose -f "$COMPOSE_FILE" up --build -d 2>&1 | tee "$RUN_RESULTS_DIR/docker_startup.log"
 
 if [ $? -ne 0 ]; then
     fail "Docker compose up failed. Check $RUN_RESULTS_DIR/docker_startup.log"
