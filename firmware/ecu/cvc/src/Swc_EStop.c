@@ -106,14 +106,12 @@ void Swc_EStop_MainFunction(void)
                 /* Write to RTE */
                 (void)Rte_Write(CVC_SIG_ESTOP_ACTIVE, (uint32)TRUE);
 
-                /* Build E-stop PDU and send with E2E */
+                /* Send E-stop signals via Com (E2E applied by Com_MainFunction_Tx) */
                 {
-                    uint8 pdu[ESTOP_PDU_LENGTH] = {0u};
-                    pdu[0] = TRUE;  /* E-stop active flag */
-
-                    (void)E2E_Protect(NULL_PTR, NULL_PTR,
-                                      pdu, ESTOP_PDU_LENGTH);
-                    (void)Com_SendSignal(CVC_COM_TX_ESTOP, pdu);
+                    uint8 estop_active = TRUE;
+                    uint8 estop_source = 1u;  /* CVC = source 1 */
+                    (void)Com_SendSignal(CVC_COM_SIG_ESTOP_BROADCAST_ACTIVE, &estop_active);
+                    (void)Com_SendSignal(CVC_COM_SIG_ESTOP_BROADCAST_SOURCE, &estop_source);
                 }
             }
         } else {
@@ -123,12 +121,10 @@ void Swc_EStop_MainFunction(void)
     } else {
         /* --- 4. Already latched — repeat broadcasts --------------- */
         if (repeat_counter < ESTOP_BROADCAST_COUNT) {
-            uint8 pdu[ESTOP_PDU_LENGTH] = {0u};
-            pdu[0] = TRUE;
-
-            (void)E2E_Protect(NULL_PTR, NULL_PTR,
-                              pdu, ESTOP_PDU_LENGTH);
-            (void)Com_SendSignal(CVC_COM_TX_ESTOP, pdu);
+            uint8 estop_active = TRUE;
+            uint8 estop_source = 1u;
+            (void)Com_SendSignal(CVC_COM_SIG_ESTOP_BROADCAST_ACTIVE, &estop_active);
+            (void)Com_SendSignal(CVC_COM_SIG_ESTOP_BROADCAST_SOURCE, &estop_source);
 
             repeat_counter++;
         }
