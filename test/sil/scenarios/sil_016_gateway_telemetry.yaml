@@ -33,8 +33,8 @@ setup:
 steps:
   - action: wait_state
     state: RUN
-    timeout: 15
-    description: "Wait for INIT hold (10s) + E2E stabilization with CAN traffic active"
+    timeout: 30
+    description: "Wait for INIT hold (10s) + post-INIT grace (10s) + Docker scheduling margin"
   - action: wait
     seconds: 80
     description: "Wait for at least one gateway telemetry publish cycle (5s wall-clock interval; 80 / SIL_TIME_SCALE=10 = 8s wall time)"
