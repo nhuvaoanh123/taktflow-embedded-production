@@ -36,8 +36,8 @@ setup:
 steps:
   - action: wait_state
     state: RUN
-    timeout: 15
-    description: "Wait for INIT hold (10s) + E2E stabilization"
+    timeout: 30
+    description: "Wait for INIT hold (10s) + post-INIT grace (10s) + Docker scheduling margin"
   - action: wait
     seconds: 12
     description: "Allow CVC post-INIT grace period (10s) to expire"
