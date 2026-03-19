@@ -113,8 +113,8 @@ static const uint8 transition_table[CVC_STATE_COUNT][CVC_EVT_COUNT] = {
         CVC_STATE_SAFE_STOP,   /* EVT_MOTOR_CUTOFF       -> SAFE_STOP (HARA: no backup) */
         CVC_STATE_SAFE_STOP,   /* EVT_BRAKE_FAULT        -> SAFE_STOP    */
         CVC_STATE_SAFE_STOP,   /* EVT_STEERING_FAULT     -> SAFE_STOP (HARA: no backup) */
-        CVC_STATE_SAFE_STOP,   /* EVT_BATTERY_WARN       -> SAFE_STOP (HARA: no backup) */
-        CVC_STATE_SAFE_STOP,   /* EVT_BATTERY_CRIT       -> SAFE_STOP (HARA: no backup) */
+        CVC_STATE_DEGRADED,    /* EVT_BATTERY_WARN       -> DEGRADED (graceful degradation) */
+        CVC_STATE_LIMP,        /* EVT_BATTERY_CRIT       -> LIMP (reduced torque + speed limit) */
         CVC_STATE_SAFE_STOP    /* EVT_CREEP_FAULT        -> SAFE_STOP    */
     },
     /* CVC_STATE_DEGRADED */
