@@ -90,6 +90,33 @@ Session-level lessons from firmware bringup, HIL test automation, and platform p
 
 **Principle**: On bare-metal without a debugger, your only diagnostic is what you can print before the crash. Configure UART as early as possible (in SystemInit, before constructors), and always implement a HardFault handler that dumps fault registers. Never deploy firmware without a HardFault handler — even "hello world" level code.
 
+## 2026-03-20 — F413ZH bxCAN bringup: 3 bugs masked each other, board appeared dead
+
+**Context**: NUCLEO-F413ZH (RZC) port. Board was flashed via SWD successfully but appeared completely non-functional — no LED blink, no CAN, no UART. When CAN was enabled, it disrupted the entire CAN bus (CVC + FZC went bus-off).
+
+**Mistakes (3 layered bugs)**:
+1. **HSE clock source unavailable** — `SystemClock_Config()` used `RCC_HSE_BYPASS` expecting 8 MHz from ST-LINK MCO. On this board, HSE was not available. `HAL_RCC_OscConfig()` hung waiting for HSERDY, then called `Error_Handler()` which silently disabled IRQs and looped. No LED, no diagnostic output, looked like a dead board.
+2. **SysTick_Handler removed for OS port** — `stm32f4xx_it.c` had `SysTick_Handler` and `PendSV_Handler` deleted with a comment "provided by Os_Port_Stm32_Asm.S". Standalone CubeMX test (without OS) had no tick source. `HAL_Delay()` hung on the first call. LED turned on but never toggled — appeared stuck.
+3. **CAN normal mode disrupts bus** — `HAL_CAN_Init()` alone (init mode) is safe. `HAL_CAN_Start()` transitions to normal mode where bxCAN actively participates on the bus. Something in the bxCAN TX path drives incorrect levels, corrupting the differential bus. All other ECUs go bus-off. Root cause still under investigation (transceiver, pin config, or bxCAN sleep/init sequence).
+
+**Debugging approach**:
+1. Wrote 892-byte bare-metal blink (direct register access, HSI only, no HAL) → **blinked** → board is alive
+2. CubeMX HAL blink with HSI + all peripherals disabled → LED on but not blinking → SysTick missing
+3. Restored `SysTick_Handler` → `HAL_IncTick()` → **blinked** → HAL works
+4. Re-enabled `MX_CAN1_Init()` (init only, no start) → **blinked**, bus clean → CAN init is safe
+5. Production firmware (CAN init + start) → bus disrupted → problem is in CAN normal mode
+
+**Fixes applied**:
+1. Switched `rzc_f4_hw_stm32f4.c` from HSE to HSI (PLLM=16 instead of 8, same 96 MHz SYSCLK, 48 MHz APB1)
+2. Restored `SysTick_Handler` in CubeMX `stm32f4xx_it.c` for standalone testing
+3. CAN bus disruption: still open — erased F413ZH flash to protect bus while investigating
+
+**Principles**:
+1. **When a board appears dead, test from the bottom up**: bare-metal register blink (no HAL, no clocks, HSI only) proves the MCU runs code. Only then add HAL, clocks, peripherals one at a time.
+2. **HSE bypass is not guaranteed on all Nucleo boards.** ST-LINK provides MCO on some boards but not all, and solder bridges may be open. Always have an HSI fallback or verify HSE availability before depending on it.
+3. **Never remove interrupt handlers without a compile-time guard.** The `SysTick_Handler` removal for OS integration should have been `#ifdef OSEK_OS` guarded, not a comment. Without the OS linked, `HAL_Delay()` silently hangs.
+4. **Multiple bugs masking each other is the norm in bringup.** Bug 1 (HSE) hid bug 2 (SysTick), which hid bug 3 (CAN disruption). Always fix and verify one layer at a time before adding the next.
+
 ## 2026-03-19 — E-Stop 0x001 never on CAN: 4 bugs in the injection chain
 
 **Context**: SIL E-Stop test (SIL-003). UDP fault-inject sends E-Stop command to CVC. CVC should detect via DIO, transition to SAFE_STOP, and broadcast CAN 0x001. Vehicle went to SAFE_STOP (local state) but 0x001 never appeared on the bus.
