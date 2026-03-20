@@ -661,6 +661,12 @@ class ArxmlReader:
             if "dtc_events" in ecu_data:
                 ecu.dtc_events.update(ecu_data["dtc_events"])
 
+            # UDS diagnostic PDU names (for PduR CanTp routing)
+            if "uds_rx_pdu_name" in ecu_data:
+                ecu.uds_rx_pdu_name = ecu_data["uds_rx_pdu_name"]
+            if "uds_tx_pdu_name" in ecu_data:
+                ecu.uds_tx_pdu_name = ecu_data["uds_tx_pdu_name"]
+
             # E2E data IDs — store named constants in ECU dict
             if "e2e_data_ids" in ecu_data:
                 ecu.e2e_data_ids.update(ecu_data["e2e_data_ids"])

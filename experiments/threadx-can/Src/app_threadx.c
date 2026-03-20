@@ -76,11 +76,7 @@ TX_THREAD ThreadTwo;
 TX_EVENT_FLAGS_GROUP EventFlag;
 TX_TIMER can_periodic_timer;
 TX_TIMER bsw_1ms_timer;
-TX_THREAD can_rx_thread;
-TX_EVENT_FLAGS_GROUP can_rx_event;
 static uint32_t can_tx_count = 0;
-static FDCAN_RxHeaderTypeDef can_rx_header;
-static uint8_t can_rx_data[8];
 
 /* BSW configuration objects */
 static const Can_ConfigType exp_can_config = {
@@ -96,6 +92,7 @@ extern const Rte_ConfigType   fzc_rte_config;
 extern const Dcm_ConfigType   fzc_dcm_config;
 extern const CanIf_ConfigType fzc_canif_config;
 extern const PduR_ConfigType  fzc_pdur_config;
+extern const CanTp_ConfigType fzc_cantp_config;
 
 /* USER CODE END PV */
 
@@ -106,7 +103,6 @@ void ThreadTwo_Entry(ULONG thread_input);
 void App_Delay(uint32_t Delay);
 static void CAN_Periodic_Callback(ULONG arg);
 static void BSW_1ms_Callback(ULONG arg);
-static void CAN_RX_Thread_Entry(ULONG arg);
 /* USER CODE END PFP */
 
 /**
@@ -193,7 +189,7 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
 
   /* Step 8: UDS diagnostics */
   Dem_Init(NULL_PTR);
-  CanTp_Init(NULL_PTR);
+  CanTp_Init(&fzc_cantp_config);
   Dcm_Init(&fzc_dcm_config);
   BswM_Init(NULL_PTR);
   WdgM_Init(NULL_PTR);
@@ -227,7 +223,9 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   tx_timer_create(&bsw_1ms_timer, "BSW_1MS", BSW_1ms_Callback,
                   0, 1, 1, TX_AUTO_ACTIVATE);
 
-  /* Create CAN RX event flag + thread (ISR-based, kept from Steps 1-6) */
+  /* ISR-based CAN RX disabled — BSW polling (Can_MainFunction_Read) handles all RX.
+   * The ISR was consuming frames from FIFO before BSW could poll them. */
+#if 0  /* Disabled for Step 9 — BSW polling mode */
   tx_event_flags_create(&can_rx_event, "CAN_RX_EVT");
 
   if (tx_byte_allocate(byte_pool, (VOID**)&pointer,
@@ -239,11 +237,8 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
                    pointer, TX_APP_STACK_SIZE, 3, 3,
                    TX_NO_TIME_SLICE, TX_AUTO_START);
 
-  /* Enable FDCAN RX FIFO0 new message notification (ISR path) */
-  extern FDCAN_HandleTypeDef hfdcan1;
-  HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-  HAL_NVIC_SetPriority(FDCAN1_IT0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(FDCAN1_IT0_IRQn);
+  /* ISR-based RX disabled — BSW polling mode */
+#endif  /* Disabled for Step 9 */
   /* USER CODE END App_ThreadX_Init */
 
   return ret;
@@ -387,7 +382,9 @@ void ThreadTwo_Entry(ULONG thread_input)
 
 /**
   * @brief  CAN RX thread — waits for ISR event, prints received frame
+  *         Disabled for Step 9 — BSW polling mode
   */
+#if 0
 static void CAN_RX_Thread_Entry(ULONG arg)
 {
   (void)arg;
@@ -406,16 +403,17 @@ static void CAN_RX_Thread_Entry(ULONG arg)
   }
 }
 
+#endif /* ISR RX disabled */
+
 /**
-  * @brief  HAL FDCAN RX FIFO0 callback — called from ISR
+  * @brief  HAL FDCAN RX FIFO0 callback — disabled, BSW polling mode
   */
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 {
-  if (RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE)
-  {
-    HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &can_rx_header, can_rx_data);
-    tx_event_flags_set(&can_rx_event, 0x1, TX_OR);
-  }
+  /* Disabled — BSW polling via Can_MainFunction_Read handles all RX.
+   * Do NOT read from FIFO here — it would consume frames before BSW polls. */
+  (void)hfdcan;
+  (void)RxFifo0ITs;
 }
 
 /**

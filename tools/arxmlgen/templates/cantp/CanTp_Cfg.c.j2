@@ -1,0 +1,18 @@
+{% include "common/file_header.j2" %}
+#include "CanTp.h"
+#include "{{ ecu.prefix | pascal_case }}_Cfg.h"
+
+/* ==================================================================
+ * CanTp Channel Configuration — ISO-TP for UDS diagnostics
+ * ================================================================== */
+
+{% if ecu.uds_rx_pdu_name and ecu.uds_tx_pdu_name %}
+const CanTp_ConfigType {{ ecu.name }}_cantp_config = {
+    .rxPduId      = {{ ecu.prefix }}_COM_RX_{{ ecu.uds_rx_pdu_name | upper_snake }},   /* UDS physical request RX */
+    .txPduId      = {{ ecu.prefix }}_COM_TX_{{ ecu.uds_tx_pdu_name | upper_snake }},   /* UDS response TX */
+    .fcTxPduId    = {{ ecu.prefix }}_COM_TX_{{ ecu.uds_tx_pdu_name | upper_snake }},   /* Flow control TX (same as response) */
+    .upperRxPduId = 0u,                                                                  /* DCM RX PDU ID */
+};
+{% else %}
+/* No UDS diagnostic configured for this ECU */
+{% endif %}

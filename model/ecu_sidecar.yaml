@@ -7,8 +7,15 @@ message_routing:
   DTC_Broadcast:
     additional_tx_ecus: [fzc, rzc, sc, bcm, icu, tcu]
 
+# UDS diagnostic addressing per ECU
+# uds_rx_pdu_name: DBC message name for physical UDS request TO this ECU
+# uds_tx_pdu_name: DBC message name for UDS response FROM this ECU
+# These route through CanTp (ISO-TP) instead of Com (direct signal)
+
 ecus:
   cvc:
+    uds_rx_pdu_name: "UDS_Phys_Req_CVC"
+    uds_tx_pdu_name: "UDS_Resp_CVC"
     dtc_events:
       CVC_DTC_PEDAL_PLAUSIBILITY: 0
       CVC_DTC_PEDAL_STUCK: 1
@@ -254,6 +261,8 @@ ecus:
         wdgm_se_id: 0xFF
 
   rzc:
+    uds_rx_pdu_name: "UDS_Phys_Req_RZC"
+    uds_tx_pdu_name: "UDS_Resp_RZC"
     dtc_events:
       RZC_DTC_OVERCURRENT: 0
       RZC_DTC_OVERTEMP: 1

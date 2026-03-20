@@ -137,7 +137,8 @@ C_SOURCES += \
   $(FW)/ecu/fzc/cfg/Dcm_Cfg_Fzc.c \
   $(FW)/ecu/fzc/cfg/E2E_Cfg_Fzc.c \
   $(FW)/ecu/fzc/cfg/PduR_Cfg_Fzc.c \
-  $(FW)/ecu/fzc/cfg/CanIf_Cfg_Fzc.c
+  $(FW)/ecu/fzc/cfg/CanIf_Cfg_Fzc.c \
+  $(FW)/ecu/fzc/cfg/CanTp_Cfg_Fzc.c
 
 # Assembly sources
 ASM_SOURCES = \

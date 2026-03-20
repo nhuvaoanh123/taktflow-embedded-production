@@ -18,6 +18,7 @@ REGISTRY: dict[str, tuple[str, str]] = {
     "canif":  ("tools.arxmlgen.generators.canif_cfg",   "CanIfCfgGenerator"),
     "pdur":   ("tools.arxmlgen.generators.pdur_cfg",    "PduRCfgGenerator"),
     "e2e":    ("tools.arxmlgen.generators.e2e_cfg",     "E2ECfgGenerator"),
+    "cantp":  ("tools.arxmlgen.generators.cantp_cfg",   "CanTpCfgGenerator"),
     "swc":    ("tools.arxmlgen.generators.swc_skeleton", "SwcSkeletonGenerator"),
 }
 

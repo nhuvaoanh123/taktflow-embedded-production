@@ -105,6 +105,8 @@ class Ecu:
     com_signal_map: dict[str, int] = field(default_factory=dict)
 
     # From sidecar (optional)
+    uds_rx_pdu_name: str = ""
+    uds_tx_pdu_name: str = ""
     dtc_events: dict[str, int] = field(default_factory=dict)
     e2e_data_ids: dict[str, int] = field(default_factory=dict)
     enums: dict[str, int] = field(default_factory=dict)
