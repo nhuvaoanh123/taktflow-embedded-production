@@ -1,243 +1,185 @@
-# Plan: Firmware Rewrite — Clean BSW + SWC Architecture
+# Plan: Firmware Rewrite — HARA-Driven Architecture
 
 **Status**: PLANNING
 **Date**: 2026-03-20
-**Goal**: Scrap accumulated hacks, rewrite firmware with proper top-down architecture.
+**Goal**: Rewrite firmware architecture top-down from HARA, not from code bugs.
 
 ---
 
-## Why Rewrite
+## Traceability Chain
 
-Current firmware has these structural problems (found during HIL bringup):
-
-| Problem | Root Cause | Impact |
-|---------|-----------|--------|
-| SWCs bypass Com with direct PduR_Transmit | Hand-written E2E in SWCs | Com cycle time throttle doesn't apply to 60% of TX frames |
-| E2E DataIDs hardcoded in SWCs | SWCs written before DBC had E2E attributes | Wrong DataIDs cause E2E flicker on monitor |
-| IoHwAb_Init(NULL) → all sensor reads fail | No bench-mode IoHwAb config | All signal values = 0 on hardware bench |
-| Shared E2E alive counter across PDUs | Single `FzcCom_TxAlive` for all TX | Counter jumps unpredictably, E2E receivers reject frames |
-| Bus-off recovery as inline hack in timer | Quick fix for USB hub power issue | Extra Com_MainFunction_Tx calls, 40% rate overshoot |
-| Debug counters in production BSW modules | Instrumentation left in code | Code bloat, maintenance burden |
-| ThreadX timer fires 141/s instead of 100/s | Unknown — possibly SysTick drift | All timing assumptions wrong |
-
----
-
-## Architecture Principles
-
-1. **DBC is the single source of truth** — every CAN ID, signal, E2E DataID, cycle time comes from DBC. No hardcoded values in SWC code.
-
-2. **All TX goes through Com** — no direct PduR_Transmit from SWCs. E2E protection happens in Com layer (AUTOSAR standard), not in SWCs.
-
-3. **IoHwAb has bench mode** — when no sensors are connected, IoHwAb returns configurable test values. No NULL config workaround.
-
-4. **Per-PDU E2E state** — each PDU has its own alive counter. No shared counters.
-
-5. **Bus-off recovery in Can MCAL** — not in application timer callbacks. Can_MainFunction_BusOff handles recovery.
-
-6. **SWC code is thin** — reads from RTE, computes, writes to RTE. No BSW API calls except Rte_Read/Rte_Write.
-
-7. **Codegen generates everything** — Com_Cfg, E2E_Cfg, Rte_Cfg, CanIf_Cfg all from DBC+ARXML. SWC skeletons generated with correct port names.
-
----
-
-## Phase 1: BSW Stack Cleanup (Com + E2E)
-
-### 1.1 Move E2E into Com layer
-
-**Current**: SWC builds raw PDU → E2E_Protect → PduR_Transmit
-**Target**: SWC → Com_SendSignal → Com packs PDU → Com applies E2E → PduR_Transmit
-
-Changes:
-- `Com_MainFunction_Tx`: after packing signals, apply E2E_Protect per PDU before PduR_Transmit
-- E2E config per PDU in `Com_TxPduConfigType`: add `e2e_protected`, `e2e_data_id`, `e2e_counter_bit`, `e2e_crc_bit`
-- Codegen: populate E2E fields from DBC attributes
-- Remove all `PduR_Transmit` calls from SWC code
-
-### 1.2 Per-PDU E2E alive counter
-
-**Current**: Shared `FzcCom_TxAlive` across all PDUs
-**Target**: `com_e2e_alive[COM_MAX_PDUS]` array, one counter per PDU
-
-Changes:
-- Add `static uint8 com_e2e_alive[COM_MAX_PDUS]` in Com.c
-- E2E_Protect uses `com_e2e_alive[pdu_id]` and increments per send
-- Remove `FzcCom_TxAlive`, `RzcCom_TxAlive`
-
-### 1.3 Com cycle time enforcement (DONE)
-
-Already implemented in this session. Verify it works after Phase 1.1 (all TX through Com).
-
----
-
-## Phase 2: SWC Simplification
-
-### 2.1 Remove all direct PduR/CanIf/E2E calls from SWCs
-
-Files to clean:
-- `Swc_FzcCom.c`: remove `PduR_Transmit` for brake_fault, motor_cutoff, lidar
-- `Swc_RzcCom.c`: remove `PduR_Transmit` for motor_status, motor_current, motor_temp, battery_status
-- `Swc_Heartbeat.c`: remove `PduR_Transmit`, `E2E_Protect` — heartbeat goes through Com like everything else
-- `Swc_CvcCom.c`: remove any direct PduR calls
-
-After cleanup, SWCs only call:
-- `Rte_Read()` to get inputs
-- Compute
-- `Rte_Write()` to set outputs
-- `Com_SendSignal()` for TX triggers (or Com does it automatically via RTE binding)
-
-### 2.2 Automatic Com→RTE binding
-
-**Current**: SWC calls `Com_SendSignal(signal_id, &value)` manually
-**Target**: Com RX automatically writes to RTE (via `RteSignalId` in signal config). Com TX reads from RTE and packs automatically.
-
-The `COM_RTE_SIGNAL_NONE` sentinel in `Com_SignalConfigType.RteSignalId` is already there. Set it to actual RTE signal IDs in the codegen.
-
-Then `Com_MainFunction_Tx` automatically reads fresh values from RTE and packs them — no SWC intervention needed for cyclic TX.
-
-### 2.3 Thin SWC pattern
-
-After Phase 2.1 and 2.2, each SWC becomes:
-
-```c
-void Swc_Steering_MainFunction(void)
-{
-    /* Read sensor */
-    uint16 angle = 0;
-    IoHwAb_ReadSteeringAngle(&angle);
-
-    /* Compute (control law, fault detection) */
-    /* ... */
-
-    /* Write to RTE — Com picks it up automatically */
-    Rte_Write(FZC_SIG_STEER_ANGLE, angle);
-    Rte_Write(FZC_SIG_STEER_FAULT, fault);
-}
+```
+HARA (15 hazardous events)
+  → Safety Goals (SG-001..SG-008, ASIL A..D)
+    → Technical Safety Requirements (TSR)
+      → Software Safety Requirements (SSR)
+        → Software Requirements (SWR per ECU)
+          → DBC (CAN matrix, source of truth)
+            → ARXML (system description)
+              → Codegen (Com_Cfg, E2E_Cfg, Rte_Cfg, CanIf_Cfg)
+                → Firmware (BSW + SWC)
+                  → HIL verification
 ```
 
-No Com_SendSignal, no PduR_Transmit, no E2E_Protect in SWC code.
+Every line of firmware code must trace back through this chain.
 
 ---
 
-## Phase 3: IoHwAb Bench Mode
+## Safety Goals Driving the Architecture
 
-### 3.1 IoHwAb config with test values
+| SG | Description | ASIL | FTTI | Safe State | Architecture Impact |
+|----|-------------|------|------|------------|-------------------|
+| SG-001 | Prevent unintended acceleration | D | 50ms | Torque = 0 | Dual pedal sensors, plausibility check, E2E on Torque_Request |
+| SG-002 | Prevent loss of drive torque | B | 500ms | Warn driver | Motor fault detection, DTC broadcast, graceful degradation |
+| SG-003 | Prevent unintended/loss of steering | D | 100ms | Center steering | E2E on Steer_Command, steer plausibility, FZC safety SWC |
+| SG-004 | Prevent loss of braking | D | 100ms | Max brake | E2E on Brake_Command, brake plausibility, redundant path |
+| SG-005 | Prevent unintended braking | A | 200ms | Release brake | Pedal plausibility, brake command validation |
+| SG-006 | Detect motor/battery faults | A | 1000ms | Degrade/limp | Overcurrent, overtemp, undervoltage monitoring |
+| SG-007 | Detect obstacles reliably | C | 200ms | Emergency brake | Lidar plausibility, sensor disagreement detection |
+| SG-008 | Maintain system integrity | C | 500ms | SAFE_STOP | E-Stop, CAN monitoring, heartbeat, SC relay kill |
 
-```c
-typedef struct {
-    /* ... existing fields ... */
-    boolean     BenchMode;          /**< TRUE = use test values, not HW */
-    uint16      TestSteerAngle;     /**< Bench: simulated steer angle */
-    uint16      TestBrakePos;       /**< Bench: simulated brake position */
-    uint16      TestBatteryMV;      /**< Bench: simulated battery voltage */
-    sint16      TestMotorTempDC;    /**< Bench: simulated motor temp */
-} IoHwAb_ConfigType;
+---
+
+## What HARA Requires of the Firmware
+
+### 1. E2E Protection (SG-001, SG-003, SG-004, SG-008)
+
+Every safety-relevant CAN message MUST have E2E protection:
+- **CRC-8** for data integrity
+- **Alive counter** for sequence checking (per-PDU, NOT shared)
+- **DataID** unique per message (from DBC `E2E_DataID` attribute)
+
+**Current violation**: SWCs share alive counters. DataIDs hardcoded wrong.
+**HARA mandate**: Per-PDU E2E state is not optional — ASIL D requires it.
+
+### 2. Timing Compliance (all SGs with FTTI)
+
+Every message MUST be sent within its DBC `GenMsgCycleTime`:
+- Torque_Request: 10ms (SG-001 FTTI = 50ms → 5 frames before fault detection)
+- Steer_Command: 10ms (SG-003 FTTI = 100ms → 10 frames)
+- Heartbeat: 50ms (SG-008 → SC timeout detection within 500ms)
+
+**Current violation**: Bus flooding at 500/s bypasses cycle times.
+**HARA mandate**: Timing budget is derived from FTTI, not arbitrary.
+
+### 3. Fault Detection (SG-002, SG-006, SG-007)
+
+Every sensor reading MUST return a valid value or report a fault:
+- IoHwAb returns `E_NOT_OK` → SWC MUST set fault flag → DTC broadcast
+- Not silently return 0 and pretend everything is fine
+
+**Current violation**: IoHwAb_Init(NULL) → all reads fail → values = 0, no DTC.
+**HARA mandate**: Sensor failure = DTC + degraded mode, not silent zero.
+
+### 4. Independent Monitoring (SG-008)
+
+CVC Vehicle State Machine must transition to SAFE_STOP when:
+- FZC heartbeat lost for > 500ms
+- RZC heartbeat lost for > 500ms
+- E-Stop activated (within 100ms FTTI)
+- SC relay kill received
+
+**Current violation**: CVC stuck in INIT because heartbeat E2E rejects frames.
+**HARA mandate**: VSM transition logic is the core safety mechanism.
+
+---
+
+## Rewrite Phases (HARA-Ordered)
+
+### Phase 0: DBC Audit
+
+Verify every safety-relevant message in DBC has:
+- [ ] Correct `GenMsgCycleTime` derived from FTTI
+- [ ] Correct `E2E_DataID` unique per message
+- [ ] Correct `ASIL` attribute
+- [ ] Correct `Owner` (sender ECU)
+
+DBC is the contract between ECUs. If DBC is wrong, everything downstream is wrong.
+
+### Phase 1: Codegen — Generate Everything from DBC
+
+1. **E2E DataIDs**: generate `#define <ECU>_E2E_<MSG>_DATA_ID` for ALL E2E-protected PDUs (TX and RX)
+2. **Com CycleTimeMs**: already done — propagate from DBC `GenMsgCycleTime`
+3. **Com→RTE binding**: populate `RteSignalId` in `Com_SignalConfigType` for automatic signal routing
+4. **Per-PDU E2E config**: generate E2E protect/check configs in `E2E_Cfg_<Ecu>.c`
+
+After Phase 1: all generated configs are correct. No hardcoded values needed in SWC code.
+
+### Phase 2: BSW — E2E in Com Layer
+
+Move E2E protection from SWC to Com:
+
+1. `Com_MainFunction_Tx`: after packing signals, call `E2E_Protect` per PDU
+2. Per-PDU alive counter array: `com_e2e_alive[COM_MAX_PDUS]`
+3. `Com_MainFunction_Rx`: after unpacking, call `E2E_Check` per PDU, report to Dem on failure
+4. Cycle time enforcement: already done
+
+After Phase 2: ALL TX goes through Com → E2E → PduR → CanIf → CAN. No bypass paths.
+
+### Phase 3: SWC — Thin Application Layer
+
+Rewrite each SWC to ONLY use Rte_Read/Rte_Write:
+
+```
+Sensor → IoHwAb → SWC Rte_Write → (Com reads RTE automatically) → CAN
+CAN → (Com unpacks to RTE automatically) → SWC Rte_Read → Actuator
 ```
 
-When `BenchMode = TRUE`, all reads return the test values. When `FALSE`, reads from real hardware.
+SWC does NOT call Com_SendSignal, PduR_Transmit, E2E_Protect, or CanIf_Transmit.
 
-### 3.2 Bench config in experiment Makefiles
+Per-ECU SWC cleanup:
+- **CVC**: VehicleState, Pedal, EStop, Dashboard, Heartbeat, CanMonitor
+- **FZC**: Steering, Brake, Lidar, Heartbeat, FzcSafety, FzcCom → simplify to Rte only
+- **RZC**: Motor, CurrentMonitor, TempMonitor, Battery, Encoder, Heartbeat, RzcCom → simplify
 
-Each ThreadX experiment provides a static config:
+### Phase 4: IoHwAb — Sensor Abstraction
 
-```c
-static const IoHwAb_ConfigType bench_config = {
-    .BenchMode = TRUE,
-    .TestSteerAngle = 1500,   /* 15.0° */
-    .TestBatteryMV = 12600,   /* 12.6V */
-    .TestMotorTempDC = 350,   /* 35.0°C */
-    /* ... */
-};
-IoHwAb_Init(&bench_config);
-```
+1. Bench mode: configurable test values when no sensors connected
+2. Fault reporting: if real HW read fails → set DTC via `Dem_ReportErrorStatus`
+3. SWC reads fault flag from RTE and enters degraded mode
 
----
+### Phase 5: Can MCAL — Clean Recovery
 
-## Phase 4: Can MCAL Bus-Off Recovery
+1. Bus-off recovery in `Can_MainFunction_BusOff` (production code, not experiment hack)
+2. Auto-restart with backoff timer (not immediate retry causing 84/s recoveries)
+3. Remove all inline FDCAN re-init from experiment timer callbacks
 
-### 4.1 Move recovery to Can_MainFunction_BusOff
+### Phase 6: Verification
 
-**Current**: Inline FDCAN re-init in timer callback
-**Target**: `Can_MainFunction_BusOff()` called every 10ms, handles recovery internally
+Trace every test back to a safety goal:
 
-```c
-void Can_MainFunction_BusOff(void)
-{
-    if (Can_Hw_IsBusOff()) {
-        Can_Hw_Stop();
-        Can_Hw_Init(500000);
-        Can_Hw_Start();
-        /* Don't call Com — just restart hardware */
-    }
-}
-```
-
-### 4.2 Remove bus-off hacks from experiments
-
-Delete all inline FDCAN re-init code from `app_threadx.c` and `main.c`.
-
----
-
-## Phase 5: Codegen Completeness
-
-### 5.1 Generate E2E DataIDs for ALL E2E-protected PDUs
-
-Currently missing: Brake_Fault, Motor_Cutoff TX DataIDs in Fzc_Cfg.h.
-
-Fix `tools/arxmlgen/generators/cfg_header.py` to emit `#define <ECU>_E2E_<MSG>_DATA_ID` for every E2E-protected PDU (TX and RX).
-
-### 5.2 Generate Com→RTE signal bindings
-
-Populate `Com_SignalConfigType.RteSignalId` from ARXML port mappings instead of `COM_RTE_SIGNAL_NONE`.
-
-### 5.3 Generate SWC skeletons (optional)
-
-Generate `Swc_<Name>.c` with correct `Rte_Read`/`Rte_Write` calls from ARXML ports. Developer fills in the compute logic.
-
----
-
-## Phase 6: Verification
-
-### 6.1 HIL CAN rate test
-
-Run `test/hil/test_can_rates.py` — verify every message matches DBC GenMsgCycleTime within ±30%.
-
-### 6.2 E2E verification
-
-Each PDU has its own alive counter incrementing monotonically. No jumps or shared counters.
-
-### 6.3 Signal value verification
-
-With IoHwAb bench mode: all signals show configured test values, not zero.
-
-### 6.4 CVC reaches RUN
-
-With proper heartbeat rates and E2E, CVC VSM transitions INIT → RUN within 5 seconds.
-
-### 6.5 SIL regression
-
-After rewrite, run full 16-scenario SIL suite. Must pass >= 14/16.
-
----
-
-## Estimated Effort
-
-| Phase | Scope | Effort |
-|-------|-------|--------|
-| 1 | BSW Com+E2E refactor | 4-6 hours |
-| 2 | SWC cleanup (7 ECUs × 2-3 SWCs each) | 4-6 hours |
-| 3 | IoHwAb bench mode | 1-2 hours |
-| 4 | Can bus-off recovery | 1 hour |
-| 5 | Codegen fixes | 2-3 hours |
-| 6 | Verification | 2-3 hours |
-| **Total** | | **14-21 hours** |
+| Test | Traces To | Checks |
+|------|-----------|--------|
+| HIL CAN rate test | SG-001..SG-008 (FTTI compliance) | Every cyclic message within ±30% of DBC cycle |
+| HIL E2E test | SG-001, SG-003, SG-004 | Per-PDU alive counter, correct DataID, CRC valid |
+| HIL heartbeat test | SG-008 | CVC sees FZC+RZC heartbeats, transitions INIT→RUN |
+| HIL E-Stop test | SG-008 | E-Stop → SAFE_STOP within 100ms |
+| HIL sensor fault test | SG-002, SG-006 | IoHwAb failure → DTC + degraded mode |
+| SIL regression | All | 16 scenarios pass |
 
 ---
 
 ## Order of Execution
 
-1. Phase 5 first (codegen) — generate correct configs
-2. Phase 1 (Com+E2E) — route all TX through Com
-3. Phase 2 (SWC cleanup) — simplify SWCs
-4. Phase 3 (IoHwAb bench) — get non-zero values
-5. Phase 4 (bus-off recovery) — clean Can MCAL
-6. Phase 6 (verify) — HIL + SIL tests
+1. **Phase 0**: DBC audit (30 min)
+2. **Phase 1**: Codegen (2-3 hours)
+3. **Phase 2**: Com E2E (3-4 hours)
+4. **Phase 3**: SWC rewrite (4-6 hours)
+5. **Phase 4**: IoHwAb (1-2 hours)
+6. **Phase 5**: Can MCAL (1 hour)
+7. **Phase 6**: Verification (2-3 hours)
+
+**Total: 14-20 hours**
+
+---
+
+## Success Criteria
+
+- [ ] Every CAN message rate matches DBC GenMsgCycleTime (±30%)
+- [ ] Every E2E-protected PDU has unique DataID from DBC
+- [ ] Every E2E alive counter is per-PDU (no sharing)
+- [ ] No SWC calls PduR_Transmit, CanIf_Transmit, or E2E_Protect directly
+- [ ] IoHwAb bench mode shows non-zero test values
+- [ ] CVC reaches RUN state with FZC+RZC on bus
+- [ ] SIL suite passes >= 14/16
+- [ ] Every firmware function traces to a SWR which traces to a SSR which traces to a SG
