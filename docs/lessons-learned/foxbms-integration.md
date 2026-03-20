@@ -154,3 +154,28 @@ candump vcan0                         # See CAN output in another terminal
 
 ### Environment Variable
 `FOXBMS_CAN_IF=can0` to use real CAN instead of vcan0
+
+## foxBMS POSIX vECU — CAN TX VERIFIED (2026-03-20 late)
+
+### Proof
+```
+(000.000000)  vcan1  222   [8]  01 00 00 00 00 00 00 00
+```
+foxBMS CAN ID 0x222 captured on isolated vcan1 with candump. No other processes on this bus.
+
+### Fixes Required for FreeRTOS POSIX Port
+1. **Engine task vTaskDelay(10)**: Engine runs at REAL_TIME priority. Without delay, it monopolizes CPU and lower-priority tasks never run.
+2. **All busy-waits need vTaskDelay(1)**: foxBMS uses `while(condition) {}` busy-waits between task phases. POSIX port's signal-based preemption doesn't interrupt these.
+3. **portGET_HIGHEST_PRIORITY macro**: ARM CLZ instruction replaced with `__builtin_clz` for x86.
+4. **Early SocketCAN open**: foxBMS sends CAN before SYS state machine calls canInit(). Open socket in constructor.
+5. **SPS_Initialize stub**: SPS driver accesses GIO hardware registers directly — must exclude sps.c and stub.
+6. **SBC_GetState → RUNNING**: System state machine waits for SBC. Bypass with #ifdef FOXBMS_POSIX.
+7. **RTC_IsRtcModuleInitialized → true**: State machine waits for RTC. Bypass.
+
+### Source Files Modified (on laptop, not committed upstream)
+- `src/app/task/ftask/ftask.c` — vTaskDelay in busy-waits and engine loop
+- `src/app/task/config/ftask_cfg.c` — trace prints
+- `src/app/task/os/freertos/os_freertos.c` — trace prints
+- `src/app/driver/sbc/sbc.c` — FOXBMS_POSIX bypasses for SBC state
+- `src/app/driver/rtc/rtc.c` — FOXBMS_POSIX bypass for RTC init
+- `src/app/engine/sys/sys.c` — state machine trace
