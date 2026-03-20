@@ -364,30 +364,149 @@ class Dbc2Arxml:
             except Exception as e:
                 print("  Warning: frame %s: %s" % (mn, e))
 
-    # -- E2E annotations ---------------------------------------------------
+    # -- E2E Protection Set (AUTOSAR Approach A) -----------------------------
 
     def _create_e2e_annotations(self):
+        """Create END-TO-END-PROTECTION-SET with per-PDU E2E Profile P01 config.
+
+        Reads from DBC attributes:
+          - E2E_DataID (BA_ per message) → DATA-ID-VALUE
+          - E2E_MaxDeltaCounter (BA_ per message, default 2) → MAX-DELTA-COUNTER-INIT
+          - ASIL (BA_ per message) → ADMIN-DATA/SDGS/SD[@GID='ASIL']
+          - Satisfies (BA_ per message) → ADMIN-DATA/SDGS/SD[@GID='SATISFIES']
+          - GenMsgCycleTime → used in DESC for documentation
+
+        E2E signal layout (consistent across all messages):
+          - DataID nibble: bit 0, 4 bits
+          - AliveCounter: bit 4, 4 bits
+          - CRC8: bit 8, 8 bits
+
+        Traceability: each END-TO-END-PROTECTION traces to:
+          - DBC message (via I-SIGNAL-I-PDU-REF)
+          - Safety Goal (via ADMIN-DATA/SDGS/SATISFIES)
+          - HARA hazardous event (via Safety Goal chain)
+
+        @traces_to TSR-022 (E2E protection on safety-relevant CAN messages)
+        @satisfies SG-001, SG-003, SG-004, SG-008 (per-message, see DBC Satisfies attr)
+        """
         e2e_pkg = self.am.get_or_create_package("/Taktflow/E2E")
+        raw_pkg = e2e_pkg.element
+
+        # Create END-TO-END-PROTECTION-SET as a top-level element
+        elems = raw_pkg.get_or_create_sub_element("ELEMENTS")
+        e2e_set = elems.create_named_sub_element(
+            "END-TO-END-PROTECTION-SET", "E2E_ProtectionSet_P01"
+        )
+        prots = e2e_set.create_sub_element("END-TO-END-PROTECTIONS")
+
+        e2e_count = 0
         for msg in self.db.messages:
             mn = safe_name(msg.name)
-            sigs = [s.name for s in msg.signals]
-            if not ("E2E_DataID" in sigs and "E2E_AliveCounter" in sigs and "E2E_CRC8" in sigs):
+
+            # Only messages with E2E signals (DataID + AliveCounter + CRC8)
+            sig_names = set()
+            for s in msg.signals:
+                # Match suffix after message prefix: e.g. EStop_Broadcast_E2E_DataID
+                short = s.name
+                if "E2E_DataID" in short:
+                    sig_names.add("E2E_DataID")
+                if "E2E_AliveCounter" in short:
+                    sig_names.add("E2E_AliveCounter")
+                if "E2E_CRC8" in short:
+                    sig_names.add("E2E_CRC8")
+
+            if not ({"E2E_DataID", "E2E_AliveCounter", "E2E_CRC8"} <= sig_names):
                 continue
+
             self.e2e_messages.append(mn)
+
+            # Read DBC attributes
+            data_id = int(get_msg_attr_value(msg, "E2E_DataID", "0"))
+            max_delta = int(get_msg_attr_value(msg, "E2E_MaxDeltaCounter", "2"))
             asil = get_msg_attr_value(msg, "ASIL", "QM")
+            satisfies = get_msg_attr_value(msg, "Satisfies", "")
+            cycle_ms = get_msg_attr_value(msg, "GenMsgCycleTime", "0")
+
+            # Find E2E signal bit positions
+            crc_offset = 8    # default
+            counter_offset = 4  # default
+            dataid_offset = 0   # default
+            for s in msg.signals:
+                if "E2E_CRC8" in s.name:
+                    crc_offset = s.start
+                elif "E2E_AliveCounter" in s.name:
+                    counter_offset = s.start
+                elif "E2E_DataID" in s.name:
+                    dataid_offset = s.start
+
             try:
-                marker = e2e_pkg.create_system_signal("E2E_%s" % mn)
-                elem = marker.element
-                desc = elem.get_or_create_sub_element("DESC")
-                l2 = desc.get_or_create_sub_element("L-2")
-                l2.set_attribute("L", "EN")
-                l2.character_data = (
-                    "E2E Profile: DataID(4bit)+AliveCounter(4bit)+CRC8. "
-                    "CAN ID: 0x%03X. ASIL: %s. Cycle: %sms."
-                    % (msg.frame_id, asil, get_msg_attr_value(msg, "GenMsgCycleTime", "?"))
+                # Create END-TO-END-PROTECTION for this message
+                prot = prots.create_named_sub_element(
+                    "END-TO-END-PROTECTION", "E2E_%s" % mn
                 )
-            except Exception:
-                pass
+
+                # CATEGORY = profile identifier
+                prot.create_sub_element("CATEGORY").character_data = "E2E_PROFILE_01"
+
+                # END-TO-END-PROFILE with all parameters
+                profile = prot.create_sub_element("END-TO-END-PROFILE")
+                profile.create_sub_element("CATEGORY").character_data = "PROFILE_01"
+                profile.create_sub_element("DATA-ID-MODE").character_data = 0  # 0=ALL-16-BIT
+
+                # DATA-IDS (each DATA-ID is a direct value element)
+                data_ids_elem = profile.create_sub_element("DATA-IDS")
+                did_elem = data_ids_elem.create_sub_element("DATA-ID")
+                did_elem.character_data = str(data_id)
+
+                # Signal layout
+                profile.create_sub_element("DATA-LENGTH").character_data = str(msg.length * 8)
+                profile.create_sub_element("CRC-OFFSET").character_data = str(crc_offset)
+                profile.create_sub_element("COUNTER-OFFSET").character_data = str(counter_offset)
+                profile.create_sub_element("DATA-ID-NIBBLE-OFFSET").character_data = str(dataid_offset)
+
+                # E2E timing parameters (from DBC E2E_MaxDeltaCounter)
+                profile.create_sub_element("MAX-DELTA-COUNTER-INIT").character_data = str(max_delta)
+                profile.create_sub_element("MAX-NO-NEW-OR-REPEATED-DATA").character_data = str(max_delta + 1)
+                profile.create_sub_element("SYNC-COUNTER-INIT").character_data = "0"
+
+                # ADMIN-DATA for traceability (ASIL + Satisfies + I-PDU reference)
+                # Note: I-SIGNAL-I-PDUS not supported in END-TO-END-PROTECTION in R22-11.
+                # I-PDU link stored in ADMIN-DATA/SDGS as custom metadata.
+                admin = prot.create_sub_element("ADMIN-DATA")
+                sdgs = admin.create_sub_element("SDGS")
+                sdg = sdgs.create_sub_element("SDG")
+                sdg.set_attribute("GID", "SAFETY")
+
+                sd_asil = sdg.create_sub_element("SD")
+                sd_asil.set_attribute("GID", "ASIL")
+                sd_asil.character_data = str(asil)
+
+                if satisfies:
+                    sd_sat = sdg.create_sub_element("SD")
+                    sd_sat.set_attribute("GID", "SATISFIES")
+                    sd_sat.character_data = str(satisfies)
+
+                sd_can = sdg.create_sub_element("SD")
+                sd_can.set_attribute("GID", "CAN_ID")
+                sd_can.character_data = "0x%03X" % msg.frame_id
+
+                sd_cycle = sdg.create_sub_element("SD")
+                sd_cycle.set_attribute("GID", "CYCLE_MS")
+                sd_cycle.character_data = str(cycle_ms)
+
+                # I-PDU path reference (custom metadata — R22-11 doesn't
+                # support I-SIGNAL-I-PDUS under END-TO-END-PROTECTION)
+                if mn in self.ipdus:
+                    sd_ipdu = sdg.create_sub_element("SD")
+                    sd_ipdu.set_attribute("GID", "I-PDU-PATH")
+                    sd_ipdu.character_data = self.ipdus[mn].element.path
+
+                e2e_count += 1
+
+            except Exception as e:
+                print("  Warning: E2E %s: %s" % (mn, e))
+
+        print("    E2E protections: %d (Profile P01, END-TO-END-PROTECTION-SET)" % e2e_count)
 
     # -- Software Components -----------------------------------------------
 
