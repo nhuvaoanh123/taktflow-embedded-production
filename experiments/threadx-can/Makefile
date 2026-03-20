@@ -98,6 +98,33 @@ C_SOURCES += \
   $(FW)/ecu/fzc/cfg/Rte_Cfg_Fzc.c \
   $(FW)/ecu/fzc/src/Swc_Heartbeat.c
 
+# ---- Step 9: All FZC SWCs + MCAL + IoHwAb ----
+C_SOURCES += \
+  $(FW)/ecu/fzc/src/Swc_Steering.c \
+  $(FW)/ecu/fzc/src/Swc_Brake.c \
+  $(FW)/ecu/fzc/src/Swc_Lidar.c \
+  $(FW)/ecu/fzc/src/Swc_FzcSafety.c \
+  $(FW)/ecu/fzc/src/Swc_Buzzer.c \
+  $(FW)/ecu/fzc/src/Swc_FzcCanMonitor.c \
+  $(FW)/ecu/fzc/src/Swc_FzcCom.c \
+  $(FW)/ecu/fzc/src/Swc_FzcDcm.c \
+  $(FW)/ecu/fzc/src/Swc_FzcNvm.c \
+  $(FW)/ecu/fzc/src/Swc_FzcSensorFeeder.c \
+  $(FW)/ecu/fzc/src/Swc_FzcScheduler.c \
+  $(FW)/bsw/ecual/IoHwAb/src/IoHwAb.c \
+  $(FW)/bsw/mcal/Spi/src/Spi.c \
+  $(FW)/bsw/mcal/Adc/src/Adc.c \
+  $(FW)/bsw/mcal/Pwm/src/Pwm.c \
+  $(FW)/bsw/mcal/Dio/src/Dio.c \
+  $(FW)/bsw/mcal/Uart/src/Uart.c \
+  $(FW)/bsw/services/NvM/src/NvM.c \
+  $(FW)/platform/stm32/src/Spi_Hw_STM32.c \
+  $(FW)/platform/stm32/src/Adc_Hw_STM32.c \
+  $(FW)/platform/stm32/src/Pwm_Hw_STM32.c \
+  $(FW)/platform/stm32/src/Dio_Hw_STM32.c \
+  $(FW)/platform/stm32/src/Uart_Hw_STM32.c \
+  $(FW)/platform/stm32/src/Gpt_Hw_STM32.c
+
 # ---- Step 8: UDS Diagnostics ----
 C_SOURCES += \
   $(FW)/bsw/services/CanTp/src/CanTp.c \
@@ -150,6 +177,13 @@ INCLUDES = \
   -I$(FW)/bsw/ecual/IoHwAb/include \
   -I$(FW)/ecu/fzc/include \
   -I$(FW)/ecu/fzc/cfg/platform_target \
+  -I$(FW)/bsw/mcal/Spi/include \
+  -I$(FW)/bsw/mcal/Adc/include \
+  -I$(FW)/bsw/mcal/Pwm/include \
+  -I$(FW)/bsw/mcal/Dio/include \
+  -I$(FW)/bsw/mcal/Uart/include \
+  -I$(FW)/bsw/mcal/Gpt/include \
+  -I$(FW)/bsw/os/include \
   -I$(FW)/platform/stm32/include
 
 ##############################################################################

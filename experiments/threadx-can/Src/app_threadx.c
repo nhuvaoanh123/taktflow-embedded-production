@@ -36,6 +36,18 @@
 #include "Det.h"
 #include "Fzc_Cfg.h"
 #include "Swc_Heartbeat.h"
+#include "Swc_Steering.h"
+#include "Swc_Brake.h"
+#include "Swc_Lidar.h"
+#include "Swc_FzcSafety.h"
+#include "Swc_FzcCom.h"
+#include "Swc_FzcCanMonitor.h"
+#include "Swc_Buzzer.h"
+#include "Swc_FzcSensorFeeder.h"
+#include "IoHwAb.h"
+#include "Spi.h"
+#include "Adc.h"
+#include "Uart.h"
 #include "CanTp.h"
 #include "Dcm.h"
 #include "E2E.h"
@@ -186,9 +198,23 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   BswM_Init(NULL_PTR);
   WdgM_Init(NULL_PTR);
 
-  /* Step 7d: Rte + Swc_Heartbeat */
+  /* Step 7d: Rte */
   Rte_Init(&fzc_rte_config);
+
+  /* Step 9: All FZC SWCs + MCAL peripherals */
+  Spi_Init(NULL_PTR);
+  Adc_Init(NULL_PTR);
+  IoHwAb_Init(NULL_PTR);
+  Uart_Init(NULL_PTR);
   Swc_Heartbeat_Init();
+  Swc_Steering_Init(NULL_PTR);
+  Swc_Brake_Init(NULL_PTR);
+  Swc_Lidar_Init(NULL_PTR);
+  Swc_FzcCom_Init();
+  Swc_FzcCanMonitor_Init();
+  Swc_FzcSafety_Init();
+  Swc_Buzzer_Init();
+  Swc_FzcSensorFeeder_Init();
 
   /* Start CAN controller via BSW API */
   (void)Can_SetControllerMode(0u, CAN_CS_STARTED);
