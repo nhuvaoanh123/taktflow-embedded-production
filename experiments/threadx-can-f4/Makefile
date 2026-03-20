@@ -159,7 +159,7 @@ size: $(ELF)
 
 flash: $(ELF)
 	"C:\Program Files (x86)\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" \
-		--connect port=SWD index=2 --download $(ELF) --verify --start
+		--connect port=SWD sn=0670FF383930434B43202436 --download $(ELF) --verify --start
 
 clean:
 	rm -rf $(BUILD)

@@ -18,6 +18,15 @@
 #include "Rte.h"
 #include "Det.h"
 #include "Rzc_Cfg.h"
+#include "Swc_Heartbeat.h"
+#include "Swc_Motor.h"
+#include "Swc_Battery.h"
+#include "Swc_CurrentMonitor.h"
+#include "Swc_Encoder.h"
+#include "Swc_TempMonitor.h"
+#include "Swc_RzcCom.h"
+#include "Swc_RzcSafety.h"
+#include "Swc_RzcSensorFeeder.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -192,7 +201,7 @@ static void main_thread_entry(ULONG param)
     /* Step 7a: MCAL */
     Det_Init();
     Can_Init(&rzc_can_config);
-    Can_Hw_Start();
+    Can_SetControllerMode(0u, CAN_CS_STARTED);
     Uart_Print("  7a: Can OK\r\n");
 
     /* Step 7b: CanIf */
@@ -209,40 +218,50 @@ static void main_thread_entry(ULONG param)
     Rte_Init(&rzc_rte_config);
     Uart_Print("  7d: Rte OK\r\n");
 
+    /* SWC init */
+    Swc_Heartbeat_Init();
+    Swc_Motor_Init();
+    Swc_Battery_Init();
+    Swc_CurrentMonitor_Init();
+    Swc_Encoder_Init();
+    Swc_TempMonitor_Init();
+    Swc_RzcCom_Init();
+    Swc_RzcSafety_Init();
+    Swc_RzcSensorFeeder_Init();
+    Uart_Print("  SWC init OK\r\n");
+
     tx_thread_sleep(100);
-    Uart_Print("BSW init complete, ESR=");
+    Uart_Print("BSW+SWC init complete, ESR=");
     Uart_PrintHex32(CAN1->ESR);
     Uart_Print("\r\n");
 
-    /* Step 5: Periodic TX (heartbeat 0x012 every 50ms) */
-    Uart_Print("Starting periodic heartbeat TX...\r\n");
+    /* Wait for BSW to start processing */
+    tx_thread_sleep(100);
+
+    Uart_Print("BSW running. Monitoring CAN...\r\n");
     while (1)
     {
-        txData[0] = counter++;
-        txData[1] = (uint8_t)(bsw_tick & 0xFF);
-        txData[2] = (uint8_t)((bsw_tick >> 8) & 0xFF);
-        txData[3] = 0x03; /* RZC source */
-
-        CAN_TX(0x012, txData, 4);
-
-        /* Print status every second */
+        counter++;
         if ((counter % 20) == 0)
         {
+            uint32_t tsr = CAN1->TSR;
+            uint8_t tme = (uint8_t)((tsr >> 26u) & 0x07u);
+
             Uart_Print("[");
             Uart_PrintU32(bsw_tick / 1000);
             Uart_Print("s] tick=");
             Uart_PrintU32(bsw_tick);
-            Uart_Print(" tx=");
-            Uart_PrintU32(counter);
             Uart_Print(" rx=");
             Uart_PrintU32(can_rx_count);
             Uart_Print(" ESR=");
             Uart_PrintHex32(CAN1->ESR);
+            Uart_Print(" TME=");
+            Uart_PrintU32(tme);
             Uart_Print("\r\n");
         }
 
-        Led_Set(0, (counter & 1));  /* green toggle */
-        tx_thread_sleep(50);  /* 50ms at 1000Hz tick */
+        Led_Set(0, (counter & 1));
+        tx_thread_sleep(50);
     }
 }
 
