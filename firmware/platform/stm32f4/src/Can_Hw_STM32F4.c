@@ -338,3 +338,7 @@ Std_ReturnType Can_Hw_LoopbackTest(void)
     (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
     return E_NOT_OK;
 }
+
+/* Bringup debug stub — referenced by HardFault handler in stm32f4xx_it.c */
+void bringup_put_hex(uint32_t val) { (void)val; }
+void bringup_puts(const char* s) { (void)s; }
