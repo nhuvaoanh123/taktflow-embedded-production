@@ -56,7 +56,7 @@ static uint16_t  sig_tx_lidar_distance_range_cm;
 static uint16_t  sig_tx_lidar_distance_signalstrength;
 static uint8_t  sig_tx_lidar_distance_obstaclezone;
 static uint8_t  sig_tx_lidar_distance_sensorstatus;
-static uint32_t  sig_tx_dtc_broadcast_number;
+static uint16_t  sig_tx_dtc_broadcast_number;
 static uint8_t  sig_tx_dtc_broadcast_status;
 static uint8_t  sig_tx_dtc_broadcast_ecu_source;
 static uint8_t  sig_tx_dtc_broadcast_occurrencecount;
@@ -177,7 +177,7 @@ static boolean  sig_rx_door_lock_status_frontrightlock;
 static boolean  sig_rx_door_lock_status_rearleftlock;
 static boolean  sig_rx_door_lock_status_rearrightlock;
 static boolean  sig_rx_door_lock_status_centrallock;
-static uint32_t  sig_rx_dtc_broadcast_number;
+static uint16_t  sig_rx_dtc_broadcast_number;
 static uint8_t  sig_rx_dtc_broadcast_status;
 static uint8_t  sig_rx_dtc_broadcast_ecu_source;
 static uint8_t  sig_rx_dtc_broadcast_occurrencecount;
@@ -247,7 +247,7 @@ static const Com_SignalConfigType fzc_signal_config[] = {
     { 37u,   32u,    16u, COM_UINT16, FZC_COM_TX_LIDAR_DISTANCE, &sig_tx_lidar_distance_signalstrength, COM_RTE_SIGNAL_NONE },
     { 38u,   48u,     4u, COM_UINT8, FZC_COM_TX_LIDAR_DISTANCE, &sig_tx_lidar_distance_obstaclezone, COM_RTE_SIGNAL_NONE },
     { 39u,   52u,     4u, COM_UINT8, FZC_COM_TX_LIDAR_DISTANCE, &sig_tx_lidar_distance_sensorstatus, COM_RTE_SIGNAL_NONE },
-    { 40u,    7u,    24u, COM_UINT32, FZC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
+    { 40u,    7u,    16u, COM_UINT16, FZC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
     { 41u,   24u,     8u, COM_UINT8, FZC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_status, COM_RTE_SIGNAL_NONE },
     { 42u,   32u,     8u, COM_UINT8, FZC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_ecu_source, COM_RTE_SIGNAL_NONE },
     { 43u,   40u,     8u, COM_UINT8, FZC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_occurrencecount, COM_RTE_SIGNAL_NONE },
@@ -368,7 +368,7 @@ static const Com_SignalConfigType fzc_signal_config[] = {
     { 156u,    2u,     1u, COM_UINT8, FZC_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_rearleftlock, FZC_SIG_DOOR_LOCK_STATUS_REAR_LEFT_LOCK },
     { 157u,    3u,     1u, COM_UINT8, FZC_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_rearrightlock, FZC_SIG_DOOR_LOCK_STATUS_REAR_RIGHT_LOCK },
     { 158u,    4u,     1u, COM_UINT8, FZC_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_centrallock, FZC_SIG_DOOR_LOCK_STATUS_CENTRAL_LOCK },
-    { 159u,    7u,    24u, COM_UINT32, FZC_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, FZC_SIG_DTC_BROADCAST_NUMBER },
+    { 159u,    7u,    16u, COM_UINT16, FZC_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, FZC_SIG_DTC_BROADCAST_NUMBER },
     { 160u,   24u,     8u, COM_UINT8, FZC_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_status, FZC_SIG_DTC_BROADCAST_STATUS },
     { 161u,   32u,     8u, COM_UINT8, FZC_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_ecu_source, FZC_SIG_DTC_BROADCAST_ECU_SOURCE },
     { 162u,   40u,     8u, COM_UINT8, FZC_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_occurrencecount, FZC_SIG_DTC_BROADCAST_OCCURRENCE_COUNT },
@@ -402,10 +402,10 @@ static const Com_SignalConfigType fzc_signal_config[] = {
 static const Com_TxPduConfigType fzc_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
     { FZC_COM_TX_FZC_HEARTBEAT,     4u,    50u },   /* CAN 0x011 */
-    { FZC_COM_TX_STEERING_STATUS,     8u,   100u },   /* CAN 0x200 */
+    { FZC_COM_TX_STEERING_STATUS,     8u,    50u },   /* CAN 0x200 */
     { FZC_COM_TX_BRAKE_STATUS,     8u,    50u },   /* CAN 0x201 */
     { FZC_COM_TX_BRAKE_FAULT,     4u,     0u },   /* CAN 0x210 */
-    { FZC_COM_TX_MOTOR_CUTOFF_REQ,     4u,   100u },   /* CAN 0x211 */
+    { FZC_COM_TX_MOTOR_CUTOFF_REQ,     4u,    50u },   /* CAN 0x211 */
     { FZC_COM_TX_LIDAR_DISTANCE,     8u,    10u },   /* CAN 0x220 */
     { FZC_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
     { FZC_COM_TX_UDS_RESP_FZC,     8u,     0u },   /* CAN 0x7E9 */

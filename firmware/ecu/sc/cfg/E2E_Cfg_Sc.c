@@ -46,9 +46,9 @@ static const E2E_PduProtectCfgType sc_e2e_rx_config[] = {
     { SC_COM_RX_CVC_HEARTBEAT,  0x02u,  4u,  8u },   /* CVC_Heartbeat */
     { SC_COM_RX_FZC_HEARTBEAT,  0x03u,  4u,  8u },   /* FZC_Heartbeat */
     { SC_COM_RX_RZC_HEARTBEAT,  0x04u,  4u,  8u },   /* RZC_Heartbeat */
-    { SC_COM_RX_ICU_HEARTBEAT,  0x10u,  4u,  8u },   /* ICU_Heartbeat */
-    { SC_COM_RX_TCU_HEARTBEAT,  0x11u,  4u,  8u },   /* TCU_Heartbeat */
-    { SC_COM_RX_BCM_HEARTBEAT,  0x12u,  4u,  8u },   /* BCM_Heartbeat */
+    { SC_COM_RX_ICU_HEARTBEAT,  0x00u,  4u,  8u },   /* ICU_Heartbeat */
+    { SC_COM_RX_TCU_HEARTBEAT,  0x00u,  4u,  8u },   /* TCU_Heartbeat */
+    { SC_COM_RX_BCM_HEARTBEAT,  0x00u,  4u,  8u },   /* BCM_Heartbeat */
     { SC_COM_RX_VEHICLE_STATE,  0x05u,  4u,  8u },   /* Vehicle_State */
     { SC_COM_RX_TORQUE_REQUEST,  0x06u,  4u,  8u },   /* Torque_Request */
     { SC_COM_RX_STEER_COMMAND,  0x07u,  4u,  8u },   /* Steer_Command */
@@ -61,7 +61,7 @@ static const E2E_PduProtectCfgType sc_e2e_rx_config[] = {
     { SC_COM_RX_MOTOR_STATUS,  0x0Eu,  4u,  8u },   /* Motor_Status */
     { SC_COM_RX_MOTOR_CURRENT,  0x0Fu,  4u,  8u },   /* Motor_Current */
     { SC_COM_RX_MOTOR_TEMPERATURE,  0x00u,  4u,  8u },   /* Motor_Temperature */
-    { SC_COM_RX_BATTERY_STATUS,  0x13u,  4u,  8u },   /* Battery_Status */
+    { SC_COM_RX_BATTERY_STATUS,  0x00u,  4u,  8u },   /* Battery_Status */
 };
 
 #define SC_E2E_RX_PROTECT_COUNT  20u

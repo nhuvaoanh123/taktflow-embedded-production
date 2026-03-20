@@ -21,7 +21,7 @@ static uint8_t  sig_tx_tcu_heartbeat_e2e_alivecounter;
 static uint8_t  sig_tx_tcu_heartbeat_e2e_crc8;
 static uint8_t  sig_tx_tcu_heartbeat_alivecounter;
 static uint8_t  sig_tx_tcu_heartbeat_ecu_id;
-static uint32_t  sig_tx_dtc_broadcast_number;
+static uint16_t  sig_tx_dtc_broadcast_number;
 static uint8_t  sig_tx_dtc_broadcast_status;
 static uint8_t  sig_tx_dtc_broadcast_ecu_source;
 static uint8_t  sig_tx_dtc_broadcast_occurrencecount;
@@ -177,7 +177,7 @@ static boolean  sig_rx_door_lock_status_frontrightlock;
 static boolean  sig_rx_door_lock_status_rearleftlock;
 static boolean  sig_rx_door_lock_status_rearrightlock;
 static boolean  sig_rx_door_lock_status_centrallock;
-static uint32_t  sig_rx_dtc_broadcast_number;
+static uint16_t  sig_rx_dtc_broadcast_number;
 static uint8_t  sig_rx_dtc_broadcast_status;
 static uint8_t  sig_rx_dtc_broadcast_ecu_source;
 static uint8_t  sig_rx_dtc_broadcast_occurrencecount;
@@ -212,7 +212,7 @@ static const Com_SignalConfigType tcu_signal_config[] = {
     {  2u,    8u,     8u, COM_UINT8, TCU_COM_TX_TCU_HEARTBEAT, &sig_tx_tcu_heartbeat_e2e_crc8, COM_RTE_SIGNAL_NONE },
     {  3u,   16u,     8u, COM_UINT8, TCU_COM_TX_TCU_HEARTBEAT, &sig_tx_tcu_heartbeat_alivecounter, COM_RTE_SIGNAL_NONE },
     {  4u,   24u,     8u, COM_UINT8, TCU_COM_TX_TCU_HEARTBEAT, &sig_tx_tcu_heartbeat_ecu_id, COM_RTE_SIGNAL_NONE },
-    {  5u,    7u,    24u, COM_UINT32, TCU_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
+    {  5u,    7u,    16u, COM_UINT16, TCU_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
     {  6u,   24u,     8u, COM_UINT8, TCU_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_status, COM_RTE_SIGNAL_NONE },
     {  7u,   32u,     8u, COM_UINT8, TCU_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_ecu_source, COM_RTE_SIGNAL_NONE },
     {  8u,   40u,     8u, COM_UINT8, TCU_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_occurrencecount, COM_RTE_SIGNAL_NONE },
@@ -368,7 +368,7 @@ static const Com_SignalConfigType tcu_signal_config[] = {
     { 156u,    2u,     1u, COM_UINT8, TCU_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_rearleftlock, TCU_SIG_DOOR_LOCK_STATUS_REAR_LEFT_LOCK },
     { 157u,    3u,     1u, COM_UINT8, TCU_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_rearrightlock, TCU_SIG_DOOR_LOCK_STATUS_REAR_RIGHT_LOCK },
     { 158u,    4u,     1u, COM_UINT8, TCU_COM_RX_DOOR_LOCK_STATUS, &sig_rx_door_lock_status_centrallock, TCU_SIG_DOOR_LOCK_STATUS_CENTRAL_LOCK },
-    { 159u,    7u,    24u, COM_UINT32, TCU_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, TCU_SIG_DTC_BROADCAST_NUMBER },
+    { 159u,    7u,    16u, COM_UINT16, TCU_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, TCU_SIG_DTC_BROADCAST_NUMBER },
     { 160u,   24u,     8u, COM_UINT8, TCU_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_status, TCU_SIG_DTC_BROADCAST_STATUS },
     { 161u,   32u,     8u, COM_UINT8, TCU_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_ecu_source, TCU_SIG_DTC_BROADCAST_ECU_SOURCE },
     { 162u,   40u,     8u, COM_UINT8, TCU_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_occurrencecount, TCU_SIG_DTC_BROADCAST_OCCURRENCE_COUNT },

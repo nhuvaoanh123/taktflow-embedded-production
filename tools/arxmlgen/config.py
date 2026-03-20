@@ -36,7 +36,7 @@ class GenConfig:
     settings: dict = field(default_factory=dict)
 
 
-E2E_SOURCES = ("dbc", "sidecar")
+E2E_SOURCES = ("dbc", "sidecar", "arxml")
 
 
 @dataclass
@@ -47,7 +47,7 @@ class ProjectConfig:
     arxml_paths: list[str] = field(default_factory=list)
     dbc_path: str | None = None
     sidecar_path: str | None = None
-    e2e_source: str = "sidecar"  # "dbc" or "sidecar"
+    e2e_source: str = "arxml"  # "arxml" (from END-TO-END-PROTECTION-SET), "dbc", or "sidecar"
     output: OutputConfig = field(default_factory=OutputConfig)
     ecus: dict[str, EcuConfig] = field(default_factory=dict)
     generators: dict[str, GenConfig] = field(default_factory=dict)

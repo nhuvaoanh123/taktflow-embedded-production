@@ -428,6 +428,71 @@
 #define SC_COM_SIG_COUNT   180u
 
 /* ====================================================================
+ * E2E Data IDs
+ * ==================================================================== */
+
+#ifndef SC_E2E_ESTOP_BROADCAST_DATA_ID
+  #define SC_E2E_ESTOP_BROADCAST_DATA_ID  0x01u
+#endif
+#ifndef SC_E2E_CVC_HEARTBEAT_DATA_ID
+  #define SC_E2E_CVC_HEARTBEAT_DATA_ID  0x02u
+#endif
+#ifndef SC_E2E_FZC_HEARTBEAT_DATA_ID
+  #define SC_E2E_FZC_HEARTBEAT_DATA_ID  0x03u
+#endif
+#ifndef SC_E2E_RZC_HEARTBEAT_DATA_ID
+  #define SC_E2E_RZC_HEARTBEAT_DATA_ID  0x04u
+#endif
+#ifndef SC_E2E_ICU_HEARTBEAT_DATA_ID
+  #define SC_E2E_ICU_HEARTBEAT_DATA_ID  0x00u
+#endif
+#ifndef SC_E2E_TCU_HEARTBEAT_DATA_ID
+  #define SC_E2E_TCU_HEARTBEAT_DATA_ID  0x00u
+#endif
+#ifndef SC_E2E_BCM_HEARTBEAT_DATA_ID
+  #define SC_E2E_BCM_HEARTBEAT_DATA_ID  0x00u
+#endif
+#ifndef SC_E2E_VEHICLE_STATE_DATA_ID
+  #define SC_E2E_VEHICLE_STATE_DATA_ID  0x05u
+#endif
+#ifndef SC_E2E_TORQUE_REQUEST_DATA_ID
+  #define SC_E2E_TORQUE_REQUEST_DATA_ID  0x06u
+#endif
+#ifndef SC_E2E_STEER_COMMAND_DATA_ID
+  #define SC_E2E_STEER_COMMAND_DATA_ID  0x07u
+#endif
+#ifndef SC_E2E_BRAKE_COMMAND_DATA_ID
+  #define SC_E2E_BRAKE_COMMAND_DATA_ID  0x08u
+#endif
+#ifndef SC_E2E_STEERING_STATUS_DATA_ID
+  #define SC_E2E_STEERING_STATUS_DATA_ID  0x09u
+#endif
+#ifndef SC_E2E_BRAKE_STATUS_DATA_ID
+  #define SC_E2E_BRAKE_STATUS_DATA_ID  0x0Au
+#endif
+#ifndef SC_E2E_BRAKE_FAULT_DATA_ID
+  #define SC_E2E_BRAKE_FAULT_DATA_ID  0x0Bu
+#endif
+#ifndef SC_E2E_MOTOR_CUTOFF_REQ_DATA_ID
+  #define SC_E2E_MOTOR_CUTOFF_REQ_DATA_ID  0x0Cu
+#endif
+#ifndef SC_E2E_LIDAR_DISTANCE_DATA_ID
+  #define SC_E2E_LIDAR_DISTANCE_DATA_ID  0x0Du
+#endif
+#ifndef SC_E2E_MOTOR_STATUS_DATA_ID
+  #define SC_E2E_MOTOR_STATUS_DATA_ID  0x0Eu
+#endif
+#ifndef SC_E2E_MOTOR_CURRENT_DATA_ID
+  #define SC_E2E_MOTOR_CURRENT_DATA_ID  0x0Fu
+#endif
+#ifndef SC_E2E_MOTOR_TEMPERATURE_DATA_ID
+  #define SC_E2E_MOTOR_TEMPERATURE_DATA_ID  0x00u
+#endif
+#ifndef SC_E2E_BATTERY_STATUS_DATA_ID
+  #define SC_E2E_BATTERY_STATUS_DATA_ID  0x00u
+#endif
+
+/* ====================================================================
  * Application-specific constants (hand-authored, not generated)
  * ==================================================================== */
 #if __has_include("Sc_App.h")

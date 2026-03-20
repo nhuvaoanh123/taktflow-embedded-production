@@ -50,9 +50,9 @@ static const E2E_PduProtectCfgType fzc_e2e_rx_config[] = {
     { FZC_COM_RX_ESTOP_BROADCAST,  0x01u,  4u,  8u },   /* EStop_Broadcast */
     { FZC_COM_RX_CVC_HEARTBEAT,  0x02u,  4u,  8u },   /* CVC_Heartbeat */
     { FZC_COM_RX_RZC_HEARTBEAT,  0x04u,  4u,  8u },   /* RZC_Heartbeat */
-    { FZC_COM_RX_ICU_HEARTBEAT,  0x10u,  4u,  8u },   /* ICU_Heartbeat */
-    { FZC_COM_RX_TCU_HEARTBEAT,  0x11u,  4u,  8u },   /* TCU_Heartbeat */
-    { FZC_COM_RX_BCM_HEARTBEAT,  0x12u,  4u,  8u },   /* BCM_Heartbeat */
+    { FZC_COM_RX_ICU_HEARTBEAT,  0x00u,  4u,  8u },   /* ICU_Heartbeat */
+    { FZC_COM_RX_TCU_HEARTBEAT,  0x00u,  4u,  8u },   /* TCU_Heartbeat */
+    { FZC_COM_RX_BCM_HEARTBEAT,  0x00u,  4u,  8u },   /* BCM_Heartbeat */
     { FZC_COM_RX_VEHICLE_STATE,  0x05u,  4u,  8u },   /* Vehicle_State */
     { FZC_COM_RX_TORQUE_REQUEST,  0x06u,  4u,  8u },   /* Torque_Request */
     { FZC_COM_RX_STEER_COMMAND,  0x07u,  4u,  8u },   /* Steer_Command */
@@ -60,7 +60,7 @@ static const E2E_PduProtectCfgType fzc_e2e_rx_config[] = {
     { FZC_COM_RX_MOTOR_STATUS,  0x0Eu,  4u,  8u },   /* Motor_Status */
     { FZC_COM_RX_MOTOR_CURRENT,  0x0Fu,  4u,  8u },   /* Motor_Current */
     { FZC_COM_RX_MOTOR_TEMPERATURE,  0x00u,  4u,  8u },   /* Motor_Temperature */
-    { FZC_COM_RX_BATTERY_STATUS,  0x13u,  4u,  8u },   /* Battery_Status */
+    { FZC_COM_RX_BATTERY_STATUS,  0x00u,  4u,  8u },   /* Battery_Status */
 };
 
 #define FZC_E2E_RX_PROTECT_COUNT  14u

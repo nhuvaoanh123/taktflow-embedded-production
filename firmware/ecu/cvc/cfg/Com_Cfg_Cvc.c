@@ -59,7 +59,7 @@ static boolean  sig_tx_body_control_cmd_taillighton;
 static boolean  sig_tx_body_control_cmd_hazardactive;
 static uint8_t  sig_tx_body_control_cmd_turnsignalcmd;
 static boolean  sig_tx_body_control_cmd_doorlockcmd;
-static uint32_t  sig_tx_dtc_broadcast_number;
+static uint16_t  sig_tx_dtc_broadcast_number;
 static uint8_t  sig_tx_dtc_broadcast_status;
 static uint8_t  sig_tx_dtc_broadcast_ecu_source;
 static uint8_t  sig_tx_dtc_broadcast_occurrencecount;
@@ -244,7 +244,7 @@ static const Com_SignalConfigType cvc_signal_config[] = {
     { 40u,    3u,     1u, COM_UINT8, CVC_COM_TX_BODY_CONTROL_CMD, &sig_tx_body_control_cmd_hazardactive, COM_RTE_SIGNAL_NONE },
     { 41u,    4u,     2u, COM_UINT8, CVC_COM_TX_BODY_CONTROL_CMD, &sig_tx_body_control_cmd_turnsignalcmd, COM_RTE_SIGNAL_NONE },
     { 42u,    6u,     1u, COM_UINT8, CVC_COM_TX_BODY_CONTROL_CMD, &sig_tx_body_control_cmd_doorlockcmd, COM_RTE_SIGNAL_NONE },
-    { 43u,    7u,    24u, COM_UINT32, CVC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
+    { 43u,    7u,    16u, COM_UINT16, CVC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
     { 44u,   24u,     8u, COM_UINT8, CVC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_status, COM_RTE_SIGNAL_NONE },
     { 45u,   32u,     8u, COM_UINT8, CVC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_ecu_source, COM_RTE_SIGNAL_NONE },
     { 46u,   40u,     8u, COM_UINT8, CVC_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_occurrencecount, COM_RTE_SIGNAL_NONE },

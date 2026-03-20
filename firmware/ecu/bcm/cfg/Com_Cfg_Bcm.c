@@ -35,7 +35,7 @@ static boolean  sig_tx_door_lock_status_frontrightlock;
 static boolean  sig_tx_door_lock_status_rearleftlock;
 static boolean  sig_tx_door_lock_status_rearrightlock;
 static boolean  sig_tx_door_lock_status_centrallock;
-static uint32_t  sig_tx_dtc_broadcast_number;
+static uint16_t  sig_tx_dtc_broadcast_number;
 static uint8_t  sig_tx_dtc_broadcast_status;
 static uint8_t  sig_tx_dtc_broadcast_ecu_source;
 static uint8_t  sig_tx_dtc_broadcast_occurrencecount;
@@ -176,7 +176,7 @@ static boolean  sig_rx_body_control_cmd_taillighton;
 static boolean  sig_rx_body_control_cmd_hazardactive;
 static uint8_t  sig_rx_body_control_cmd_turnsignalcmd;
 static boolean  sig_rx_body_control_cmd_doorlockcmd;
-static uint32_t  sig_rx_dtc_broadcast_number;
+static uint16_t  sig_rx_dtc_broadcast_number;
 static uint8_t  sig_rx_dtc_broadcast_status;
 static uint8_t  sig_rx_dtc_broadcast_ecu_source;
 static uint8_t  sig_rx_dtc_broadcast_occurrencecount;
@@ -226,7 +226,7 @@ static const Com_SignalConfigType bcm_signal_config[] = {
     { 16u,    2u,     1u, COM_UINT8, BCM_COM_TX_DOOR_LOCK_STATUS, &sig_tx_door_lock_status_rearleftlock, COM_RTE_SIGNAL_NONE },
     { 17u,    3u,     1u, COM_UINT8, BCM_COM_TX_DOOR_LOCK_STATUS, &sig_tx_door_lock_status_rearrightlock, COM_RTE_SIGNAL_NONE },
     { 18u,    4u,     1u, COM_UINT8, BCM_COM_TX_DOOR_LOCK_STATUS, &sig_tx_door_lock_status_centrallock, COM_RTE_SIGNAL_NONE },
-    { 19u,    7u,    24u, COM_UINT32, BCM_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
+    { 19u,    7u,    16u, COM_UINT16, BCM_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_number, COM_RTE_SIGNAL_NONE },
     { 20u,   24u,     8u, COM_UINT8, BCM_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_status, COM_RTE_SIGNAL_NONE },
     { 21u,   32u,     8u, COM_UINT8, BCM_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_ecu_source, COM_RTE_SIGNAL_NONE },
     { 22u,   40u,     8u, COM_UINT8, BCM_COM_TX_DTC_BROADCAST, &sig_tx_dtc_broadcast_occurrencecount, COM_RTE_SIGNAL_NONE },
@@ -367,7 +367,7 @@ static const Com_SignalConfigType bcm_signal_config[] = {
     { 155u,    3u,     1u, COM_UINT8, BCM_COM_RX_BODY_CONTROL_CMD, &sig_rx_body_control_cmd_hazardactive, BCM_SIG_BODY_CONTROL_CMD_HAZARD_ACTIVE },
     { 156u,    4u,     2u, COM_UINT8, BCM_COM_RX_BODY_CONTROL_CMD, &sig_rx_body_control_cmd_turnsignalcmd, BCM_SIG_BODY_CONTROL_CMD_TURN_SIGNAL_CMD },
     { 157u,    6u,     1u, COM_UINT8, BCM_COM_RX_BODY_CONTROL_CMD, &sig_rx_body_control_cmd_doorlockcmd, BCM_SIG_BODY_CONTROL_CMD_DOOR_LOCK_CMD },
-    { 158u,    7u,    24u, COM_UINT32, BCM_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, BCM_SIG_DTC_BROADCAST_NUMBER },
+    { 158u,    7u,    16u, COM_UINT16, BCM_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_number, BCM_SIG_DTC_BROADCAST_NUMBER },
     { 159u,   24u,     8u, COM_UINT8, BCM_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_status, BCM_SIG_DTC_BROADCAST_STATUS },
     { 160u,   32u,     8u, COM_UINT8, BCM_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_ecu_source, BCM_SIG_DTC_BROADCAST_ECU_SOURCE },
     { 161u,   40u,     8u, COM_UINT8, BCM_COM_RX_DTC_BROADCAST, &sig_rx_dtc_broadcast_occurrencecount, BCM_SIG_DTC_BROADCAST_OCCURRENCE_COUNT },

@@ -35,7 +35,7 @@ static const E2E_PduProtectCfgType rzc_e2e_tx_config[] = {
     { RZC_COM_TX_MOTOR_STATUS,  0x0Eu,  4u,  8u },   /* Motor_Status */
     { RZC_COM_TX_MOTOR_CURRENT,  0x0Fu,  4u,  8u },   /* Motor_Current */
     { RZC_COM_TX_MOTOR_TEMPERATURE,  0x00u,  4u,  8u },   /* Motor_Temperature */
-    { RZC_COM_TX_BATTERY_STATUS,  0x13u,  4u,  8u },   /* Battery_Status */
+    { RZC_COM_TX_BATTERY_STATUS,  0x00u,  4u,  8u },   /* Battery_Status */
 };
 
 #define RZC_E2E_TX_PROTECT_COUNT  5u
@@ -49,9 +49,9 @@ static const E2E_PduProtectCfgType rzc_e2e_rx_config[] = {
     { RZC_COM_RX_ESTOP_BROADCAST,  0x01u,  4u,  8u },   /* EStop_Broadcast */
     { RZC_COM_RX_CVC_HEARTBEAT,  0x02u,  4u,  8u },   /* CVC_Heartbeat */
     { RZC_COM_RX_FZC_HEARTBEAT,  0x03u,  4u,  8u },   /* FZC_Heartbeat */
-    { RZC_COM_RX_ICU_HEARTBEAT,  0x10u,  4u,  8u },   /* ICU_Heartbeat */
-    { RZC_COM_RX_TCU_HEARTBEAT,  0x11u,  4u,  8u },   /* TCU_Heartbeat */
-    { RZC_COM_RX_BCM_HEARTBEAT,  0x12u,  4u,  8u },   /* BCM_Heartbeat */
+    { RZC_COM_RX_ICU_HEARTBEAT,  0x00u,  4u,  8u },   /* ICU_Heartbeat */
+    { RZC_COM_RX_TCU_HEARTBEAT,  0x00u,  4u,  8u },   /* TCU_Heartbeat */
+    { RZC_COM_RX_BCM_HEARTBEAT,  0x00u,  4u,  8u },   /* BCM_Heartbeat */
     { RZC_COM_RX_VEHICLE_STATE,  0x05u,  4u,  8u },   /* Vehicle_State */
     { RZC_COM_RX_TORQUE_REQUEST,  0x06u,  4u,  8u },   /* Torque_Request */
     { RZC_COM_RX_STEER_COMMAND,  0x07u,  4u,  8u },   /* Steer_Command */
