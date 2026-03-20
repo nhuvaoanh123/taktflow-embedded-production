@@ -239,14 +239,64 @@ static void main_thread_entry(ULONG param)
     /* Wait for BSW to start processing */
     tx_thread_sleep(100);
 
-    /* Debug: manually call Com_SendSignal to test TX path */
+    /* Debug: trace the TX chain step by step */
     {
         uint8_t val = 3u;
-        Com_SendSignal(RZC_COM_SIG_RZC_HEARTBEAT_ECU_ID, &val);
-        Uart_Print("Forced Com_SendSignal(ECU_ID=3)\r\n");
+        Std_ReturnType ret;
+
+        /* Step A: Com_SendSignal */
+        ret = Com_SendSignal(RZC_COM_SIG_RZC_HEARTBEAT_ECU_ID, &val);
+        Uart_Print("A: Com_SendSignal=");
+        Uart_PrintU32(ret);
+        Uart_Print("\r\n");
+
+        /* Step B: skipped (com_tx_pending is static) */
+
+        /* Step C: call PduR_Transmit directly */
+        {
+            uint8_t test_data[8] = {0x12, 0x34, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
+            PduInfoType pdu = { test_data, 4u };
+            ret = PduR_Transmit(RZC_COM_TX_RZC_HEARTBEAT, &pdu);
+            Uart_Print("C: PduR_Transmit=");
+            Uart_PrintU32(ret);
+            Uart_Print("\r\n");
+        }
+
+        /* Step D: call CanIf_Transmit directly */
+        {
+            uint8_t test_data[8] = {0x56, 0x78, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
+            PduInfoType pdu = { test_data, 4u };
+            ret = CanIf_Transmit(RZC_COM_TX_RZC_HEARTBEAT, &pdu);
+            Uart_Print("D: CanIf_Transmit=");
+            Uart_PrintU32(ret);
+            Uart_Print("\r\n");
+        }
+
+        /* Step E: call Can_Hw_Transmit directly */
+        {
+            uint8_t test_data[4] = {0xAB, 0xCD, 0x03, 0x00};
+
+            /* Check HAL CAN state first */
+            Uart_Print("E: HAL_state=");
+            Uart_PrintU32(Can_Hw_GetHalState());
+            Uart_Print(" MCR=");
+            Uart_PrintHex32(CAN1->MCR);
+            Uart_Print(" MSR=");
+            Uart_PrintHex32(CAN1->MSR);
+            Uart_Print("\r\n");
+
+            ret = Can_Hw_Transmit(0x012u, test_data, 4u);
+            Uart_Print("E: Can_Hw_Transmit=");
+            Uart_PrintU32(ret);
+            Uart_Print(" TME=");
+            Uart_PrintU32((CAN1->TSR >> 26u) & 0x07u);
+            Uart_Print(" ESR=");
+            Uart_PrintHex32(CAN1->ESR);
+            Uart_Print("\r\n");
+        }
     }
 
-    tx_thread_sleep(100); /* let Com_MainFunction_Tx process it */
+    tx_thread_sleep(100);
 
     Uart_Print("BSW running. Monitoring CAN...\r\n");
     while (1)

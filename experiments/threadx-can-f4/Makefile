@@ -45,10 +45,12 @@ BSW      = $(ROOT)/firmware/bsw
 PLAT_F4  = $(ROOT)/firmware/platform/stm32f4
 ECU_RZC  = $(ROOT)/firmware/ecu/rzc
 
+CUBEMX_SRC = $(ROOT)/firmware/ecu/rzc_f4/cuberzccf4fg/Core/Src
+
 vpath %.c Src $(BSW)/mcal/Can/src $(BSW)/services/Det/src $(BSW)/services/SchM/src \
          $(BSW)/ecual/CanIf/src $(BSW)/ecual/PduR/src $(BSW)/services/Com/src \
          $(BSW)/services/E2E/src $(BSW)/rte/src $(PLAT_F4)/src \
-         $(ECU_RZC)/cfg $(ECU_RZC)/src
+         $(ECU_RZC)/cfg $(ECU_RZC)/src $(CUBEMX_SRC)
 
 INCLUDES += -I$(BSW)/include -I$(BSW)/mcal/Can/include -I$(BSW)/services/Det/include \
             -I$(BSW)/services/SchM/include -I$(BSW)/services/Com/include \
@@ -66,6 +68,7 @@ INCLUDES += -I$(BSW)/include -I$(BSW)/mcal/Can/include -I$(BSW)/services/Det/inc
 
 # Step 9: Full BSW + all RZC SWCs
 APP_SRCS = main.c SchM_ThreadX.c bsw_stubs.c \
+           stm32f4xx_hal_msp.c \
            Can.c Can_Hw_STM32F4.c Det.c \
            CanIf.c CanIf_Cfg_Rzc.c \
            PduR.c PduR_Cfg_Rzc.c \
