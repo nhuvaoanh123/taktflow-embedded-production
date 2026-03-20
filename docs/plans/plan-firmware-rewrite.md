@@ -1,6 +1,6 @@
 # Plan: Firmware Rewrite — HARA-Driven Architecture
 
-**Status**: Phase 0 DONE, Phase 0.5 IN PROGRESS
+**Status**: Phase 0 DONE, Phase 0.5 DONE, Phase 1 DONE (partial — needs pipeline restructure)
 **Date**: 2026-03-20
 **Goal**: Rewrite firmware architecture top-down from HARA, not from code bugs.
 
@@ -95,6 +95,132 @@ CVC Vehicle State Machine must transition to SAFE_STOP when:
 
 **Current violation**: CVC stuck in INIT because heartbeat E2E rejects frames.
 **HARA mandate**: VSM transition logic is the core safety mechanism.
+
+---
+
+## Pipeline Architecture — Iterative, Not One-Shot
+
+### Current (broken)
+
+```
+DBC ──→ dbc2arxml.py ──→ ARXML ──→ arxmlgen ──→ C configs
+         (everything        (everything
+          in one shot)        in one shot)
+```
+
+Problems:
+- No intermediate validation
+- Can't re-run a single step
+- Error at step 3 requires re-running from step 1
+- No way to inspect/fix intermediate ARXML before codegen
+
+### Target (iterative with validation gates)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Step 1: DBC Validate                                         │
+│   Input:  gateway/taktflow_vehicle.dbc                       │
+│   Check:  12-point audit (Phase 0 checks)                    │
+│   Output: PASS/FAIL + report                                 │
+│   Gate:   STOP if FAIL                                       │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Step 2: DBC → ARXML Base                                     │
+│   Input:  DBC (validated)                                    │
+│   Tool:   dbc2arxml.py --step=base                           │
+│   Output: arxml/TaktflowSystem_base.arxml                    │
+│           (signals, PDUs, frames, CAN cluster, ECU instances)│
+│   Gate:   0 reference errors                                 │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Step 3: Enrich ARXML (E2E + SWCs + Connectors)               │
+│   Input:  arxml/TaktflowSystem_base.arxml                    │
+│           + model/ecu_sidecar.yaml (scheduling, DTCs, enums) │
+│           + DBC (E2E_DataID, Satisfies, MaxDelta attributes) │
+│   Tool:   dbc2arxml.py --step=enrich                         │
+│   Output: arxml/TaktflowSystem.arxml                         │
+│           (base + END-TO-END-PROTECTION-SET                  │
+│            + SWC types + assembly connectors                 │
+│            + ADMIN-DATA traceability)                        │
+│   Gate:   0 reference errors + E2E count matches DBC         │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Step 4: ARXML Validate                                       │
+│   Input:  arxml/TaktflowSystem.arxml                         │
+│   Check:  - E2E protections == DBC E2E-protected messages    │
+│           - Every ASIL message has E2E protection element     │
+│           - Every E2E DataID matches DBC BA_ value            │
+│           - ADMIN-DATA/Satisfies present on ASIL elements    │
+│           - Signal count matches DBC                          │
+│           - I-PDU count matches DBC                           │
+│   Output: PASS/FAIL + report                                 │
+│   Gate:   STOP if FAIL                                       │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Step 5: ARXML → C Configs (per ECU)                          │
+│   Input:  arxml/TaktflowSystem.arxml (validated)             │
+│           + model/ecu_sidecar.yaml                           │
+│   Tool:   python -m tools.arxmlgen --config project.yaml     │
+│   Output: firmware/ecu/*/cfg/ (Com_Cfg, CanIf_Cfg, E2E_Cfg, │
+│           PduR_Cfg, Rte_Cfg per ECU)                         │
+│           firmware/ecu/*/include/ (Ecu_Cfg.h, Rte headers)   │
+│   Gate:   93 files written, 0 errors                         │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Step 6: C Config Validate                                    │
+│   Input:  Generated C configs                                │
+│   Check:  - Every E2E DataID in .h matches ARXML value       │
+│           - Every Com CycleTimeMs matches DBC GenMsgCycleTime│
+│           - Signal count per ECU matches ARXML                │
+│           - PDU ID uniqueness per ECU                         │
+│           - gcc -fsyntax-only passes for all ECUs             │
+│   Output: PASS/FAIL + report                                 │
+│   Gate:   STOP if FAIL                                       │
+└──────────────────────────┬───────────────────────────────────┘
+                           ▼
+                    Code is ready for
+                    firmware build + test
+```
+
+### Key principles
+
+1. **Each step reads ONLY the output of the previous step** — no reaching back to DBC from step 5
+2. **Each step has a validation gate** — STOP on failure, fix, re-run from that step
+3. **Steps can be run individually** — `make step2` re-runs only ARXML base generation
+4. **Intermediate artifacts are inspectable** — you can open `TaktflowSystem_base.arxml` and check it before enrichment
+5. **Errors are caught early** — DBC validation (step 1) catches most issues before any generation
+
+### Implementation
+
+Single Makefile target per step:
+
+```makefile
+step1-validate-dbc:
+    python tools/sanity_check_all.py --dbc-only
+
+step2-arxml-base:
+    python tools/arxml/dbc2arxml.py --step=base gateway/taktflow_vehicle.dbc arxml/
+
+step3-arxml-enrich:
+    python tools/arxml/dbc2arxml.py --step=enrich arxml/ model/ecu_sidecar.yaml
+
+step4-validate-arxml:
+    python tools/sanity_check_all.py --arxml-only
+
+step5-codegen:
+    python -m tools.arxmlgen --config project.yaml
+
+step6-validate-configs:
+    python tools/sanity_check_all.py --configs-only
+
+# Full pipeline (stops on first failure)
+generate: step1-validate-dbc step2-arxml-base step3-arxml-enrich step4-validate-arxml step5-codegen step6-validate-configs
+```
 
 ---
 
