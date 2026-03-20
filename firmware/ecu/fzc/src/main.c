@@ -542,10 +542,7 @@ int main(void)
 
 #ifdef USE_THREADX
     /* Start ThreadX kernel — never returns.
-     * tx_kernel_enter() calls:
-     *   1. _tx_initialize_low_level() — our .S file, configures SysTick
-     *   2. tx_application_define()   — creates BSW periodic timers
-     *   3. ThreadX scheduler         — runs timer callbacks at configured periods */
+     * Timers created in tx_application_define() (tx_stubs.c). */
     tx_kernel_enter();
 #else
     /* Original bare-metal polling loop */

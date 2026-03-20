@@ -112,6 +112,8 @@ ecus:
         wdgm_se_id: 0xFF
 
   fzc:
+    uds_rx_pdu_name: "UDS_Phys_Req_FZC"
+    uds_tx_pdu_name: "UDS_Resp_FZC"
     dtc_events:
       FZC_DTC_STEER_PLAUSIBILITY: 0
       FZC_DTC_STEER_RANGE: 1

@@ -219,6 +219,6 @@ static const Dcm_DidTableType fzc_did_table[] = {
 const Dcm_ConfigType fzc_dcm_config = {
     .DidTable    = fzc_did_table,
     .DidCount    = (uint8)FZC_DCM_DID_COUNT,
-    .TxPduId     = 0xFFu,         /* No UDS response TX PDU for FZC */
+    .TxPduId     = FZC_COM_TX_UDS_RESP_FZC,  /* UDS response via CanTp → CanIf → 0x7E9 */
     .S3TimeoutMs = 5000u,
 };
