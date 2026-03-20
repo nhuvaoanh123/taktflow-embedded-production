@@ -81,8 +81,8 @@ static Std_ReturnType Can_Hw_InitMode(uint32 mode)
     hcan1.Init.TimeSeg1           = CAN_BS1_13TQ;
     hcan1.Init.TimeSeg2           = CAN_BS2_2TQ;
     hcan1.Init.TimeTriggeredMode  = DISABLE;
-    hcan1.Init.AutoBusOff         = DISABLE;
-    hcan1.Init.AutoWakeUp         = DISABLE;
+    hcan1.Init.AutoBusOff         = ENABLE;
+    hcan1.Init.AutoWakeUp         = ENABLE;
     hcan1.Init.AutoRetransmission = ENABLE;
     hcan1.Init.ReceiveFifoLocked  = DISABLE;
     hcan1.Init.TransmitFifoPriority = DISABLE;
@@ -91,6 +91,12 @@ static Std_ReturnType Can_Hw_InitMode(uint32 mode)
     {
         return E_NOT_OK;
     }
+
+    /* Explicitly exit sleep mode AFTER HAL_CAN_Init (clock now enabled).
+     * bxCAN defaults to sleep after reset. HAL_CAN_Init requests INRQ
+     * but may not clear SLEEP on some STM32F4 revisions. */
+    CAN1->MCR &= ~CAN_MCR_SLEEP;
+    while ((CAN1->MSR & CAN_MSR_SLAK) != 0u) {}
 
     return Can_Hw_ConfigureFilter();
 }
@@ -119,6 +125,14 @@ Std_ReturnType Can_Hw_Init(uint32 baudrate)
 void Can_Hw_Start(void)
 {
     (void)HAL_CAN_Start(&hcan1);
+
+    /* bxCAN may still have SLEEP set in MCR after HAL_CAN_Start.
+     * Explicitly clear it and wait for SLAK to deassert. */
+    CAN1->MCR &= ~CAN_MCR_SLEEP;
+    {
+        volatile uint32_t timeout = 100000u;
+        while (((CAN1->MSR & CAN_MSR_SLAK) != 0u) && (timeout > 0u)) { timeout--; }
+    }
 }
 
 /**
