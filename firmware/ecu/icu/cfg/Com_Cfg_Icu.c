@@ -401,7 +401,7 @@ static const Com_SignalConfigType icu_signal_config[] = {
 
 static const Com_TxPduConfigType icu_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
-    { ICU_COM_TX_ICU_HEARTBEAT,     4u,     0u },   /* CAN 0x014 */
+    { ICU_COM_TX_ICU_HEARTBEAT,     4u,   500u },   /* CAN 0x014 */
     { ICU_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
 };
 

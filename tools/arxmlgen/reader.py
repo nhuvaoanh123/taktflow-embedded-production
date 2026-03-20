@@ -40,6 +40,7 @@ class ArxmlReader:
         self._dbc_tx_map: dict[str, str] = {}           # message_name → sender_ecu (uppercase)
         self._dbc_rx_map: dict[str, list[str]] = {}     # message_name → list of receiver ECUs
         self._dbc_e2e_map: dict[str, int] = {}          # message_name → E2E data ID (from DBC attr)
+        self._dbc_cycle_map: dict[str, int] = {}       # message_name → GenMsgCycleTime (ms)
         self._additional_tx_ecus: dict[str, list[str]] = {}  # message_name → extra TX ECUs
 
     def read(self) -> ProjectModel:
@@ -152,6 +153,16 @@ class ArxmlReader:
                     e2e_val = int(e2e_attr.value if hasattr(e2e_attr, 'value') else e2e_attr)
                     if e2e_val >= 0:
                         self._dbc_e2e_map[msg.name] = e2e_val
+            except (AttributeError, TypeError, ValueError):
+                pass
+
+            # Extract GenMsgCycleTime attribute (TX cycle period in ms)
+            try:
+                cycle_attr = msg.dbc.attributes.get("GenMsgCycleTime")
+                if cycle_attr is not None:
+                    cycle_val = int(cycle_attr.value if hasattr(cycle_attr, 'value') else cycle_attr)
+                    if cycle_val > 0:
+                        self._dbc_cycle_map[msg.name] = cycle_val
             except (AttributeError, TypeError, ValueError):
                 pass
 
@@ -326,10 +337,21 @@ class ArxmlReader:
                 for s in signals:
                     s.e2e_protected = True
 
+            pdu_cycle = self._dbc_cycle_map.get(pdu_name, 0)
+            if pdu_cycle == 0 and can_id > 0:
+                # Try stripping _Ipdu or _Frame suffix
+                for suffix in ("_Ipdu", "_Frame", "_Pdu"):
+                    stripped = pdu_name.replace(suffix, "")
+                    if stripped in self._dbc_cycle_map:
+                        pdu_cycle = self._dbc_cycle_map[stripped]
+                        break
+                # pdu_cycle == 0 means event-triggered (DTC, UDS, etc.) — no throttle
+
             pdu = Pdu(
                 name=pdu_name,
                 can_id=can_id,
                 dlc=dlc,
+                cycle_ms=pdu_cycle,
                 signals=sorted(signals, key=lambda s: s.bit_position),
                 e2e_protected=e2e,
                 e2e_data_id=e2e_data_id,
@@ -361,6 +383,7 @@ class ArxmlReader:
                     pdu_id=len(ecus[tx_ecu_lower].tx_pdus),
                     can_id=pdu.can_id,
                     dlc=pdu.dlc,
+                    cycle_ms=pdu.cycle_ms,
                     direction="TX",
                     signals=pdu.signals,
                     e2e_protected=pdu.e2e_protected,
@@ -403,6 +426,7 @@ class ArxmlReader:
                     pdu_id=len(ecus[ecu_lower].tx_pdus),
                     can_id=pdu.can_id,
                     dlc=pdu.dlc,
+                    cycle_ms=pdu.cycle_ms,
                     direction="TX",
                     signals=pdu.signals,
                     e2e_protected=pdu.e2e_protected,

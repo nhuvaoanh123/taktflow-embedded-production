@@ -401,9 +401,9 @@ static const Com_SignalConfigType bcm_signal_config[] = {
 
 static const Com_TxPduConfigType bcm_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
-    { BCM_COM_TX_BCM_HEARTBEAT,     4u,     0u },   /* CAN 0x016 */
-    { BCM_COM_TX_LIGHT_STATUS,     4u,     0u },   /* CAN 0x400 */
-    { BCM_COM_TX_INDICATOR_STATE,     4u,     0u },   /* CAN 0x401 */
+    { BCM_COM_TX_BCM_HEARTBEAT,     4u,   500u },   /* CAN 0x016 */
+    { BCM_COM_TX_LIGHT_STATUS,     4u,   100u },   /* CAN 0x400 */
+    { BCM_COM_TX_INDICATOR_STATE,     4u,   100u },   /* CAN 0x401 */
     { BCM_COM_TX_DOOR_LOCK_STATUS,     2u,     0u },   /* CAN 0x402 */
     { BCM_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
 };

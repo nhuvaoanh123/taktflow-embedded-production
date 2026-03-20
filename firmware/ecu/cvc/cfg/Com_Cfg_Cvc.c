@@ -389,16 +389,16 @@ static const Com_SignalConfigType cvc_signal_config[] = {
 
 static const Com_TxPduConfigType cvc_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
-    { CVC_COM_TX_ESTOP_BROADCAST,     4u,     0u },   /* CAN 0x001 */
-    { CVC_COM_TX_CVC_HEARTBEAT,     4u,     0u },   /* CAN 0x010 */
-    { CVC_COM_TX_VEHICLE_STATE,     6u,     0u },   /* CAN 0x100 */
-    { CVC_COM_TX_TORQUE_REQUEST,     8u,     0u },   /* CAN 0x101 */
-    { CVC_COM_TX_STEER_COMMAND,     8u,     0u },   /* CAN 0x102 */
-    { CVC_COM_TX_BRAKE_COMMAND,     8u,     0u },   /* CAN 0x103 */
-    { CVC_COM_TX_BODY_CONTROL_CMD,     4u,     0u },   /* CAN 0x350 */
+    { CVC_COM_TX_ESTOP_BROADCAST,     4u,    10u },   /* CAN 0x001 */
+    { CVC_COM_TX_CVC_HEARTBEAT,     4u,    50u },   /* CAN 0x010 */
+    { CVC_COM_TX_VEHICLE_STATE,     6u,    10u },   /* CAN 0x100 */
+    { CVC_COM_TX_TORQUE_REQUEST,     8u,    10u },   /* CAN 0x101 */
+    { CVC_COM_TX_STEER_COMMAND,     8u,    10u },   /* CAN 0x102 */
+    { CVC_COM_TX_BRAKE_COMMAND,     8u,    10u },   /* CAN 0x103 */
+    { CVC_COM_TX_BODY_CONTROL_CMD,     4u,   100u },   /* CAN 0x350 */
     { CVC_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
-    { CVC_COM_TX_FZC_VIRTUAL_SENSORS,     8u,     0u },   /* CAN 0x600 */
-    { CVC_COM_TX_RZC_VIRTUAL_SENSORS,     8u,     0u },   /* CAN 0x601 */
+    { CVC_COM_TX_FZC_VIRTUAL_SENSORS,     8u,    10u },   /* CAN 0x600 */
+    { CVC_COM_TX_RZC_VIRTUAL_SENSORS,     8u,    10u },   /* CAN 0x601 */
     { CVC_COM_TX_UDS_RESP_CVC,     8u,     0u },   /* CAN 0x7E8 */
 };
 

@@ -401,11 +401,11 @@ static const Com_SignalConfigType rzc_signal_config[] = {
 
 static const Com_TxPduConfigType rzc_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
-    { RZC_COM_TX_RZC_HEARTBEAT,     4u,     0u },   /* CAN 0x012 */
-    { RZC_COM_TX_MOTOR_STATUS,     8u,     0u },   /* CAN 0x300 */
-    { RZC_COM_TX_MOTOR_CURRENT,     8u,     0u },   /* CAN 0x301 */
-    { RZC_COM_TX_MOTOR_TEMPERATURE,     8u,     0u },   /* CAN 0x302 */
-    { RZC_COM_TX_BATTERY_STATUS,     6u,     0u },   /* CAN 0x303 */
+    { RZC_COM_TX_RZC_HEARTBEAT,     4u,    50u },   /* CAN 0x012 */
+    { RZC_COM_TX_MOTOR_STATUS,     8u,    20u },   /* CAN 0x300 */
+    { RZC_COM_TX_MOTOR_CURRENT,     8u,    10u },   /* CAN 0x301 */
+    { RZC_COM_TX_MOTOR_TEMPERATURE,     8u,   100u },   /* CAN 0x302 */
+    { RZC_COM_TX_BATTERY_STATUS,     6u,  1000u },   /* CAN 0x303 */
     { RZC_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
     { RZC_COM_TX_UDS_RESP_RZC,     8u,     0u },   /* CAN 0x7EA */
 };

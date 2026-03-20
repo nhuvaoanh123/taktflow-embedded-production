@@ -27,6 +27,12 @@ static boolean                com_initialized = FALSE;
 static uint8  com_tx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
 static boolean com_tx_pending[COM_MAX_PDUS];
 
+/* TX cycle counters (ms elapsed since last send per PDU) */
+static uint16 com_tx_cycle_cnt[COM_MAX_PDUS];
+
+/** Com_MainFunction_Tx call period in ms — must match BSW timer config */
+#define COM_TX_MAIN_PERIOD_MS  10u
+
 /* RX PDU buffers */
 static uint8  com_rx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
 
@@ -257,12 +263,35 @@ void Com_MainFunction_Tx(void)
         return;
     }
 
-    /* Transmit all pending TX PDUs */
     for (i = 0u; i < com_config->txPduCount; i++) {
         PduIdType pdu_id = com_config->txPduConfig[i].PduId;
+        uint16 cycle_ms = com_config->txPduConfig[i].CycleTimeMs;
+
+        if (pdu_id >= COM_MAX_PDUS) {
+            continue;
+        }
+
+        /* Increment cycle counter */
+        com_tx_cycle_cnt[pdu_id] += COM_TX_MAIN_PERIOD_MS;
 
         SchM_Enter_Com_COM_EXCLUSIVE_AREA_0();
-        if ((pdu_id < COM_MAX_PDUS) && (com_tx_pending[pdu_id] == TRUE)) {
+
+        boolean should_send = FALSE;
+
+        if (cycle_ms == 0u) {
+            /* Event-triggered (CycleTimeMs=0): send when pending */
+            should_send = com_tx_pending[pdu_id];
+        } else {
+            /* Cyclic: send when cycle time elapsed AND data pending */
+            if ((com_tx_cycle_cnt[pdu_id] >= cycle_ms) &&
+                (com_tx_pending[pdu_id] == TRUE))
+            {
+                should_send = TRUE;
+                com_tx_cycle_cnt[pdu_id] = 0u;
+            }
+        }
+
+        if (should_send == TRUE) {
             PduInfoType pdu_info;
             pdu_info.SduDataPtr = com_tx_pdu_buf[pdu_id];
             pdu_info.SduLength  = com_config->txPduConfig[i].Dlc;

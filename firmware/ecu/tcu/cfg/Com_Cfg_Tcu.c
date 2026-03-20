@@ -401,7 +401,7 @@ static const Com_SignalConfigType tcu_signal_config[] = {
 
 static const Com_TxPduConfigType tcu_tx_pdu_config[] = {
     /* pduId,                      dlc, cycleMs */
-    { TCU_COM_TX_TCU_HEARTBEAT,     4u,     0u },   /* CAN 0x015 */
+    { TCU_COM_TX_TCU_HEARTBEAT,     4u,   500u },   /* CAN 0x015 */
     { TCU_COM_TX_DTC_BROADCAST,     8u,     0u },   /* CAN 0x500 */
     { TCU_COM_TX_UDS_RESP_TCU,     8u,     0u },   /* CAN 0x644 */
 };
