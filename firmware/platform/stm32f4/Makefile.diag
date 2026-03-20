@@ -1,0 +1,82 @@
+# Minimal CAN diagnostic build for F413ZH
+# Usage:
+#   make -f firmware/platform/stm32f4/Makefile.diag build
+#   make -f firmware/platform/stm32f4/Makefile.diag flash
+#   make -f firmware/platform/stm32f4/Makefile.diag clean
+
+PREFIX  = arm-none-eabi-
+CC      = $(PREFIX)gcc
+AS      = $(PREFIX)gcc -x assembler-with-cpp
+CP      = $(PREFIX)objcopy
+SZ      = $(PREFIX)size
+
+MCU_FLAGS = -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+CFLAGS    = $(MCU_FLAGS) -Wall -Wextra -std=c99 -Og -g3 -DDEBUG
+CFLAGS   += -DSTM32F413xx -DUSE_HAL_DRIVER
+CFLAGS   += -fdata-sections -ffunction-sections
+
+LDFLAGS   = $(MCU_FLAGS) -Wl,--gc-sections -specs=nosys.specs -specs=nano.specs
+LDFLAGS  += -T firmware/ecu/rzc_f4/cuberzccf4fg/STM32F413XX_FLASH.ld
+
+BUILD = build/diag_f4
+
+# HAL paths
+CUBEMX    = firmware/ecu/rzc_f4/cuberzccf4fg
+HAL_DRV   = $(CUBEMX)/Drivers/STM32F4xx_HAL_Driver
+CMSIS     = $(CUBEMX)/Drivers/CMSIS
+PLAT_F4   = firmware/platform/stm32f4
+
+INCLUDES  = -I$(CUBEMX)/Core/Inc
+INCLUDES += -I$(HAL_DRV)/Inc
+INCLUDES += -I$(CMSIS)/Include
+INCLUDES += -I$(CMSIS)/Device/ST/STM32F4xx/Include
+
+# Sources: just main_diag + can_diag_test + minimal HAL
+SRCS = \
+    $(PLAT_F4)/src/main_diag.c \
+    $(PLAT_F4)/src/can_diag_test.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_cortex.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_rcc.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_rcc_ex.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_pwr.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_pwr_ex.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_gpio.c \
+    $(HAL_DRV)/Src/stm32f4xx_hal_can.c \
+    $(CUBEMX)/Core/Src/system_stm32f4xx.c
+
+# Startup
+ASM_SRC = $(CUBEMX)/startup_stm32f413xx.s
+
+OBJS     = $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+ASM_OBJS = $(patsubst %.s,$(BUILD)/%.o,$(ASM_SRC))
+
+ELF = $(BUILD)/diag_f4.elf
+BIN = $(BUILD)/diag_f4.bin
+
+.PHONY: build flash clean size
+
+build: $(ELF) size
+
+$(ELF): $(OBJS) $(ASM_OBJS)
+	@mkdir -p $(dir $@)
+	$(CC) $(LDFLAGS) $^ -o $@
+	$(CP) -O binary $@ $(BIN)
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+$(BUILD)/%.o: %.s
+	@mkdir -p $(dir $@)
+	$(AS) $(MCU_FLAGS) -c $< -o $@
+
+size: $(ELF)
+	$(SZ) $<
+
+flash: $(ELF)
+	"C:\Program Files (x86)\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" \
+		--connect port=SWD index=2 --download $(ELF) --verify --start
+
+clean:
+	rm -rf $(BUILD)
