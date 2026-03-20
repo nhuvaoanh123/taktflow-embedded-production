@@ -445,6 +445,14 @@ class ArxmlReader:
             for i, pdu in enumerate(ecu.rx_pdus):
                 pdu.pdu_id = i
 
+            # Auto-populate E2E DataIDs from DBC for ALL E2E-protected PDUs
+            for pdu in ecu.tx_pdus + ecu.rx_pdus:
+                if pdu.e2e_data_id is not None:
+                    # Generate define name: <ECU>_E2E_<MSG>_DATA_ID
+                    safe_name = pdu.name.upper().replace(" ", "_").replace("-", "_")
+                    define_name = f"{ecu.prefix}_E2E_{safe_name}_DATA_ID"
+                    ecu.e2e_data_ids[define_name] = pdu.e2e_data_id
+
             # Build flat signal list
             seen = set()
             for pdu in ecu.tx_pdus + ecu.rx_pdus:

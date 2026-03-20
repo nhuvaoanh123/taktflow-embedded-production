@@ -200,7 +200,12 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   /* Step 9: All FZC SWCs + MCAL peripherals */
   Spi_Init(NULL_PTR);
   Adc_Init(NULL_PTR);
-  IoHwAb_Init(NULL_PTR);
+  {
+    /* Minimal IoHwAb config — marks module as initialized so reads don't fail.
+     * All channel values are 0 — reads will return ADC/SPI zeros but E_OK. */
+    static const IoHwAb_ConfigType iohwab_bench_cfg = {0};
+    IoHwAb_Init(&iohwab_bench_cfg);
+  }
   Uart_Init(NULL_PTR);
   Swc_Heartbeat_Init();
   Swc_Steering_Init(NULL_PTR);

@@ -91,13 +91,13 @@ volatile uint32 g_dbg_steer_rte_dispatch = 0u; /* TransmitSchedule calls */
 /** @brief E2E configs for TX data messages — shared BSW E2E (Profile 1)
  *  @safety_req SWR-FZC-019 */
 static const E2E_ConfigType fzc_e2e_brake_fault_cfg = {
-    FZC_E2E_BRAKE_STATUS_DATA_ID,  /* 0x21 */
+    0x0Bu,  /* E2E_DataID=11 from DBC Brake_Fault */
     15u, 8u
 };
 static E2E_StateType fzc_e2e_brake_fault_state;
 
 static const E2E_ConfigType fzc_e2e_motor_cutoff_cfg = {
-    FZC_E2E_BRAKE_STATUS_DATA_ID,  /* 0x21 — same as brake (pre-existing, no separate ID) */
+    0x0Cu,  /* E2E_DataID=12 from DBC Motor_Cutoff_Req */
     15u, 8u
 };
 static E2E_StateType fzc_e2e_motor_cutoff_state;
