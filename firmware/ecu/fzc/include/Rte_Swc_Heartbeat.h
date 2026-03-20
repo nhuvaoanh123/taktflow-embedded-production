@@ -22,14 +22,14 @@
  * ==================================================================== */
 
 /**
- * @brief  Read CVC_Heartbeat_FaultStatus (uint8_t)
+ * @brief  Read Brake_Command_E2E_AliveCounter (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_FaultStatus(uint8_t *data)
+static inline Rte_StatusType Rte_Read_Brake_Command_E2E_AliveCounter(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_FAULT_STATUS, &tmp);
+    Rte_StatusType status = Rte_Read(FZC_SIG_BRAKE_COMMAND_E_2_E_ALIVE_COUNTER, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -54,14 +54,14 @@ static inline Rte_StatusType Rte_Read_CVC_Heartbeat_ECU_ID(uint8_t *data)
 }
 
 /**
- * @brief  Read CVC_Heartbeat_E2E_DataID (uint8_t)
+ * @brief  Read CVC_Heartbeat_OperatingMode (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_DataID(uint8_t *data)
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_OperatingMode(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_E_2_E_DATA_ID, &tmp);
+    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_OPERATING_MODE, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -70,62 +70,14 @@ static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_DataID(uint8_t *data)
 }
 
 /**
- * @brief  Read CVC_Heartbeat_E2E_CRC8 (uint8_t)
+ * @brief  Read CVC_Heartbeat_FaultStatus (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_CRC8(uint8_t *data)
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_FaultStatus(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_E_2_E_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_E2E_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_VEHICLE_STATE_E_2_E_ALIVE_COUNTER, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_Status_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_Status_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_SC_STATUS_ALIVE_COUNTER, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Brake_Command_E2E_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Brake_Command_E2E_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_BRAKE_COMMAND_E_2_E_ALIVE_COUNTER, &tmp);
+    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_FAULT_STATUS, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -150,22 +102,6 @@ static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_AliveCounter(uint8_t *da
 }
 
 /**
- * @brief  Read EStop_Broadcast_E2E_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_BROADCAST_E_2_E_ALIVE_COUNTER, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
  * @brief  Read Steer_Command_E2E_AliveCounter (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -182,14 +118,14 @@ static inline Rte_StatusType Rte_Read_Steer_Command_E2E_AliveCounter(uint8_t *da
 }
 
 /**
- * @brief  Read CVC_Heartbeat_OperatingMode (uint8_t)
+ * @brief  Read SC_Status_AliveCounter (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_OperatingMode(uint8_t *data)
+static inline Rte_StatusType Rte_Read_SC_Status_AliveCounter(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_OPERATING_MODE, &tmp);
+    Rte_StatusType status = Rte_Read(FZC_SIG_SC_STATUS_ALIVE_COUNTER, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -198,13 +134,67 @@ static inline Rte_StatusType Rte_Read_CVC_Heartbeat_OperatingMode(uint8_t *data)
 }
 
 /**
- * @brief  Write Brake_Fault_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
+ * @brief  Read Vehicle_State_E2E_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Brake_Fault_E2E_AliveCounter(uint8_t value)
+static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_AliveCounter(uint8_t *data)
 {
-    return Rte_Write(FZC_SIG_BRAKE_FAULT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_VEHICLE_STATE_E_2_E_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_E2E_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_E_2_E_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_E2E_DataID (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_DataID(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_CVC_HEARTBEAT_E_2_E_DATA_ID, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read EStop_Broadcast_E2E_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_AliveCounter(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(FZC_SIG_ESTOP_BROADCAST_E_2_E_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
 }
 
 /**
@@ -218,23 +208,13 @@ static inline Rte_StatusType Rte_Write_Brake_Status_E2E_AliveCounter(uint8_t val
 }
 
 /**
- * @brief  Write FZC_Heartbeat_E2E_CRC8 (uint8_t)
+ * @brief  Write Motor_Cutoff_Req_E2E_AliveCounter (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_FZC_Heartbeat_E2E_CRC8(uint8_t value)
+static inline Rte_StatusType Rte_Write_Motor_Cutoff_Req_E2E_AliveCounter(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_FZC_HEARTBEAT_E_2_E_CRC_8, (uint32_t)value);
-}
-
-/**
- * @brief  Write FZC_Heartbeat_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_FZC_Heartbeat_E2E_AliveCounter(uint8_t value)
-{
-    return Rte_Write(FZC_SIG_FZC_HEARTBEAT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    return Rte_Write(FZC_SIG_MOTOR_CUTOFF_REQ_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 /**
@@ -258,6 +238,16 @@ static inline Rte_StatusType Rte_Write_FZC_Heartbeat_FaultStatus(uint8_t value)
 }
 
 /**
+ * @brief  Write Steering_Status_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Steering_Status_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_STEERING_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
  * @brief  Write FZC_Heartbeat_E2E_DataID (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -265,6 +255,16 @@ static inline Rte_StatusType Rte_Write_FZC_Heartbeat_FaultStatus(uint8_t value)
 static inline Rte_StatusType Rte_Write_FZC_Heartbeat_E2E_DataID(uint8_t value)
 {
     return Rte_Write(FZC_SIG_FZC_HEARTBEAT_E_2_E_DATA_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write FZC_Heartbeat_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_FZC_Heartbeat_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(FZC_SIG_FZC_HEARTBEAT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 /**
@@ -288,23 +288,23 @@ static inline Rte_StatusType Rte_Write_FZC_Heartbeat_ECU_ID(uint8_t value)
 }
 
 /**
- * @brief  Write Motor_Cutoff_Req_E2E_AliveCounter (uint8_t)
+ * @brief  Write FZC_Heartbeat_E2E_CRC8 (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Cutoff_Req_E2E_AliveCounter(uint8_t value)
+static inline Rte_StatusType Rte_Write_FZC_Heartbeat_E2E_CRC8(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_MOTOR_CUTOFF_REQ_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    return Rte_Write(FZC_SIG_FZC_HEARTBEAT_E_2_E_CRC_8, (uint32_t)value);
 }
 
 /**
- * @brief  Write Steering_Status_E2E_AliveCounter (uint8_t)
+ * @brief  Write Brake_Fault_E2E_AliveCounter (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Steering_Status_E2E_AliveCounter(uint8_t value)
+static inline Rte_StatusType Rte_Write_Brake_Fault_E2E_AliveCounter(uint8_t value)
 {
-    return Rte_Write(FZC_SIG_STEERING_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    return Rte_Write(FZC_SIG_BRAKE_FAULT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_HEARTBEAT_H */

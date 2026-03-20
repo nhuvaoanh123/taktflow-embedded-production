@@ -38,13 +38,13 @@ static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorTemp_dC(uint16_t 
 }
 
 /**
- * @brief  Write Motor_Temperature_E2E_AliveCounter (uint8_t)
+ * @brief  Write Motor_Temperature_E2E_CRC8 (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_AliveCounter(uint8_t value)
+static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_CRC8(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_CRC_8, (uint32_t)value);
 }
 
 /**
@@ -58,13 +58,23 @@ static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp2_C(uint16_t
 }
 
 /**
- * @brief  Write Motor_Temperature_WindingTemp1_C (uint16_t)
+ * @brief  Write Motor_Temperature_DeratingPercent (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp1_C(uint16_t value)
+static inline Rte_StatusType Rte_Write_Motor_Temperature_DeratingPercent(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_1_C, (uint32_t)value);
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_DERATING_PERCENT, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_ALIVE_COUNTER, (uint32_t)value);
 }
 
 /**
@@ -78,23 +88,13 @@ static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_DataID(uint8_t valu
 }
 
 /**
- * @brief  Write Motor_Temperature_DeratingPercent (uint8_t)
+ * @brief  Write Motor_Temperature_WindingTemp1_C (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_DeratingPercent(uint8_t value)
+static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp1_C(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_DERATING_PERCENT, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_E2E_CRC8 (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_CRC8(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_CRC_8, (uint32_t)value);
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_1_C, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_TEMPMONITOR_H */

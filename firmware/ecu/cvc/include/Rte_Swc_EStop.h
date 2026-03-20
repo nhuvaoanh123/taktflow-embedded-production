@@ -22,6 +22,16 @@
  * ==================================================================== */
 
 /**
+ * @brief  Write EStop_Broadcast_E2E_DataID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_EStop_Broadcast_E2E_DataID(uint8_t value)
+{
+    return Rte_Write(CVC_SIG_ESTOP_BROADCAST_E_2_E_DATA_ID, (uint32_t)value);
+}
+
+/**
  * @brief  Write EStop_Broadcast_E2E_CRC8 (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -29,16 +39,6 @@
 static inline Rte_StatusType Rte_Write_EStop_Broadcast_E2E_CRC8(uint8_t value)
 {
     return Rte_Write(CVC_SIG_ESTOP_BROADCAST_E_2_E_CRC_8, (uint32_t)value);
-}
-
-/**
- * @brief  Write EStop_Broadcast_Source (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_EStop_Broadcast_Source(uint8_t value)
-{
-    return Rte_Write(CVC_SIG_ESTOP_BROADCAST_SOURCE, (uint32_t)value);
 }
 
 /**
@@ -52,13 +52,13 @@ static inline Rte_StatusType Rte_Write_EStop_Broadcast_Active(uint8_t value)
 }
 
 /**
- * @brief  Write EStop_Broadcast_E2E_DataID (uint8_t)
+ * @brief  Write EStop_Broadcast_Source (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_EStop_Broadcast_E2E_DataID(uint8_t value)
+static inline Rte_StatusType Rte_Write_EStop_Broadcast_Source(uint8_t value)
 {
-    return Rte_Write(CVC_SIG_ESTOP_BROADCAST_E_2_E_DATA_ID, (uint32_t)value);
+    return Rte_Write(CVC_SIG_ESTOP_BROADCAST_SOURCE, (uint32_t)value);
 }
 
 /**

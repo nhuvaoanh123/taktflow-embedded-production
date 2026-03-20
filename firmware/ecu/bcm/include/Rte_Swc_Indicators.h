@@ -38,6 +38,16 @@ static inline Rte_StatusType Rte_Read_Body_Control_Cmd_TurnSignalCmd(uint8_t *da
 }
 
 /**
+ * @brief  Write Indicator_State_LeftOn (boolean)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Indicator_State_LeftOn(boolean value)
+{
+    return Rte_Write(BCM_SIG_INDICATOR_STATE_LEFT_ON, (uint32_t)value);
+}
+
+/**
  * @brief  Write Indicator_State_BlinkPhaseHigh (boolean)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -65,16 +75,6 @@ static inline Rte_StatusType Rte_Write_Indicator_State_RightOn(boolean value)
 static inline Rte_StatusType Rte_Write_Indicator_State_HazardActive(boolean value)
 {
     return Rte_Write(BCM_SIG_INDICATOR_STATE_HAZARD_ACTIVE, (uint32_t)value);
-}
-
-/**
- * @brief  Write Indicator_State_LeftOn (boolean)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Indicator_State_LeftOn(boolean value)
-{
-    return Rte_Write(BCM_SIG_INDICATOR_STATE_LEFT_ON, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_INDICATORS_H */

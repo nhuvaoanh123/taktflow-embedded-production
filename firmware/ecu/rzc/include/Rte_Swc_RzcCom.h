@@ -22,22 +22,6 @@
  * ==================================================================== */
 
 /**
- * @brief  Read EStop_Broadcast_E2E_CRC8 (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_CRC8(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
  * @brief  Read SC_Status_Mode (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -54,242 +38,14 @@ static inline Rte_StatusType Rte_Read_SC_Status_Mode(uint8_t *data)
 }
 
 /**
- * @brief  Read Vehicle_State_E2E_DataID (uint8_t)
+ * @brief  Read SC_Status_FaultReason (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_DataID(uint8_t *data)
+static inline Rte_StatusType Rte_Read_SC_Status_FaultReason(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_DATA_ID, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read CVC_Heartbeat_FaultStatus (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_FaultStatus(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_FAULT_STATUS, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read CVC_Heartbeat_ECU_ID (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_ECU_ID(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_ECU_ID, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_FaultMask (uint16_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_FaultMask(uint16_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_FAULT_MASK, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read CVC_Heartbeat_E2E_DataID (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_DataID(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_DATA_ID, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_Mode (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_Mode(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_MODE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read RZC_Virtual_Sensors_MotorSpeed_RPM (uint16_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorSpeed_RPM(uint16_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_MOTOR_SPEED_RPM, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read CVC_Heartbeat_E2E_CRC8 (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_CRC8(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_E2E_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_ALIVE_COUNTER, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read EStop_Broadcast_Source (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_Source(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_SOURCE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_E2E_CRC8 (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_CRC8(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read EStop_Broadcast_Active (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_Active(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_ACTIVE, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Torque_Request_Direction (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Torque_Request_Direction(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_DIRECTION, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read UDS_Func_Request_UDS_Data (uint32_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_UDS_Func_Request_UDS_Data(uint32_t *data)
-{
-    return Rte_Read(RZC_SIG_UDS_FUNC_REQUEST_UDS_DATA, data);
-}
-
-/**
- * @brief  Read UDS_Phys_Req_RZC_UDS_Data (uint32_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_UDS_Phys_Req_RZC_UDS_Data(uint32_t *data)
-{
-    return Rte_Read(RZC_SIG_UDS_PHYS_REQ_RZC_UDS_DATA, data);
-}
-
-/**
- * @brief  Read EStop_Broadcast_E2E_DataID (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_DataID(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_DATA_ID, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_FAULT_REASON, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -330,62 +86,14 @@ static inline Rte_StatusType Rte_Read_SC_Status_RelayEnergized(boolean *data)
 }
 
 /**
- * @brief  Read SC_Status_AliveCounter (uint8_t)
+ * @brief  Read CVC_Heartbeat_ECU_ID (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SC_Status_AliveCounter(uint8_t *data)
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_ECU_ID(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_ALIVE_COUNTER, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read RZC_Virtual_Sensors_MotorCurrent_mA (uint16_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorCurrent_mA(uint16_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_MOTOR_CURRENT_M_A, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Vehicle_State_SpeedLimit (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Vehicle_State_SpeedLimit(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_SPEED_LIMIT, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Torque_Request_Command_pct (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Torque_Request_Command_pct(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_COMMAND_PCT, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_ECU_ID, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -410,14 +118,24 @@ static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorTemp_dC(uint16_t 
 }
 
 /**
- * @brief  Read Vehicle_State_TorqueLimit (uint8_t)
+ * @brief  Read UDS_Func_Request_UDS_Data (uint32_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_Vehicle_State_TorqueLimit(uint8_t *data)
+static inline Rte_StatusType Rte_Read_UDS_Func_Request_UDS_Data(uint32_t *data)
+{
+    return Rte_Read(RZC_SIG_UDS_FUNC_REQUEST_UDS_DATA, data);
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_OperatingMode (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_OperatingMode(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_TORQUE_LIMIT, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_OPERATING_MODE, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -426,14 +144,14 @@ static inline Rte_StatusType Rte_Read_Vehicle_State_TorqueLimit(uint8_t *data)
 }
 
 /**
- * @brief  Read CVC_Heartbeat_E2E_AliveCounter (uint8_t)
+ * @brief  Read Vehicle_State_SpeedLimit (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_AliveCounter(uint8_t *data)
+static inline Rte_StatusType Rte_Read_Vehicle_State_SpeedLimit(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_ALIVE_COUNTER, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_SPEED_LIMIT, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -442,30 +160,14 @@ static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_AliveCounter(uint8_t *da
 }
 
 /**
- * @brief  Read Torque_Request_PedalPosition2 (uint16_t)
+ * @brief  Read CVC_Heartbeat_FaultStatus (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_Torque_Request_PedalPosition2(uint16_t *data)
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_FaultStatus(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_PEDAL_POSITION_2, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read EStop_Broadcast_E2E_AliveCounter (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_AliveCounter(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_ALIVE_COUNTER, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_FAULT_STATUS, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -474,110 +176,14 @@ static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_AliveCounter(uint8_t *
 }
 
 /**
- * @brief  Read SC_Status_CRC8 (uint8_t)
+ * @brief  Read Vehicle_State_E2E_DataID (uint8_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_SC_Status_CRC8(uint8_t *data)
+static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_DataID(uint8_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_CRC_8, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_Status_FaultReason (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_Status_FaultReason(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_FAULT_REASON, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read SC_Status_ECU_Health (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_SC_Status_ECU_Health(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_ECU_HEALTH, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Torque_Request_E2E_DataID (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Torque_Request_E2E_DataID(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_E_2_E_DATA_ID, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint8_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read RZC_Virtual_Sensors_BattVoltage_mV (uint16_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_BattVoltage_mV(uint16_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_BATT_VOLTAGE_M_V, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Torque_Request_PedalPosition1 (uint16_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Torque_Request_PedalPosition1(uint16_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_PEDAL_POSITION_1, &tmp);
-    if (status == RTE_E_OK)
-    {
-        *data = (uint16_t)tmp;
-    }
-    return status;
-}
-
-/**
- * @brief  Read Torque_Request_E2E_CRC8 (uint8_t)
- * @param  data  Pointer to receive the signal value
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Read_Torque_Request_E2E_CRC8(uint8_t *data)
-{
-    uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_E_2_E_CRC_8, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_DATA_ID, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
@@ -602,17 +208,379 @@ static inline Rte_StatusType Rte_Read_Torque_Request_PedalFault(boolean *data)
 }
 
 /**
- * @brief  Read CVC_Heartbeat_OperatingMode (uint8_t)
+ * @brief  Read Torque_Request_PedalPosition2 (uint16_t)
  * @param  data  Pointer to receive the signal value
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Read_CVC_Heartbeat_OperatingMode(uint8_t *data)
+static inline Rte_StatusType Rte_Read_Torque_Request_PedalPosition2(uint16_t *data)
 {
     uint32_t tmp;
-    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_OPERATING_MODE, &tmp);
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_PEDAL_POSITION_2, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read EStop_Broadcast_E2E_DataID (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_DataID(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_DATA_ID, &tmp);
     if (status == RTE_E_OK)
     {
         *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read SC_Status_ECU_Health (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_SC_Status_ECU_Health(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_ECU_HEALTH, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Vehicle_State_Mode (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Vehicle_State_Mode(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_MODE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_E2E_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_AliveCounter(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Vehicle_State_TorqueLimit (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Vehicle_State_TorqueLimit(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_TORQUE_LIMIT, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Torque_Request_Direction (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Torque_Request_Direction(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_DIRECTION, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read SC_Status_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_SC_Status_AliveCounter(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Torque_Request_Command_pct (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Torque_Request_Command_pct(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_COMMAND_PCT, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Torque_Request_E2E_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Torque_Request_E2E_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_E_2_E_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read SC_Status_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_SC_Status_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_SC_STATUS_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Vehicle_State_E2E_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_AliveCounter(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read EStop_Broadcast_E2E_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read RZC_Virtual_Sensors_BattVoltage_mV (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_BattVoltage_mV(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_BATT_VOLTAGE_M_V, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read UDS_Phys_Req_RZC_UDS_Data (uint32_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_UDS_Phys_Req_RZC_UDS_Data(uint32_t *data)
+{
+    return Rte_Read(RZC_SIG_UDS_PHYS_REQ_RZC_UDS_DATA, data);
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_E2E_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read RZC_Virtual_Sensors_MotorCurrent_mA (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorCurrent_mA(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_MOTOR_CURRENT_M_A, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read CVC_Heartbeat_E2E_DataID (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_CVC_Heartbeat_E2E_DataID(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_CVC_HEARTBEAT_E_2_E_DATA_ID, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read RZC_Virtual_Sensors_MotorSpeed_RPM (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_RZC_Virtual_Sensors_MotorSpeed_RPM(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_RZC_VIRTUAL_SENSORS_MOTOR_SPEED_RPM, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read EStop_Broadcast_Active (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_Active(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_ACTIVE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Torque_Request_E2E_DataID (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Torque_Request_E2E_DataID(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_E_2_E_DATA_ID, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read EStop_Broadcast_Source (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_Source(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_SOURCE, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Vehicle_State_E2E_CRC8 (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Vehicle_State_E2E_CRC8(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_E_2_E_CRC_8, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Vehicle_State_FaultMask (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Vehicle_State_FaultMask(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_VEHICLE_STATE_FAULT_MASK, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
     }
     return status;
 }
@@ -634,6 +602,88 @@ static inline Rte_StatusType Rte_Read_SC_Status_FaultFlags(uint8_t *data)
 }
 
 /**
+ * @brief  Read EStop_Broadcast_E2E_AliveCounter (uint8_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_EStop_Broadcast_E2E_AliveCounter(uint8_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_ESTOP_BROADCAST_E_2_E_ALIVE_COUNTER, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint8_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Read Torque_Request_PedalPosition1 (uint16_t)
+ * @param  data  Pointer to receive the signal value
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Read_Torque_Request_PedalPosition1(uint16_t *data)
+{
+    uint32_t tmp;
+    Rte_StatusType status = Rte_Read(RZC_SIG_TORQUE_REQUEST_PEDAL_POSITION_1, &tmp);
+    if (status == RTE_E_OK)
+    {
+        *data = (uint16_t)tmp;
+    }
+    return status;
+}
+
+/**
+ * @brief  Write RZC_Heartbeat_E2E_CRC8 (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_CRC8(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_CRC_8, (uint32_t)value);
+}
+
+/**
+ * @brief  Write RZC_Heartbeat_OperatingMode (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_RZC_Heartbeat_OperatingMode(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_OPERATING_MODE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_TorqueEcho (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_TorqueEcho(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_TORQUE_ECHO, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_MotorFaultStatus (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_MotorFaultStatus(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_E2E_CRC8 (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_CRC8(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_CRC_8, (uint32_t)value);
+}
+
+/**
  * @brief  Write Motor_Current_E2E_DataID (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
@@ -641,66 +691,6 @@ static inline Rte_StatusType Rte_Read_SC_Status_FaultFlags(uint8_t *data)
 static inline Rte_StatusType Rte_Write_Motor_Current_E2E_DataID(uint8_t value)
 {
     return Rte_Write(RZC_SIG_MOTOR_CURRENT_E_2_E_DATA_ID, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_AliveCounter(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_ALIVE_COUNTER, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_WindingTemp2_C (uint16_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp2_C(uint16_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_2_C, (uint32_t)value);
-}
-
-/**
- * @brief  Write UDS_Resp_RZC_UDS_Data (uint32_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_UDS_Resp_RZC_UDS_Data(uint32_t value)
-{
-    return Rte_Write(RZC_SIG_UDS_RESP_RZC_UDS_DATA, (uint32_t)value);
-}
-
-/**
- * @brief  Write Battery_Status_E2E_DataID (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Battery_Status_E2E_DataID(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_DATA_ID, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_E2E_DataID (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_E2E_DataID(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_DATA_ID, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_E2E_CRC8 (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_E2E_CRC8(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_CRC_8, (uint32_t)value);
 }
 
 /**
@@ -714,53 +704,13 @@ static inline Rte_StatusType Rte_Write_Battery_Status_BatteryVoltage_mV(uint16_t
 }
 
 /**
- * @brief  Write Motor_Temperature_WindingTemp1_C (uint16_t)
+ * @brief  Write Motor_Temperature_WindingTemp2_C (uint16_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp1_C(uint16_t value)
+static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp2_C(uint16_t value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_1_C, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_E2E_DataID (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_DataID(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_DATA_ID, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_DeratingPercent (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_DeratingPercent(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_DERATING_PERCENT, (uint32_t)value);
-}
-
-/**
- * @brief  Write Battery_Status_E2E_CRC8 (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Battery_Status_E2E_CRC8(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_CRC_8, (uint32_t)value);
-}
-
-/**
- * @brief  Write RZC_Heartbeat_E2E_DataID (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_DataID(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_DATA_ID, (uint32_t)value);
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_2_C, (uint32_t)value);
 }
 
 /**
@@ -774,13 +724,153 @@ static inline Rte_StatusType Rte_Write_RZC_Heartbeat_FaultStatus(uint8_t value)
 }
 
 /**
- * @brief  Write Motor_Status_E2E_AliveCounter (uint8_t)
+ * @brief  Write Motor_Current_MotorEnable (boolean)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_Motor_Status_E2E_AliveCounter(uint8_t value)
+static inline Rte_StatusType Rte_Write_Motor_Current_MotorEnable(boolean value)
 {
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_MOTOR_ENABLE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Current_Phase_mA (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Current_Phase_mA(uint16_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_PHASE_M_A, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Current_TorqueEcho (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Current_TorqueEcho(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_TORQUE_ECHO, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Battery_Status_E2E_DataID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Battery_Status_E2E_DataID(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_DATA_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Battery_Status_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Battery_Status_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_MotorEnable (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_MotorEnable(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_ENABLE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_DeratingPercent (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_DeratingPercent(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_DERATING_PERCENT, (uint32_t)value);
+}
+
+/**
+ * @brief  Write RZC_Heartbeat_ECU_ID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_RZC_Heartbeat_ECU_ID(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_ECU_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Current_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Current_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Current_DirIsReverse (boolean)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Current_DirIsReverse(boolean value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_DIR_IS_REVERSE, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_E2E_CRC8 (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_E2E_CRC8(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_CRC_8, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_MotorSpeed_RPM (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_MotorSpeed_RPM(uint16_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_SPEED_RPM, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_E2E_DataID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_DataID(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_DATA_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_E2E_DataID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_E2E_DataID(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_DATA_ID, (uint32_t)value);
 }
 
 /**
@@ -791,6 +881,66 @@ static inline Rte_StatusType Rte_Write_Motor_Status_E2E_AliveCounter(uint8_t val
 static inline Rte_StatusType Rte_Write_Motor_Current_E2E_CRC8(uint8_t value)
 {
     return Rte_Write(RZC_SIG_MOTOR_CURRENT_E_2_E_CRC_8, (uint32_t)value);
+}
+
+/**
+ * @brief  Write UDS_Resp_RZC_UDS_Data (uint32_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_UDS_Resp_RZC_UDS_Data(uint32_t value)
+{
+    return Rte_Write(RZC_SIG_UDS_RESP_RZC_UDS_DATA, (uint32_t)value);
+}
+
+/**
+ * @brief  Write RZC_Heartbeat_E2E_DataID (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_DataID(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_DATA_ID, (uint32_t)value);
+}
+
+/**
+ * @brief  Write RZC_Heartbeat_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Temperature_WindingTemp1_C (uint16_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Temperature_WindingTemp1_C(uint16_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_WINDING_TEMP_1_C, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Status_E2E_AliveCounter (uint8_t)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Status_E2E_AliveCounter(uint8_t value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
+}
+
+/**
+ * @brief  Write Motor_Current_OvercurrentFlag (boolean)
+ * @param  value  Signal value to transmit
+ * @return Rte_StatusType (RTE_E_OK on success)
+ */
+static inline Rte_StatusType Rte_Write_Motor_Current_OvercurrentFlag(boolean value)
+{
+    return Rte_Write(RZC_SIG_MOTOR_CURRENT_OVERCURRENT_FLAG, (uint32_t)value);
 }
 
 /**
@@ -814,163 +964,13 @@ static inline Rte_StatusType Rte_Write_Motor_Status_MotorDirection(uint8_t value
 }
 
 /**
- * @brief  Write RZC_Heartbeat_ECU_ID (uint8_t)
+ * @brief  Write Battery_Status_E2E_CRC8 (uint8_t)
  * @param  value  Signal value to transmit
  * @return Rte_StatusType (RTE_E_OK on success)
  */
-static inline Rte_StatusType Rte_Write_RZC_Heartbeat_ECU_ID(uint8_t value)
+static inline Rte_StatusType Rte_Write_Battery_Status_E2E_CRC8(uint8_t value)
 {
-    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_ECU_ID, (uint32_t)value);
-}
-
-/**
- * @brief  Write RZC_Heartbeat_E2E_CRC8 (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_CRC8(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_CRC_8, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_MotorSpeed_RPM (uint16_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_MotorSpeed_RPM(uint16_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_SPEED_RPM, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_DirIsReverse (boolean)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_DirIsReverse(boolean value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_DIR_IS_REVERSE, (uint32_t)value);
-}
-
-/**
- * @brief  Write RZC_Heartbeat_OperatingMode (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_RZC_Heartbeat_OperatingMode(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_OPERATING_MODE, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_OvercurrentFlag (boolean)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_OvercurrentFlag(boolean value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_OVERCURRENT_FLAG, (uint32_t)value);
-}
-
-/**
- * @brief  Write RZC_Heartbeat_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_RZC_Heartbeat_E2E_AliveCounter(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_RZC_HEARTBEAT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_TorqueEcho (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_TorqueEcho(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_TORQUE_ECHO, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_TorqueEcho (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_TorqueEcho(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_TORQUE_ECHO, (uint32_t)value);
-}
-
-/**
- * @brief  Write Battery_Status_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Battery_Status_E2E_AliveCounter(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_ALIVE_COUNTER, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_Phase_mA (uint16_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_Phase_mA(uint16_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_PHASE_M_A, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Temperature_E2E_CRC8 (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Temperature_E2E_CRC8(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_TEMPERATURE_E_2_E_CRC_8, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_MotorFaultStatus (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_MotorFaultStatus(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_FAULT_STATUS, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_E2E_AliveCounter (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_E2E_AliveCounter(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_E_2_E_ALIVE_COUNTER, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Current_MotorEnable (boolean)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Current_MotorEnable(boolean value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_CURRENT_MOTOR_ENABLE, (uint32_t)value);
-}
-
-/**
- * @brief  Write Motor_Status_MotorEnable (uint8_t)
- * @param  value  Signal value to transmit
- * @return Rte_StatusType (RTE_E_OK on success)
- */
-static inline Rte_StatusType Rte_Write_Motor_Status_MotorEnable(uint8_t value)
-{
-    return Rte_Write(RZC_SIG_MOTOR_STATUS_MOTOR_ENABLE, (uint32_t)value);
+    return Rte_Write(RZC_SIG_BATTERY_STATUS_E_2_E_CRC_8, (uint32_t)value);
 }
 
 #endif /* RTE_SWC_RZCCOM_H */

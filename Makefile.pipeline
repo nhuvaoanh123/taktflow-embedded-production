@@ -1,0 +1,87 @@
+# =============================================================================
+# Pipeline Makefile — 6-step iterative generation with validation gates
+#
+# Usage:
+#   make -f Makefile.pipeline step1    # Validate DBC only
+#   make -f Makefile.pipeline step2    # Generate ARXML from DBC
+#   make -f Makefile.pipeline step4    # Validate ARXML against DBC
+#   make -f Makefile.pipeline step5    # Generate C configs from ARXML
+#   make -f Makefile.pipeline generate # Full pipeline (stops on first failure)
+# =============================================================================
+
+DBC      = gateway/taktflow_vehicle.dbc
+ARXML    = arxml/TaktflowSystem.arxml
+ARXML_V2 = arxml_v2/TaktflowSystem.arxml
+SWC_MODEL = arxml_v2/swc_model.json
+SIDECAR  = model/ecu_sidecar.yaml
+PROJECT  = project.yaml
+
+.PHONY: step1 step2 step3 step4 step5 step6 generate clean-generated
+
+# Step 1: Validate DBC (12-point ISO 26262 audit)
+step1:
+	@echo "========== Step 1: Validate DBC =========="
+	C:\Python314\python.exe tools/pipeline/step1_validate_dbc.py $(DBC)
+
+# Step 2+3: Generate ARXML from DBC (base + E2E enrichment)
+# Currently combined in dbc2arxml.py — will split later
+step2:
+	@echo "========== Step 2+3: Generate ARXML =========="
+	C:\Python314\python.exe tools/arxml/dbc2arxml.py $(DBC) arxml_v2/ $(SWC_MODEL)
+	cp $(ARXML_V2) $(ARXML)
+	@echo "ARXML generated: $(ARXML)"
+
+# Step 4: Validate ARXML against DBC
+step4:
+	@echo "========== Step 4: Validate ARXML =========="
+	C:\Python314\python.exe tools/pipeline/step4_validate_arxml.py $(ARXML) $(DBC)
+
+# Step 5: Generate C configs from ARXML
+step5:
+	@echo "========== Step 5: Generate C Configs =========="
+	C:\Python314\python.exe -m tools.arxmlgen --config $(PROJECT)
+
+# Step 6: Validate C configs (syntax check)
+step6:
+	@echo "========== Step 6: Validate C Configs =========="
+	@echo "gcc -fsyntax-only on all ECU configs..."
+	@PASS=0; FAIL=0; \
+	for ecu in cvc fzc rzc sc bcm icu tcu; do \
+		for src in firmware/ecu/$$ecu/cfg/*.c; do \
+			if gcc -fsyntax-only -DPLATFORM_POSIX -DCANTP_ENABLED \
+				-Ifirmware/bsw/include -Ifirmware/bsw/services/Com/include \
+				-Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include \
+				-Ifirmware/bsw/services/E2E/include -Ifirmware/bsw/services/WdgM/include \
+				-Ifirmware/bsw/services/BswM/include -Ifirmware/bsw/services/Dcm/include \
+				-Ifirmware/bsw/services/SchM/include -Ifirmware/bsw/services/NvM/include \
+				-Ifirmware/bsw/services/CanTp/include -Ifirmware/bsw/services/Sil/include \
+				-Ifirmware/bsw/mcal/Can/include -Ifirmware/bsw/mcal/Adc/include \
+				-Ifirmware/bsw/mcal/Pwm/include -Ifirmware/bsw/mcal/Dio/include \
+				-Ifirmware/bsw/mcal/Gpt/include -Ifirmware/bsw/mcal/Spi/include \
+				-Ifirmware/bsw/mcal/Uart/include -Ifirmware/bsw/ecual/CanIf/include \
+				-Ifirmware/bsw/ecual/PduR/include -Ifirmware/bsw/ecual/IoHwAb/include \
+				-Ifirmware/bsw/os/include -Ifirmware/bsw/os/bootstrap/include \
+				-Ifirmware/bsw/rte/include -Ifirmware/platform/posix/include \
+				-Ifirmware/ecu/$$ecu/include -Ifirmware/ecu/$$ecu/cfg \
+				$$src 2>/dev/null; then \
+				PASS=$$((PASS+1)); \
+			else \
+				echo "  FAIL: $$src"; FAIL=$$((FAIL+1)); \
+			fi; \
+		done; \
+	done; \
+	echo "  Syntax check: $$PASS passed, $$FAIL failed"; \
+	test $$FAIL -eq 0
+
+# Full pipeline — stops on first failure
+generate: step1 step2 step4 step5 step6
+	@echo ""
+	@echo "=========================================="
+	@echo "  PIPELINE COMPLETE — ALL STEPS PASSED"
+	@echo "=========================================="
+
+clean-generated:
+	@echo "Cleaning generated configs..."
+	find firmware/ecu -name "*_Cfg_*.c" -delete
+	find firmware/ecu -name "*_Cfg.h" -delete
+	@echo "Cleaned."
