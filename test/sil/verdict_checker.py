@@ -40,6 +40,7 @@ from typing import Any, Optional
 import uuid
 
 import can
+import cantools
 import paho.mqtt.client as paho_mqtt
 import requests
 import yaml
@@ -57,6 +58,18 @@ def _find_compose_file() -> Path:
         if p.exists():
             return p
     return repo_root / "docker" / "docker-compose.dev.yml"
+
+
+# ---------------------------------------------------------------------------
+# DBC database (single load, used for all CAN signal decoding)
+# ---------------------------------------------------------------------------
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_DBC = cantools.database.load_file(str(_REPO_ROOT / "gateway" / "taktflow_vehicle.dbc"))
+
+
+def _dbc_decode(can_id: int, data: bytes) -> dict[str, Any]:
+    """Decode a CAN frame using the DBC. Returns signal dict."""
+    return _DBC.decode_message(can_id, data, decode_choices=False)
 
 
 # ---------------------------------------------------------------------------
@@ -122,10 +135,7 @@ _SIL_SCALE = max(1, min(100, int(os.environ.get("SIL_TIME_SCALE", "1"))))
 DEFAULT_SCENARIO_TIMEOUT_SEC = 60
 DEFAULT_STATE_WAIT_TIMEOUT_SEC = 10
 
-# Motor RPM byte positions in Motor_Status (0x300)
-# Layout: [E2E_alive, CRC, rpm_lo, rpm_hi, dir|enable|fault, duty, derating, reserved]
-MOTOR_RPM_BYTE_LO = 2
-MOTOR_RPM_BYTE_HI = 3
+# Motor RPM is decoded from DBC signal Motor_Status_MotorSpeed_RPM
 
 
 # ---------------------------------------------------------------------------
@@ -356,7 +366,8 @@ class CANBusMonitor:
 
                 # Track vehicle state from 0x100
                 if arb_id == CAN_VEHICLE_STATE and len(msg.data) >= 3:
-                    new_state = msg.data[2] & 0x0F
+                    decoded = _dbc_decode(arb_id, msg.data)
+                    new_state = int(decoded.get("Vehicle_State_Mode", 0))
                     if new_state != self._vehicle_state:
                         self._state_transitions.append((ts, new_state))
                         log.debug(
@@ -368,10 +379,10 @@ class CANBusMonitor:
 
                 # Track motor RPM from 0x300
                 if arb_id == CAN_MOTOR_STATUS and len(msg.data) >= 5:
-                    self._motor_rpm = (
-                        msg.data[MOTOR_RPM_BYTE_LO]
-                        | (msg.data[MOTOR_RPM_BYTE_HI] << 8)
-                    )
+                    decoded = _dbc_decode(arb_id, msg.data)
+                    self._motor_rpm = int(decoded.get(
+                        "Motor_Status_MotorSpeed_RPM", 0
+                    ))
 
 
 # ---------------------------------------------------------------------------
@@ -853,8 +864,11 @@ class ScenarioExecutor:
                 )
             elif metric == "battery_soc":
                 latest = self._can.get_latest_message(CAN_BATTERY_STATUS)
-                if latest is not None and len(latest[1].data) >= 3:
-                    self._baseline_battery_soc = latest[1].data[2]
+                if latest is not None and len(latest[1].data) >= 5:
+                    decoded = _dbc_decode(CAN_BATTERY_STATUS, latest[1].data)
+                    self._baseline_battery_soc = int(decoded.get(
+                        "Battery_Status_Level", 0
+                    ))
                 else:
                     self._baseline_battery_soc = None
                 log.info(
@@ -868,8 +882,13 @@ class ScenarioExecutor:
                 ]:
                     latest = self._can.get_latest_message(can_id_val)
                     if latest is not None and len(latest[1].data) >= 1:
-                        counter = (latest[1].data[0] >> 4) & 0x0F
-                        self._baseline_alive_counters[can_id_val] = counter
+                        decoded = _dbc_decode(can_id_val, latest[1].data)
+                        # E2E AliveCounter signal name varies per message
+                        for key, val in decoded.items():
+                            if "AliveCounter" in key:
+                                counter = int(val) & 0x0F
+                                self._baseline_alive_counters[can_id_val] = counter
+                                break
                 log.info(
                     "  [STEP] Recorded baseline alive_counters: %s",
                     {f"0x{k:03X}": v
@@ -1481,9 +1500,9 @@ class ScenarioExecutor:
         for ts, msg in history:
             if len(msg.data) < 5:
                 continue
-            # 3-byte big-endian DTC code (UDS format)
-            dtc_num = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
-            source = msg.data[4]
+            decoded = _dbc_decode(can_id, msg.data)
+            dtc_num = int(decoded.get("DTC_Broadcast_Number", 0))
+            source = int(decoded.get("DTC_Broadcast_ECU_Source", 0))
             if dtc_num == expected_dtc:
                 source_match = (
                     expected_source is None or source == expected_source
@@ -1502,7 +1521,7 @@ class ScenarioExecutor:
                         ),
                         observed=(
                             f"DTC=0x{dtc_num:06X}, "
-                            f"status=0x{msg.data[3]:02X}, "
+                            f"status=0x{int(decoded.get('DTC_Broadcast_Status', 0)):02X}, "
                             f"source={source}"
                         ),
                         passed=True,
@@ -1514,7 +1533,8 @@ class ScenarioExecutor:
         dtcs_seen = []
         for _, msg in history:
             if len(msg.data) >= 5:
-                dtc_num = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
+                d = _dbc_decode(can_id, msg.data)
+                dtc_num = int(d.get("DTC_Broadcast_Number", 0))
                 dtcs_seen.append(f"0x{dtc_num:06X}")
 
         return VerdictEvidence(
@@ -1616,10 +1636,8 @@ class ScenarioExecutor:
             history = self._can.get_message_history(CAN_MOTOR_STATUS)
             for ts, msg in history:
                 if ts >= observation_start and len(msg.data) >= 5:
-                    rpm = (
-                        msg.data[MOTOR_RPM_BYTE_LO]
-                        | (msg.data[MOTOR_RPM_BYTE_HI] << 8)
-                    )
+                    decoded = _dbc_decode(CAN_MOTOR_STATUS, msg.data)
+                    rpm = int(decoded.get("Motor_Status_MotorSpeed_RPM", 0))
                     if rpm > 0:
                         return VerdictEvidence(
                             description=description or "Motor RPM tracking",
@@ -1720,15 +1738,14 @@ class ScenarioExecutor:
             )
 
         _, msg = result
-        # Check for fault bit in steering status
-        # Convention: byte 4 or byte 5 contains fault flags
-        fault_byte = msg.data[4] if len(msg.data) > 4 else 0
-        has_fault = fault_byte != 0
+        decoded = _dbc_decode(CAN_STEERING_STATUS, msg.data)
+        fault_status = int(decoded.get("Steering_Status_SteerFaultStatus", 0))
+        has_fault = fault_status != 0
 
         return VerdictEvidence(
             description=description or "Steering rate limit active",
             expected="Steering fault flag != 0",
-            observed=f"Fault byte = 0x{fault_byte:02X}",
+            observed=f"SteerFaultStatus = {fault_status}",
             passed=has_fault,
             timestamp=time.monotonic(),
             details=f"Steering_Status data: {msg.data.hex()}",
@@ -1752,9 +1769,12 @@ class ScenarioExecutor:
         active_dtcs: list[str] = []
 
         for _, msg in history:
-            # DTC status byte is at index 3 (ISO 14229), bit 0 = test_failed
-            if len(msg.data) >= 5 and (msg.data[3] & 0x01):
-                dtc_num = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
+            if len(msg.data) < 5:
+                continue
+            decoded = _dbc_decode(CAN_DTC_BROADCAST, msg.data)
+            status = int(decoded.get("DTC_Broadcast_Status", 0))
+            if status & 0x01:  # bit 0 = test_failed
+                dtc_num = int(decoded.get("DTC_Broadcast_Number", 0))
                 active_dtcs.append(f"0x{dtc_num:06X}")
 
         passed = len(active_dtcs) == 0
@@ -1789,7 +1809,8 @@ class ScenarioExecutor:
 
         for _, msg in history:
             if len(msg.data) >= 3:
-                dtc_num = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
+                decoded = _dbc_decode(CAN_DTC_BROADCAST, msg.data)
+                dtc_num = int(decoded.get("DTC_Broadcast_Number", 0))
                 if dtc_num == expected_dtc:
                     return VerdictEvidence(
                         description=description
@@ -1875,10 +1896,8 @@ class ScenarioExecutor:
         rpms: list[int] = []
         for _, msg in history:
             if len(msg.data) >= 5:
-                rpm = (
-                    msg.data[MOTOR_RPM_BYTE_LO]
-                    | (msg.data[MOTOR_RPM_BYTE_HI] << 8)
-                )
+                decoded = _dbc_decode(CAN_MOTOR_STATUS, msg.data)
+                rpm = int(decoded.get("Motor_Status_MotorSpeed_RPM", 0))
                 rpms.append(rpm)
 
         if not rpms:
@@ -1966,11 +1985,16 @@ class ScenarioExecutor:
                 all_passed = False
                 continue
 
-            # Extract alive counter values (upper nibble of byte 0)
+            # Extract alive counter values via DBC decode
             counters: list[int] = []
             for _, msg in history:
                 if len(msg.data) >= 1:
-                    counters.append((msg.data[0] >> 4) & counter_max)
+                    decoded = _dbc_decode(can_id, msg.data)
+                    # Find the AliveCounter signal (name varies per message)
+                    for key, val in decoded.items():
+                        if "AliveCounter" in key:
+                            counters.append(int(val) & counter_max)
+                            break
 
             # Count wraps: a wrap occurs when the counter value decreases
             # (e.g. 15 -> 0 for a 4-bit counter).
@@ -2056,13 +2080,12 @@ class ScenarioExecutor:
                 timestamp=time.monotonic(),
             )
 
-        # Extract SOC values from Battery_Status (0x303).
-        # RZC sends 8-byte E2E frames: [CRC, alive, mV_lo, mV_hi, status, SOC, 0, 0]
-        # SOC is in byte 5 (0-100%).
+        # Extract SOC (Battery_Status_Level) from Battery_Status (0x303)
         soc_values: list[int] = []
         for _, msg in history:
-            if len(msg.data) >= 6:
-                raw = msg.data[5]
+            if len(msg.data) >= 5:
+                decoded = _dbc_decode(CAN_BATTERY_STATUS, msg.data)
+                raw = int(decoded.get("Battery_Status_Level", 0))
                 if raw <= 100:
                     soc_values.append(raw)
 
@@ -2181,12 +2204,14 @@ class ScenarioExecutor:
                 timestamp=time.monotonic(),
             )
 
-        # Extract temperature values (bytes 2-3, 16-bit LE, scale 0.1C)
+        # Extract temperature values via DBC (scale 0.1C applied by cantools)
         temps: list[float] = []
         for _, msg in history:
             if len(msg.data) >= 5:
-                raw = msg.data[2] | (msg.data[3] << 8)
-                temp_c = raw * 0.1
+                decoded = _dbc_decode(CAN_MOTOR_TEMP, msg.data)
+                temp_c = float(decoded.get(
+                    "Motor_Temperature_WindingTemp1_C", 0
+                ))
                 temps.append(temp_c)
 
         if not temps:

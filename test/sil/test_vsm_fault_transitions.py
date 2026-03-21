@@ -9,17 +9,22 @@ Run from VPS host:
 """
 
 import json
+import os
 import socket
 import struct
 import sys
 import time
 
+import cantools
 import paho.mqtt.publish as publish
 
 CAN_CHANNEL = "vcan0"
 MQTT_HOST = "localhost"
 MQTT_PORT = 1883
 TIMEOUT = 3.0
+
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_DB = cantools.database.load_file(os.path.join(_REPO, "gateway", "taktflow_vehicle.dbc"))
 
 
 def _mqtt_inject(msg_type, **kwargs):
@@ -44,8 +49,8 @@ def _read_vehicle_state(timeout=TIMEOUT):
             can_id = struct.unpack("<I", data[:4])[0] & 0x1FFFFFFF
             if can_id == 0x100:
                 s.close()
-                # VehicleState at byte 2 (after E2E bytes 0-1)
-                return data[10]  # byte 2 of payload
+                decoded = _DB.decode_message(can_id, data[8:16])
+                return int(decoded.get("Vehicle_State_Mode", 0))
         except socket.timeout:
             pass
     s.close()
@@ -68,7 +73,8 @@ def _check_dtc(expected_dtc, timeout=5.0):
             data = s.recv(16)
             can_id = struct.unpack("<I", data[:4])[0] & 0x1FFFFFFF
             if can_id == 0x500:
-                dtc = (data[8] << 16) | (data[9] << 8) | data[10]
+                decoded = _DB.decode_message(can_id, data[8:16])
+                dtc = int(decoded.get("DTC_Broadcast_Number", 0))
                 if dtc == expected_dtc:
                     s.close()
                     return True

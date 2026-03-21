@@ -10,8 +10,6 @@ Usage:
 """
 
 import json
-import socket
-import struct
 import sys
 import time
 
@@ -97,9 +95,9 @@ def main():
 
     # Hop 1: Plant-sim sends motor temp on 0x601
     print("Hop 1: Plant-sim → CAN 0x601 (virtual sensor)")
-    msg = can_recv(bus, CAN_VSENSOR_RZC, timeout=3)
-    if msg:
-        temp_dc = struct.unpack("<H", msg.data[2:4])[0]
+    decoded = can_recv_decoded(db, bus, CAN_VSENSOR_RZC, timeout=3)
+    if decoded:
+        temp_dc = decoded.get("RZC_Virtual_Sensors_MotorTemp_dC", 0)
         check(1, f"0x601 present, temp={temp_dc/10:.0f}°C", True)
     else:
         check(1, "0x601 present", False, "No 0x601 on bus")
@@ -107,9 +105,9 @@ def main():
     # Hop 2: MQTT injection changes temp on 0x601
     print("Hop 2: MQTT inject 110°C → 0x601 (sustained 3s)")
     inject_temp(110.0, sustained_sec=3)
-    msg = can_recv(bus, CAN_VSENSOR_RZC, timeout=3)
-    if msg:
-        temp_dc = struct.unpack("<H", msg.data[2:4])[0]
+    decoded = can_recv_decoded(db, bus, CAN_VSENSOR_RZC, timeout=3)
+    if decoded:
+        temp_dc = decoded.get("RZC_Virtual_Sensors_MotorTemp_dC", 0)
         check(2, f"0x601 temp={temp_dc/10:.1f}°C (expect ~110)",
                temp_dc >= 1000, f"temp={temp_dc/10:.1f}°C, expected >=100°C")
     else:
@@ -162,11 +160,11 @@ def main():
 
     # Hop 6: DTC broadcast
     print("Hop 6: DTC 0xE302 (overtemp) on CAN 0x500")
-    msg = can_recv(bus, CAN_DTC, timeout=5)
-    if msg:
-        dtc = (msg.data[0] << 16) | (msg.data[1] << 8) | msg.data[2]
+    decoded = can_recv_decoded(db, bus, CAN_DTC, timeout=5)
+    if decoded:
+        dtc = int(decoded.get("DTC_Broadcast_Number", 0))
         check(6, f"DTC=0x{dtc:06X} (expect 0x00E302)",
-               dtc == 0x00E302, f"DTC=0x{dtc:06X}")
+               dtc == 0xE302, f"DTC=0x{dtc:06X}")
     else:
         check(6, "0x500 present", False, "No DTC on bus")
 

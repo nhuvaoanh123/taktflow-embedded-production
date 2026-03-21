@@ -11,17 +11,22 @@ Tests each hop independently. If a hop fails, all downstream hops
 are skipped — fix the failing hop first.
 """
 
+import os
 import socket
 import struct
 import sys
 import time
 
 import can
+import cantools
 
 CAN_CHANNEL = "vcan0"
 TIMEOUT = 3.0
 MQTT_HOST = "localhost"
 MQTT_PORT = 1883
+
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_DB = cantools.database.load_file(os.path.join(_REPO, "gateway", "taktflow_vehicle.dbc"))
 
 
 def _mqtt_inject(mv: int, soc: int):
@@ -58,7 +63,8 @@ def test_hop1_plant_sends_0x601():
     s.close()
     if payload is None:
         return False, "0x601 not seen on vcan0"
-    batt = struct.unpack("<H", payload[4:6])[0]
+    decoded = _DB.decode_message(0x601, payload)
+    batt = int(decoded.get("RZC_Virtual_Sensors_BattVoltage_mV", 0))
     return True, f"0x601 present, batt={batt}mV"
 
 
@@ -75,7 +81,8 @@ def test_hop2_inject_and_check_0x601():
     s.close()
     if payload is None:
         return False, "0x601 not seen after injection"
-    batt = struct.unpack("<H", payload[4:6])[0]
+    decoded = _DB.decode_message(0x601, payload)
+    batt = int(decoded.get("RZC_Virtual_Sensors_BattVoltage_mV", 0))
     if batt > 6000:
         return False, f"0x601 batt={batt}mV — injection didn't take effect (expected ~4000)"
     return True, f"0x601 batt={batt}mV (injected 4000)"
@@ -98,8 +105,8 @@ def test_hop5_com_rx_updates_0x303():
     s.close()
     if payload is None:
         return False, "0x303 not seen"
-    # BatteryVoltage_mV at bytes 2-3 (after E2E bytes 0-1)
-    batt = struct.unpack("<H", payload[2:4])[0]
+    decoded = _DB.decode_message(0x303, payload)
+    batt = int(decoded.get("Battery_Status_BatteryVoltage_mV", 0))
     if batt > 6000:
         return False, f"0x303 batt={batt}mV — RZC didn't track injection (Com RX chain broken)"
     return True, f"0x303 batt={batt}mV (matches injection)"
@@ -122,10 +129,11 @@ def test_hop9_dtc_on_undervoltage():
             data = s.recv(16)
             can_id = struct.unpack("<I", data[:4])[0] & 0x1FFFFFFF
             if can_id == 0x500:
-                dtc = (data[8] << 16) | (data[9] << 8) | data[10]
-                source = data[12]
+                decoded = _DB.decode_message(can_id, data[8:16])
+                dtc = int(decoded.get("DTC_Broadcast_Number", 0))
+                source = int(decoded.get("DTC_Broadcast_ECU_Source", 0))
                 s.close()
-                if dtc == 0x00E401:
+                if dtc == 0xE401:
                     return True, f"DTC 0x{dtc:06X} from source={source}"
                 return False, f"DTC 0x{dtc:06X} (expected 0x00E401)"
         except socket.timeout:
