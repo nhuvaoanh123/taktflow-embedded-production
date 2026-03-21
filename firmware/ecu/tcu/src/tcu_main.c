@@ -190,7 +190,7 @@ int main(void)
         CanTp_MainFunction();
         Dcm_MainFunction();
 
-        Sil_Time_Sleep(10000u); /* 10ms virtual tick */
+        Sil_Time_Sleep((uint32)TCU_RTE_PERIOD_MS * 1000u); /* tick from codegen */
     }
 
     /* ---- Shutdown ---- */

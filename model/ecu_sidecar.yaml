@@ -422,7 +422,7 @@ ecus:
       BCM_VSTATE_FAULT: 5
 
     thresholds:
-      BCM_RTE_PERIOD_MS: 50
+      BCM_RTE_PERIOD_MS: 50  # QM — 50ms tick sufficient for body control
       BCM_COMM_TIMEOUT: 200
       BCM_INDICATOR_BLINK_MS: 500
       BCM_INDICATOR_FLASH_ON: 33
@@ -476,5 +476,5 @@ ecus:
       TCU_SIG_DTC_BROADCAST:      DTC_Broadcast_Number
 
     thresholds:
-      TCU_RTE_PERIOD_MS: 50  # QM — diagnostics only, no real-time requirement
+      TCU_RTE_PERIOD_MS: 50  # QM — 50ms tick sufficient for diagnostics
       TCU_COMM_TIMEOUT: 200

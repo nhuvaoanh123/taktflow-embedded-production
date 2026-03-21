@@ -228,7 +228,7 @@ int main(void)
     uint8 hb_tick = 0u;
     while (shutdown_requested == 0u) {
         /* Sleep 10ms (10000 microseconds) */
-        Sil_Time_Sleep(10000u); /* 10ms virtual tick */
+        Sil_Time_Sleep((uint32)BCM_RTE_PERIOD_MS * 1000u); /* tick from codegen */
 
         /* BSW CAN processing: receive frames from bus */
         Can_MainFunction_Read();
