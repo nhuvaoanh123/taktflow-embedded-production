@@ -11,6 +11,9 @@
  */
 #include "PduR.h"
 #include "Det.h"
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 
 /* ---- Internal State ---- */
 
@@ -47,6 +50,12 @@ void PduR_CanIfRxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr)
     }
 
     /* Look up RxPduId in routing table */
+#ifdef SIL_DIAG
+    if (RxPduId == 18u) {
+        fprintf(stderr, "[PDUR] Looking for RxPduId=%u in %u entries\n",
+                (unsigned)RxPduId, (unsigned)pdur_config->routingCount);
+    }
+#endif
     for (i = 0u; i < pdur_config->routingCount; i++) {
         if (pdur_config->routingTable[i].RxPduId == RxPduId) {
             PduIdType upper_id = pdur_config->routingTable[i].UpperPduId;
