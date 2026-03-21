@@ -152,7 +152,7 @@ void Can_MainFunction_Read(void)
     Can_IdType rx_id;
     uint8      rx_data[CAN_MAX_DLC];
     uint8      rx_dlc;
-    uint8      msg_count = 0u;
+    uint16     msg_count = 0u;
 
     if (can_state != CAN_CS_STARTED) {
         return;
