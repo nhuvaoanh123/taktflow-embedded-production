@@ -112,81 +112,13 @@ static const Can_ConfigType can_config = {
     .controllerId = 0u,
 };
 
-/** CanIf TX PDU routing: Com TX PDU -> CAN ID */
-static const CanIf_TxPduConfigType canif_tx_config[] = {
-    /* canId,  upperPduId,                  dlc, hth */
-    { 0x012u, RZC_COM_TX_HEARTBEAT,       8u, 0u },  /* RZC heartbeat        */
-    { 0x300u, RZC_COM_TX_MOTOR_STATUS,    8u, 0u },  /* Motor status         */
-    { 0x301u, RZC_COM_TX_MOTOR_CURRENT,   8u, 0u },  /* Motor current        */
-    { 0x302u, RZC_COM_TX_MOTOR_TEMP,      8u, 0u },  /* Motor temperature    */
-    { 0x303u, RZC_COM_TX_BATTERY_STATUS,  8u, 0u },  /* Battery status       */
-    { 0x500u, RZC_COM_TX_DTC_BROADCAST,  8u, 0u },  /* DTC broadcast        */
-    { 0x7EAu, RZC_COM_TX_UDS_RESP_RZC,  8u, 0u },  /* UDS response         */
-};
+/* CanIf config — use GENERATED routing table from CanIf_Cfg_Rzc.c
+ * DO NOT hand-write CAN ID routing here. */
+extern const CanIf_ConfigType rzc_canif_config;
+#define canif_config rzc_canif_config
 
-/** CanIf RX PDU routing: CAN ID -> Com RX PDU */
-static const CanIf_RxPduConfigType canif_rx_config[] = {
-    /* canId,  upperPduId,                       dlc, isExtended */
-    { 0x001u, RZC_COM_RX_ESTOP,                  8u, FALSE },  /* E-stop broadcast    */
-    { 0x010u, RZC_COM_RX_CVC_HEARTBEAT,          8u, FALSE },  /* CVC heartbeat       */
-    { 0x011u, RZC_COM_RX_FZC_HEARTBEAT,          8u, FALSE },  /* FZC heartbeat       */
-    { 0x013u, RZC_COM_RX_SC_STATUS,              8u, FALSE },  /* SC status           */
-    { 0x014u, RZC_COM_RX_ICU_HEARTBEAT,          8u, FALSE },  /* ICU heartbeat       */
-    { 0x015u, RZC_COM_RX_TCU_HEARTBEAT,          8u, FALSE },  /* TCU heartbeat       */
-    { 0x100u, RZC_COM_RX_VEHICLE_STATE,          8u, FALSE },  /* Vehicle state       */
-    { 0x101u, RZC_COM_RX_TORQUE_REQUEST,         8u, FALSE },  /* Torque request      */
-    { 0x102u, RZC_COM_RX_STEER_COMMAND,          8u, FALSE },  /* Steering command    */
-    { 0x103u, RZC_COM_RX_BRAKE_COMMAND,          8u, FALSE },  /* Brake command       */
-    { 0x200u, RZC_COM_RX_STEERING_STATUS,        8u, FALSE },  /* Steering status     */
-    { 0x201u, RZC_COM_RX_BRAKE_STATUS,           8u, FALSE },  /* Brake status        */
-    { 0x210u, RZC_COM_RX_BRAKE_FAULT,            8u, FALSE },  /* Brake fault         */
-    { 0x211u, RZC_COM_RX_MOTOR_CUTOFF_REQ,       8u, FALSE },  /* Motor cutoff req    */
-    { 0x220u, RZC_COM_RX_LIDAR_DISTANCE,         8u, FALSE },  /* Lidar distance      */
-    { 0x350u, RZC_COM_RX_BODY_CONTROL_CMD,       8u, FALSE },  /* Body control cmd    */
-    { 0x400u, RZC_COM_RX_LIGHT_STATUS,           8u, FALSE },  /* Light status        */
-    { 0x401u, RZC_COM_RX_INDICATOR_STATE,        8u, FALSE },  /* Indicator state     */
-    { 0x402u, RZC_COM_RX_DOOR_LOCK_STATUS,       8u, FALSE },  /* Door lock status    */
-    { 0x500u, RZC_COM_RX_DTC_BROADCAST,          8u, FALSE },  /* DTC broadcast       */
-    { 0x601u, RZC_COM_RX_VIRT_SENSORS,           8u, FALSE },  /* Virtual sensors     */
-};
-
-static const CanIf_ConfigType canif_config = {
-    .txPduConfig = canif_tx_config,
-    .txPduCount  = (uint8)(sizeof(canif_tx_config) / sizeof(canif_tx_config[0])),
-    .rxPduConfig = canif_rx_config,
-    .rxPduCount  = (uint8)(sizeof(canif_rx_config) / sizeof(canif_rx_config[0])),
-    .e2eRxCheck  = Rzc_E2eRxCheck,
-};
-
-/** PduR RX routing: CanIf RX PDU ID -> Com */
-static const PduR_RoutingTableType rzc_pdur_routing[] = {
-    { RZC_COM_RX_ESTOP,              PDUR_DEST_COM, RZC_COM_RX_ESTOP              },
-    { RZC_COM_RX_CVC_HEARTBEAT,      PDUR_DEST_COM, RZC_COM_RX_CVC_HEARTBEAT      },
-    { RZC_COM_RX_FZC_HEARTBEAT,      PDUR_DEST_COM, RZC_COM_RX_FZC_HEARTBEAT      },
-    { RZC_COM_RX_SC_STATUS,          PDUR_DEST_COM, RZC_COM_RX_SC_STATUS          },
-    { RZC_COM_RX_ICU_HEARTBEAT,      PDUR_DEST_COM, RZC_COM_RX_ICU_HEARTBEAT      },
-    { RZC_COM_RX_TCU_HEARTBEAT,      PDUR_DEST_COM, RZC_COM_RX_TCU_HEARTBEAT      },
-    { RZC_COM_RX_VEHICLE_STATE,      PDUR_DEST_COM, RZC_COM_RX_VEHICLE_STATE      },
-    { RZC_COM_RX_TORQUE_REQUEST,     PDUR_DEST_COM, RZC_COM_RX_TORQUE_REQUEST     },
-    { RZC_COM_RX_STEER_COMMAND,      PDUR_DEST_COM, RZC_COM_RX_STEER_COMMAND      },
-    { RZC_COM_RX_BRAKE_COMMAND,      PDUR_DEST_COM, RZC_COM_RX_BRAKE_COMMAND      },
-    { RZC_COM_RX_STEERING_STATUS,    PDUR_DEST_COM, RZC_COM_RX_STEERING_STATUS    },
-    { RZC_COM_RX_BRAKE_STATUS,       PDUR_DEST_COM, RZC_COM_RX_BRAKE_STATUS       },
-    { RZC_COM_RX_BRAKE_FAULT,        PDUR_DEST_COM, RZC_COM_RX_BRAKE_FAULT        },
-    { RZC_COM_RX_MOTOR_CUTOFF_REQ,   PDUR_DEST_COM, RZC_COM_RX_MOTOR_CUTOFF_REQ   },
-    { RZC_COM_RX_LIDAR_DISTANCE,     PDUR_DEST_COM, RZC_COM_RX_LIDAR_DISTANCE     },
-    { RZC_COM_RX_BODY_CONTROL_CMD,   PDUR_DEST_COM, RZC_COM_RX_BODY_CONTROL_CMD   },
-    { RZC_COM_RX_LIGHT_STATUS,       PDUR_DEST_COM, RZC_COM_RX_LIGHT_STATUS       },
-    { RZC_COM_RX_INDICATOR_STATE,    PDUR_DEST_COM, RZC_COM_RX_INDICATOR_STATE    },
-    { RZC_COM_RX_DOOR_LOCK_STATUS,   PDUR_DEST_COM, RZC_COM_RX_DOOR_LOCK_STATUS   },
-    { RZC_COM_RX_DTC_BROADCAST,      PDUR_DEST_COM, RZC_COM_RX_DTC_BROADCAST      },
-    { RZC_COM_RX_VIRT_SENSORS,       PDUR_DEST_COM, RZC_COM_RX_VIRT_SENSORS       },
-};
-
-static const PduR_ConfigType rzc_pdur_config = {
-    .routingTable = rzc_pdur_routing,
-    .routingCount = (uint8)(sizeof(rzc_pdur_routing) / sizeof(rzc_pdur_routing[0])),
-};
+/* PduR config — use GENERATED routing table from PduR_Cfg_Rzc.c */
+extern const PduR_ConfigType rzc_pdur_config;
 
 /** ADC group configuration — motor current, motor temp, battery voltage */
 static const Adc_GroupConfigType adc_groups[] = {
