@@ -97,45 +97,11 @@ static const Can_ConfigType can_config = {
     .controllerId = 0u,
 };
 
-/** CanIf TX PDU routing: Com TX PDU → CAN ID */
-static const CanIf_TxPduConfigType canif_tx_config[] = {
-    /* upperPduId,               canId,  dlc, hth */
-    { 0x001u, CVC_COM_TX_ESTOP,          8u, 0u },  /* E-stop broadcast     */
-    { 0x010u, CVC_COM_TX_HEARTBEAT,      8u, 0u },  /* CVC heartbeat        */
-    { 0x100u, CVC_COM_TX_VEHICLE_STATE,  8u, 0u },  /* Vehicle state        */
-    { 0x101u, CVC_COM_TX_TORQUE_REQ,     8u, 0u },  /* Torque request       */
-    { 0x102u, CVC_COM_TX_STEER_CMD,      8u, 0u },  /* Steering command     */
-    { 0x103u, CVC_COM_TX_BRAKE_CMD,      8u, 0u },  /* Brake command        */
-    { 0x350u, CVC_COM_TX_BODY_CMD,       8u, 0u },  /* Body control         */
-    { 0x7E8u, CVC_COM_TX_UDS_RSP,        8u, 0u },  /* UDS response         */
-    { 0x500u, CVC_COM_TX_DTC,           8u, 0u },  /* DTC broadcast        */
-};
-
-/** CanIf RX PDU routing: CAN ID → Com RX PDU */
-static const CanIf_RxPduConfigType canif_rx_config[] = {
-    /* canId, upperPduId,              dlc, isExtended */
-    { 0x011u, CVC_COM_RX_FZC_HB,        8u, FALSE },  /* FZC heartbeat      */
-    { 0x012u, CVC_COM_RX_RZC_HB,        8u, FALSE },  /* RZC heartbeat      */
-    { 0x210u, CVC_COM_RX_BRAKE_FAULT,   8u, FALSE },  /* Brake fault        */
-    { 0x211u, CVC_COM_RX_MOTOR_CUTOFF,  8u, FALSE },  /* Motor cutoff       */
-    { 0x220u, CVC_COM_RX_LIDAR,         8u, FALSE },  /* Lidar distance     */
-    { 0x301u, CVC_COM_RX_MOTOR_CURRENT, 8u, FALSE },  /* Motor current      */
-    { 0x013u, CVC_COM_RX_SC_RELAY,      4u, FALSE },  /* SC relay status    */
-    { 0x303u, CVC_COM_RX_BATTERY_STATUS, 8u, FALSE }, /* Battery status     */
-    { 0x001u, CVC_COM_RX_ESTOP_INJECT,  8u, FALSE },  /* E-Stop inject (SIL)*/
-    { 0x200u, CVC_COM_RX_STEER_STATUS, 8u, FALSE },  /* FZC steering status*/
-    { 0x300u, CVC_COM_RX_MOTOR_STATUS, 8u, FALSE },  /* RZC motor status   */
-    { 0x7DFu, 0xFFu,                    8u, FALSE },  /* UDS functional req  */
-    { 0x7E0u, 0xFEu,                    8u, FALSE },  /* UDS physical req    */
-};
-
-static const CanIf_ConfigType canif_config = {
-    .txPduConfig = canif_tx_config,
-    .txPduCount  = (uint8)(sizeof(canif_tx_config) / sizeof(canif_tx_config[0])),
-    .rxPduConfig = canif_rx_config,
-    .rxPduCount  = (uint8)(sizeof(canif_rx_config) / sizeof(canif_rx_config[0])),
-    .e2eRxCheck  = NULL_PTR,
-};
+/* CanIf config — use GENERATED routing table from CanIf_Cfg_Cvc.c
+ * DO NOT hand-write CAN ID routing here. All routing is generated from
+ * DBC → ARXML → codegen. */
+extern const CanIf_ConfigType cvc_canif_config;
+#define canif_config cvc_canif_config
 
 /* PduR config — use GENERATED routing table from PduR_Cfg_Cvc.c
  * DO NOT hand-write routing tables here. All routing is generated from
