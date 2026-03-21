@@ -266,10 +266,6 @@ void Swc_CvcCom_TransmitSchedule(uint32 currentTimeMs)
         uint8  j;
         uint32 faultSig;
         uint8  faultMask = 0u;
-        PduInfoType pdu_info;
-
-        pdu_info.SduDataPtr = txBuf;
-        pdu_info.SduLength  = 8u;
 
         for (j = 0u; j < 8u; j++) { txBuf[j] = 0u; }
 
