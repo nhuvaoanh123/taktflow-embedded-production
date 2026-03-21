@@ -103,7 +103,7 @@ print("--- Group 1: E2E CRC Corruption ---", flush=True)
 
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
-time.sleep(4)
+time.sleep(3)
 
 # Inject a corrupted FZC heartbeat (0x011) with wrong CRC
 # Valid E2E: [counter<<4 | dataId, CRC, ECU_ID, mode]
@@ -141,7 +141,7 @@ print("\n--- Group 2: Heartbeat Timeout Detection ---")
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
 rzc = start_ecu("rzc")
-time.sleep(5)
+time.sleep(3)
 
 # Verify all 3 heartbeats present
 while bus.recv(timeout=0.01):
@@ -152,7 +152,7 @@ test("G2.1 All 3 heartbeats present", len(frames) == 3,
 
 # Kill FZC — CVC should detect timeout
 kill_ecu(fzc)
-time.sleep(2)  # Wait for timeout detection
+time.sleep(1)  # Wait for timeout detection
 
 # Check CVC Vehicle_State fault mask
 while bus.recv(timeout=0.01):
@@ -162,7 +162,7 @@ test("G2.2 CVC still running after FZC death", vs is not None)
 
 # Kill RZC — CVC should detect both timeouts
 kill_ecu(rzc)
-time.sleep(2)
+time.sleep(1)
 
 vs = wait_for_frame(bus, 0x100, timeout_s=2)
 test("G2.3 CVC still running after FZC+RZC death", vs is not None)
@@ -184,7 +184,7 @@ print("\n--- Group 3: E-Stop Propagation ---")
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
 rzc = start_ecu("rzc")
-time.sleep(5)
+time.sleep(3)
 
 # Verify E-Stop broadcast is active=0 (normal)
 while bus.recv(timeout=0.01):
@@ -211,15 +211,15 @@ print("\n--- Group 4: ECU Restart Recovery ---")
 
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
-time.sleep(4)
+time.sleep(3)
 
 # Kill FZC
 kill_ecu(fzc)
-time.sleep(2)
+time.sleep(1)
 
 # Restart FZC
 fzc = start_ecu("fzc")
-time.sleep(4)
+time.sleep(3)
 
 # FZC should resume
 while bus.recv(timeout=0.01):
@@ -278,7 +278,7 @@ time.sleep(1)
 print("\n--- Group 6: Rapid Kill/Restart Cycle ---")
 
 cvc = start_ecu("cvc")
-time.sleep(2)
+time.sleep(1)
 
 # Kill and restart FZC 5 times rapidly
 for cycle in range(5):
@@ -305,7 +305,7 @@ time.sleep(1)
 fzc = start_ecu("fzc")
 time.sleep(1)
 cvc = start_ecu("cvc")
-time.sleep(4)
+time.sleep(3)
 
 # All should be running
 while bus.recv(timeout=0.01):
