@@ -26,8 +26,12 @@
 static const Com_ConfigType*  com_config = NULL_PTR;
 static boolean                com_initialized = FALSE;
 
-/* TX PDU buffers */
+/* TX PDU buffers (non-static in UNIT_TEST for test access) */
+#ifdef UNIT_TEST
+uint8  com_tx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
+#else
 static uint8  com_tx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
+#endif
 static boolean com_tx_pending[COM_MAX_PDUS];
 
 /* TX cycle counters (ms elapsed since last send per PDU) */
@@ -74,7 +78,11 @@ static boolean com_tx_ever_sent[COM_MAX_PDUS];
 static uint8 com_tx_pdu_index[COM_MAX_PDUS];
 
 /* RX PDU buffers */
+#ifdef UNIT_TEST
+uint8  com_rx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
+#else
 static uint8  com_rx_pdu_buf[COM_MAX_PDUS][COM_PDU_SIZE];
+#endif
 
 /* RX deadline monitoring: cycles since last Com_RxIndication per PDU */
 static uint16 com_rx_timeout_cnt[COM_MAX_PDUS];
