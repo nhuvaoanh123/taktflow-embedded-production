@@ -135,8 +135,10 @@ Layer 6b: CVC+FZC+RZC 3-ECU    20 CAN IDs correct ✅
 Layer 6c-f: BCM+ICU+TCU+SC     all build clean ✅
 Layer 6g: Full 7-ECU vcan       27 CAN IDs, 1265 frames/s ✅
 Layer 6h: Fault injection       3/3 PASS (CRC corruption resilience)
-Layer 6i: SC integration        SC E2E format mismatch FOUND (custom vs P01)
-Layer 6j: Docker SIL            blocked on SC fix + plant-sim deploy
+Layer 6i: SC E2E fix            FIXED — aligned to P01, 4/4 cross-ECU E2E VALID ✅
+Layer 6j: Plant-sim rewrite     DONE — cantools encode, no hardcoded bytes ✅
+Layer 6k: Fault-inject rewrite  DONE — cantools encode, corrupt/replay modes ✅
+Layer 6l: Docker SIL            next session (Phase 1 of endgame plan)
 ```
 
 ## Test Suite — 1,021 Tests (CI GREEN)
