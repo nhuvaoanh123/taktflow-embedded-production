@@ -66,8 +66,29 @@
 
 ## Phases
 
+### Phase 0: SC Audit + Plant-Sim/Fault-Inject Rewrite
+**Prereq:** SC code reviewed (DONE — E2E matches, CAN config correct)
+**Goal:** SC integration verified, plant-sim/fault-inject work with new firmware
+
+Steps:
+1. Run SC 11 unit tests — verify all compile and pass
+2. Run SC alongside CVC+FZC+RZC on vcan — verify SC heartbeat (0x013) + E2E cross-check
+3. Rewrite plant-sim to use cantools DBC encode (not hardcoded bytes)
+4. Rewrite fault-inject to use cantools DBC encode + proper E2E headers
+5. Both must generate valid E2E with correct sub-byte packing
+
+**Gate:** SC E2E interop verified, plant-sim/fault-inject produce DBC-valid frames
+
+**SC Audit Results (2026-03-21):**
+- E2E CRC: matches BSW (poly=0x1D, init=0xFF, xor_out=0xFF) ✓
+- E2E byte layout: [counter:4|dataId:4][CRC][payload] ✓
+- CanIf config: matches DBC (0x013 TX, 7 RX heartbeats + E-Stop) ✓
+- Heartbeat monitoring: timeout + confirmation + latch + recovery ✓
+- Relay: kill latch (power-cycle only reset) ✓
+- GAP: no cross-ECU integration test yet
+
 ### Phase 1: Docker SIL on Netcup (rebuild with new firmware)
-**Prereq:** All 7 ECUs build clean (DONE)
+**Prereq:** Phase 0 complete
 **Goal:** 16 SIL scenarios pass on Netcup
 
 Steps:
