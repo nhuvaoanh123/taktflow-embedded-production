@@ -12,6 +12,9 @@
 #include "CanIf.h"
 #include "CanSM.h"
 #include "Det.h"
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 
 /* ---- Internal State ---- */
 
