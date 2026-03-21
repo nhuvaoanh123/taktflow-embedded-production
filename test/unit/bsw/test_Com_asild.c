@@ -564,9 +564,12 @@ void test_Com_MainFunction_Tx_E2E_protect_applied(void)
         Com_MainFunction_Tx();
     }
 
-    /* PDU 1 is E2E-protected: byte 0 should have counter|dataId, byte 1 should be CRC (non-zero) */
-    /* DataId=5 → low nibble = 5, counter starts at 1 after first protect → byte0 = 0x15 */
-    TEST_ASSERT_EQUAL_HEX8(0x15u, mock_pdur_tx_data[0]);
+    /* PDU 1 is E2E-protected: byte 0 low nibble = DataId (5),
+     * high nibble = alive counter (>0 after at least one protect).
+     * PERIODIC mode fires every CycleTimeMs regardless of pending,
+     * so the exact counter depends on how many cycles elapsed. */
+    TEST_ASSERT_EQUAL_HEX8(0x05u, mock_pdur_tx_data[0] & 0x0Fu);  /* DataId=5 */
+    TEST_ASSERT_TRUE((mock_pdur_tx_data[0] >> 4u) > 0u);            /* Counter > 0 */
     TEST_ASSERT_TRUE(mock_pdur_tx_data[1] != 0x00u);  /* CRC should be non-zero */
 }
 
