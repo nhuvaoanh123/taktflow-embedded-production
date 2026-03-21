@@ -117,80 +117,17 @@ static const Can_ConfigType can_config = {
     .controllerId = 0u,
 };
 
-/** CanIf TX PDU routing: Com TX PDU -> CAN ID */
-static const CanIf_TxPduConfigType canif_tx_config[] = {
-    /* canId,  upperPduId,                  dlc, hth */
-    { 0x011u, FZC_COM_TX_HEARTBEAT,         8u, 0u },  /* FZC heartbeat        */
-    { 0x200u, FZC_COM_TX_STEER_STATUS,      8u, 0u },  /* Steering status      */
-    { 0x201u, FZC_COM_TX_BRAKE_STATUS,      8u, 0u },  /* Brake status         */
-    { 0x210u, FZC_COM_TX_BRAKE_FAULT,       8u, 0u },  /* Brake fault          */
-    { 0x211u, FZC_COM_TX_MOTOR_CUTOFF,      8u, 0u },  /* Motor cutoff request */
-    { 0x220u, FZC_COM_TX_LIDAR,             8u, 0u },  /* Lidar data           */
-    { 0x500u, FZC_COM_TX_DTC_BROADCAST,     8u, 0u },  /* DTC broadcast        */
-    { 0x7E9u, FZC_COM_TX_UDS_RESP_FZC,     8u, 0u },  /* UDS response         */
-};
+/* CanIf config — use GENERATED routing table from CanIf_Cfg_Fzc.c
+ * DO NOT hand-write CAN ID routing here. All routing is generated from
+ * DBC → ARXML → codegen. */
+extern const CanIf_ConfigType fzc_canif_config;
+#define canif_config fzc_canif_config
 
-/** CanIf RX PDU routing: CAN ID -> Com RX PDU */
-static const CanIf_RxPduConfigType canif_rx_config[] = {
-    /* canId,  upperPduId,                       dlc, isExtended */
-    { 0x001u, FZC_COM_RX_ESTOP,                  8u, FALSE },  /* E-stop broadcast    */
-    { 0x010u, FZC_COM_RX_CVC_HEARTBEAT,          8u, FALSE },  /* CVC heartbeat       */
-    { 0x012u, FZC_COM_RX_RZC_HEARTBEAT,          8u, FALSE },  /* RZC heartbeat       */
-    { 0x013u, FZC_COM_RX_SC_STATUS,              8u, FALSE },  /* SC status           */
-    { 0x014u, FZC_COM_RX_ICU_HEARTBEAT,          8u, FALSE },  /* ICU heartbeat       */
-    { 0x015u, FZC_COM_RX_TCU_HEARTBEAT,          8u, FALSE },  /* TCU heartbeat       */
-    { 0x100u, FZC_COM_RX_VEHICLE_STATE,          8u, FALSE },  /* Vehicle state       */
-    { 0x101u, FZC_COM_RX_TORQUE_REQUEST,         8u, FALSE },  /* Torque request      */
-    { 0x102u, FZC_COM_RX_STEER_CMD,              8u, FALSE },  /* Steering command    */
-    { 0x103u, FZC_COM_RX_BRAKE_CMD,              8u, FALSE },  /* Brake command       */
-    { 0x300u, FZC_COM_RX_MOTOR_STATUS,           8u, FALSE },  /* Motor status        */
-    { 0x301u, FZC_COM_RX_MOTOR_CURRENT,          8u, FALSE },  /* Motor current       */
-    { 0x302u, FZC_COM_RX_MOTOR_TEMPERATURE,      8u, FALSE },  /* Motor temperature   */
-    { 0x303u, FZC_COM_RX_BATTERY_STATUS,         8u, FALSE },  /* Battery status      */
-    { 0x350u, FZC_COM_RX_BODY_CONTROL_CMD,       8u, FALSE },  /* Body control cmd    */
-    { 0x400u, FZC_COM_RX_LIGHT_STATUS,           8u, FALSE },  /* Light status        */
-    { 0x401u, FZC_COM_RX_INDICATOR_STATE,        8u, FALSE },  /* Indicator state     */
-    { 0x402u, FZC_COM_RX_DOOR_LOCK_STATUS,       8u, FALSE },  /* Door lock status    */
-    { 0x500u, FZC_COM_RX_DTC_BROADCAST,          8u, FALSE },  /* DTC broadcast       */
-    { 0x600u, FZC_COM_RX_VIRT_SENSORS,           8u, FALSE },  /* Virtual sensors     */
-};
-
-static const CanIf_ConfigType canif_config = {
-    .txPduConfig = canif_tx_config,
-    .txPduCount  = (uint8)(sizeof(canif_tx_config) / sizeof(canif_tx_config[0])),
-    .rxPduConfig = canif_rx_config,
-    .rxPduCount  = (uint8)(sizeof(canif_rx_config) / sizeof(canif_rx_config[0])),
-    .e2eRxCheck  = NULL_PTR,
-};
-
-/** PduR RX routing: CanIf RX PDU ID -> Com */
-static const PduR_RoutingTableType fzc_pdur_routing[] = {
-    { FZC_COM_RX_ESTOP,              PDUR_DEST_COM, FZC_COM_RX_ESTOP              },
-    { FZC_COM_RX_CVC_HEARTBEAT,      PDUR_DEST_COM, FZC_COM_RX_CVC_HEARTBEAT      },
-    { FZC_COM_RX_RZC_HEARTBEAT,      PDUR_DEST_COM, FZC_COM_RX_RZC_HEARTBEAT      },
-    { FZC_COM_RX_SC_STATUS,          PDUR_DEST_COM, FZC_COM_RX_SC_STATUS          },
-    { FZC_COM_RX_ICU_HEARTBEAT,      PDUR_DEST_COM, FZC_COM_RX_ICU_HEARTBEAT      },
-    { FZC_COM_RX_TCU_HEARTBEAT,      PDUR_DEST_COM, FZC_COM_RX_TCU_HEARTBEAT      },
-    { FZC_COM_RX_VEHICLE_STATE,      PDUR_DEST_COM, FZC_COM_RX_VEHICLE_STATE      },
-    { FZC_COM_RX_TORQUE_REQUEST,     PDUR_DEST_COM, FZC_COM_RX_TORQUE_REQUEST     },
-    { FZC_COM_RX_STEER_CMD,          PDUR_DEST_COM, FZC_COM_RX_STEER_CMD          },
-    { FZC_COM_RX_BRAKE_CMD,          PDUR_DEST_COM, FZC_COM_RX_BRAKE_CMD          },
-    { FZC_COM_RX_MOTOR_STATUS,       PDUR_DEST_COM, FZC_COM_RX_MOTOR_STATUS       },
-    { FZC_COM_RX_MOTOR_CURRENT,      PDUR_DEST_COM, FZC_COM_RX_MOTOR_CURRENT      },
-    { FZC_COM_RX_MOTOR_TEMPERATURE,  PDUR_DEST_COM, FZC_COM_RX_MOTOR_TEMPERATURE  },
-    { FZC_COM_RX_BATTERY_STATUS,     PDUR_DEST_COM, FZC_COM_RX_BATTERY_STATUS     },
-    { FZC_COM_RX_BODY_CONTROL_CMD,   PDUR_DEST_COM, FZC_COM_RX_BODY_CONTROL_CMD   },
-    { FZC_COM_RX_LIGHT_STATUS,       PDUR_DEST_COM, FZC_COM_RX_LIGHT_STATUS       },
-    { FZC_COM_RX_INDICATOR_STATE,    PDUR_DEST_COM, FZC_COM_RX_INDICATOR_STATE    },
-    { FZC_COM_RX_DOOR_LOCK_STATUS,   PDUR_DEST_COM, FZC_COM_RX_DOOR_LOCK_STATUS   },
-    { FZC_COM_RX_DTC_BROADCAST,      PDUR_DEST_COM, FZC_COM_RX_DTC_BROADCAST      },
-    { FZC_COM_RX_VIRT_SENSORS,       PDUR_DEST_COM, FZC_COM_RX_VIRT_SENSORS       },
-};
-
-static const PduR_ConfigType fzc_pdur_config = {
-    .routingTable = fzc_pdur_routing,
-    .routingCount = (uint8)(sizeof(fzc_pdur_routing) / sizeof(fzc_pdur_routing[0])),
-};
+/* PduR config — use GENERATED routing table from PduR_Cfg_Fzc.c
+ * DO NOT hand-write routing tables here. All routing is generated from
+ * DBC → ARXML → codegen. The generated config includes XCP, UDS, and
+ * all Com RX PDU routing. */
+extern const PduR_ConfigType fzc_pdur_config;
 
 /** SPI driver configuration — AS5048A steering angle sensor */
 static const Spi_ConfigType spi_config = {

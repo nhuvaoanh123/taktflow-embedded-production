@@ -251,11 +251,11 @@ void Swc_CvcCom_TransmitSchedule(uint32 currentTimeMs)
 
     /* ---- TX: Heartbeat signals → Com (50ms cycle enforced by Com config) ---- */
     {
-        uint32 hb_vs = 0u;
         uint8 ecu_id = CVC_ECU_ID_CVC;
-        uint8 mode;
-        (void)Rte_Read(CVC_SIG_VEHICLE_STATE, &hb_vs);
-        mode = (uint8)(hb_vs & 0x0Fu);
+        /* Read state directly from VSM — avoids RTE signal latency that
+         * could cause heartbeat to report stale state (e.g. INIT after
+         * VSM already transitioned to DEGRADED in the same 10ms cycle). */
+        uint8 mode = Swc_VehicleState_GetState();
         (void)Com_SendSignal(CVC_COM_SIG_CVC_HEARTBEAT_ECU_ID, &ecu_id);
         (void)Com_SendSignal(CVC_COM_SIG_CVC_HEARTBEAT_OPERATING_MODE, &mode);
     }
