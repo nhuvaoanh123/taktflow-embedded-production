@@ -303,6 +303,16 @@ static void xcp_cmd_short_upload(const uint8* data, uint8 length)
         return;
     }
 
+    /* Address range validation — reject NULL and low addresses.
+     * On POSIX, addresses below 0x1000 are unmapped (null page).
+     * On MCU, all addresses in flash/RAM are valid. */
+#ifdef PLATFORM_POSIX
+    if (addr < 0x1000u) {
+        xcp_send_error(XCP_ERR_OUT_OF_RANGE);
+        return;
+    }
+#endif
+
     src = (const uint8*)(uintptr_t)addr;
 
     xcp_tx_buf[0] = XCP_RES_OK;
@@ -378,6 +388,13 @@ static void xcp_cmd_short_download(const uint8* data, uint8 length)
         return;
     }
 
+#ifdef PLATFORM_POSIX
+    if (addr < 0x1000u) {
+        xcp_send_error(XCP_ERR_OUT_OF_RANGE);
+        return;
+    }
+#endif
+
     dst = (uint8*)(uintptr_t)addr;
 
     for (i = 0u; i < num_bytes; i++) {
@@ -441,6 +458,13 @@ static void xcp_cmd_upload(const uint8* data, uint8 length)
         xcp_send_error(XCP_ERR_OUT_OF_RANGE);
         return;
     }
+
+#ifdef PLATFORM_POSIX
+    if (xcp_mta < 0x1000u) {
+        xcp_send_error(XCP_ERR_OUT_OF_RANGE);
+        return;
+    }
+#endif
 
     src = (const uint8*)(uintptr_t)xcp_mta;
 
