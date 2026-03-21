@@ -1,0 +1,81 @@
+# Laptop Docker Compose — QM ECUs + infra
+# Safety ECUs (CVC/FZC/RZC/SC) run on QNX Pi 4
+# QM ECUs (BCM/TCU/ICU) + plant-sim + MQTT run here
+#
+# Usage:
+#   docker compose -f docker/docker-compose.laptop.yml up --build
+#
+# Requires: vcan0 created on host
+#   sudo ip link add vcan0 type vcan && sudo ip link set vcan0 up
+
+version: "3.8"
+
+services:
+  # Body Control Module (QM)
+  bcm:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: bcm
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    restart: unless-stopped
+
+  # Telematic Control Unit (QM)
+  tcu:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: tcu
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    restart: unless-stopped
+
+  # Instrument Cluster Unit (QM)
+  icu:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: icu
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - TERM=dumb  # Disable ncurses in Docker
+    restart: unless-stopped
+
+  # Plant Simulator
+  plant-sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.plant-sim
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - MQTT_HOST=localhost
+      - MQTT_PORT=1883
+      - CAN_INTERFACE=vcan0
+    depends_on: [mqtt]
+    restart: unless-stopped
+
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto:2
+    network_mode: host
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+
+  # QNX-to-vcan relay (bridges QNX Pi UDP to laptop vcan0)
+  qnx-relay:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qnx-relay
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - QNX_HOST=192.168.137.184
+      - QNX_PORT=9877
+    restart: unless-stopped

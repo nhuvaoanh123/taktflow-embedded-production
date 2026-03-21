@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir python-can cantools paho-mqtt
+
+WORKDIR /app
+COPY gateway/ gateway/
+
+CMD ["python3", "-m", "gateway.plant_sim_py.simulator"]

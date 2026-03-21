@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir python-can
+
+WORKDIR /app
+COPY scripts/tcp_to_vcan_docker.py /app/relay.py
+
+CMD ["python3", "/app/relay.py"]
