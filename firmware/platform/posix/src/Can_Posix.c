@@ -163,6 +163,9 @@ void Can_Hw_Stop(void)
     }
 }
 
+/* Forward declaration for loopback filter */
+static void Can_Posix_TrackTx(Can_IdType id);
+
 /**
  * @brief  Transmit a CAN frame via SocketCAN
  * @param  id    CAN identifier (11-bit standard)
@@ -214,7 +217,7 @@ Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
 static Can_IdType can_posix_tx_ids[CAN_POSIX_TX_TRACK_SIZE];
 static uint8      can_posix_tx_count = 0u;
 
-void Can_Posix_TrackTx(Can_IdType id)
+static void Can_Posix_TrackTx(Can_IdType id)
 {
     uint8 i;
     for (i = 0u; i < can_posix_tx_count; i++) {
