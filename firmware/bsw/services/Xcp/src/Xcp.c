@@ -74,6 +74,52 @@ static void xcp_send_ok(void)
     xcp_send_response(1u);
 }
 
+/* ---- Address Validation ---- */
+
+/**
+ * @brief  Check if an address range is safe for XCP read/write
+ * @param  addr       Start address
+ * @param  num_bytes  Number of bytes to access
+ * @return TRUE if address is within allowed memory regions
+ *
+ * @note   On bare-metal: allow SRAM + Flash only (no peripheral registers).
+ *         On POSIX: reject null page (below 0x1000).
+ *         Calibration tools should only access data/bss sections.
+ */
+static boolean xcp_validate_address(uint32 addr, uint8 num_bytes)
+{
+    uint32 end = addr + (uint32)num_bytes;
+
+    /* Reject zero address or wraparound */
+    if ((addr == 0u) || (end < addr)) {
+        return FALSE;
+    }
+
+#ifdef PLATFORM_POSIX
+    /* POSIX: reject null page */
+    if (addr < 0x1000u) {
+        return FALSE;
+    }
+#else
+    /* Bare-metal: whitelist SRAM + Flash regions.
+     * These ranges must be configured per-MCU.
+     * STM32G474: Flash 0x08000000-0x0807FFFF, SRAM 0x20000000-0x20017FFF
+     * STM32F413: Flash 0x08000000-0x0817FFFF, SRAM 0x20000000-0x2005FFFF
+     * TMS570:    Flash 0x00000000-0x003FFFFF, SRAM 0x08000000-0x0803FFFF
+     * Use a generous superset to cover all platforms: */
+    {
+        boolean in_flash = (addr >= 0x00000100u) && (end <= 0x08200000u);
+        boolean in_sram  = (addr >= 0x08000000u) && (end <= 0x20100000u);
+        boolean in_sram2 = (addr >= 0x20000000u) && (end <= 0x20100000u);
+        if (!in_flash && !in_sram && !in_sram2) {
+            return FALSE;
+        }
+    }
+#endif
+
+    return TRUE;
+}
+
 /* ---- Seed Generation (LFSR-based, deterministic from tick) ---- */
 
 static uint32 xcp_lfsr_state = 0xDEADBEEFu;
@@ -303,15 +349,10 @@ static void xcp_cmd_short_upload(const uint8* data, uint8 length)
         return;
     }
 
-    /* Address range validation — reject NULL and low addresses.
-     * On POSIX, addresses below 0x1000 are unmapped (null page).
-     * On MCU, all addresses in flash/RAM are valid. */
-#ifdef PLATFORM_POSIX
-    if (addr < 0x1000u) {
+    if (xcp_validate_address(addr, num_bytes) == FALSE) {
         xcp_send_error(XCP_ERR_OUT_OF_RANGE);
         return;
     }
-#endif
 
     src = (const uint8*)(uintptr_t)addr;
 
@@ -388,12 +429,10 @@ static void xcp_cmd_short_download(const uint8* data, uint8 length)
         return;
     }
 
-#ifdef PLATFORM_POSIX
-    if (addr < 0x1000u) {
+    if (xcp_validate_address(addr, num_bytes) == FALSE) {
         xcp_send_error(XCP_ERR_OUT_OF_RANGE);
         return;
     }
-#endif
 
     dst = (uint8*)(uintptr_t)addr;
 
@@ -459,12 +498,10 @@ static void xcp_cmd_upload(const uint8* data, uint8 length)
         return;
     }
 
-#ifdef PLATFORM_POSIX
-    if (xcp_mta < 0x1000u) {
+    if (xcp_validate_address(xcp_mta, num_bytes) == FALSE) {
         xcp_send_error(XCP_ERR_OUT_OF_RANGE);
         return;
     }
-#endif
 
     src = (const uint8*)(uintptr_t)xcp_mta;
 

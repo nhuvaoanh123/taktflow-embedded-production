@@ -329,10 +329,13 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
         return;
     }
 
+    /* ---- Short critical section: copy PDU + reset timeout only ---- */
     SchM_Enter_Com_COM_EXCLUSIVE_AREA_0();
-
-    /* Reset RX deadline counter — fresh data arrived */
     com_rx_timeout_cnt[ComRxPduId] = 0u;
+    for (i = 0u; (i < PduInfoPtr->SduLength) && (i < COM_PDU_SIZE); i++) {
+        com_rx_pdu_buf[ComRxPduId][i] = PduInfoPtr->SduDataPtr[i];
+    }
+    SchM_Exit_Com_COM_EXCLUSIVE_AREA_0();
 
 #ifdef SIL_DIAG
     if (ComRxPduId == 22u) {
@@ -344,10 +347,7 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
     }
 #endif
 
-    /* Store received PDU data */
-    for (i = 0u; (i < PduInfoPtr->SduLength) && (i < COM_PDU_SIZE); i++) {
-        com_rx_pdu_buf[ComRxPduId][i] = PduInfoPtr->SduDataPtr[i];
-    }
+    /* ---- E2E + signal unpacking outside critical section ---- */
 
     /* E2E check with supervision state machine: windowed evaluation */
     {
@@ -391,8 +391,7 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
                                 (Dem_EventIdType)com_config->rxPduConfig[rx_idx].E2eDemEventId,
                                 DEM_EVENT_STATUS_FAILED);
                         }
-                        SchM_Exit_Com_COM_EXCLUSIVE_AREA_0();
-                        return;
+                        return;  /* E2E fail: discard frame (no lock held) */
                     }
                     /* SM is VALID, INIT, or NODATA → accept frame */
                 }
@@ -401,7 +400,8 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
         }
     }
 
-    /* Unpack signals belonging to this RX PDU and push to RTE */
+    /* Short lock: unpack signals into shadow buffers + push to RTE */
+    SchM_Enter_Com_COM_EXCLUSIVE_AREA_0();
     for (i = 0u; i < com_config->signalCount; i++) {
         const Com_SignalConfigType* sig = &com_config->signalConfig[i];
 
@@ -422,7 +422,7 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
                 }
                 *((uint8*)sig->ShadowBuffer) = v;
                 rte_val = (uint32)v;
-            } else if (sig->BitSize <= 16u) {
+            } else if ((sig->BitSize <= 16u) && ((byte_offset + 1u) < COM_PDU_SIZE)) {
                 uint16 raw16 = (uint16)com_rx_pdu_buf[ComRxPduId][byte_offset] |
                                ((uint16)com_rx_pdu_buf[ComRxPduId][byte_offset + 1u] << 8u);
                 uint8  shift16 = sig->BitPosition % 8u;
