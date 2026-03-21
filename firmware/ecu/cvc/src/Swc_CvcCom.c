@@ -39,51 +39,14 @@
 #define CVC_SAFE_BRAKE_CMD   100u   /**< Max brake for safe-state TX */
 
 /* ==================================================================
- * TX Message Schedule Table (SWR-CVC-017)
- * ================================================================== */
-
-static const Swc_CvcCom_TxEntryType CvcCom_TxTable[5] = {
-    { 0x001u,  10u, CVC_E2E_ESTOP_DATA_ID,     8u },  /* E-stop: 10ms      */
-    { 0x010u,  50u, CVC_E2E_HEARTBEAT_DATA_ID,  8u },  /* Heartbeat: 50ms   */
-    { 0x100u,  20u, CVC_E2E_VEHSTATE_DATA_ID,   8u },  /* Vehicle state:20ms*/
-    { 0x101u,  10u, CVC_E2E_TORQUE_DATA_ID,     8u },  /* Torque req: 10ms  */
-    { 0x102u,  20u, 0x07u,                       8u },  /* Steer cmd: 20ms   */
-};
-
-#define CVCCOM_TX_TABLE_SIZE  5u
-
-/* ==================================================================
- * RX Message Routing Table (SWR-CVC-016)
- * ================================================================== */
-
-static const Swc_CvcCom_RxEntryType CvcCom_RxTable[4] = {
-    { 0x011u, 0x03u, 8u },  /* FZC heartbeat — FZC_E2E_HEARTBEAT_DATA_ID */
-    { 0x012u, 0x04u, 8u },  /* RZC heartbeat — RZC_E2E_HEARTBEAT_DATA_ID */
-    { 0x210u, 0x21u, 8u },  /* Brake fault — FZC_E2E_BRAKE_STATUS_DATA_ID */
-    { 0x301u, 0x0Fu, 8u },  /* Motor current — RZC_E2E_MOTOR_CURRENT_DATA_ID */
-};
-
-#define CVCCOM_RX_TABLE_SIZE  4u
-
-/* ==================================================================
- * Module State (all static file-scope — ASIL D: no dynamic memory)
+ * Module State
+ *
+ * NOTE: Legacy TX/RX tables and E2E state arrays removed (Phase 2).
+ * E2E protection is now handled by Com_MainFunction_Tx/Rx.
+ * TX scheduling uses Com_SendSignal + PERIODIC mode in Com.
  * ================================================================== */
 
 static uint8   CvcCom_Initialized;
-
-/* E2E TX state (per TX message) */
-static E2E_StateType     CvcCom_TxE2eState[CVCCOM_TX_TABLE_SIZE];
-static E2E_ConfigType    CvcCom_TxE2eConfig[CVCCOM_TX_TABLE_SIZE];
-
-/* E2E RX state (per RX message) */
-static E2E_StateType     CvcCom_RxE2eState[CVCCOM_RX_TABLE_SIZE];
-static E2E_ConfigType    CvcCom_RxE2eConfig[CVCCOM_RX_TABLE_SIZE];
-
-/* RX status tracking */
-static Swc_CvcCom_RxStatusType CvcCom_RxStatus[CVCCOM_RX_TABLE_SIZE];
-
-/* TX last-transmit timestamps */
-static uint32  CvcCom_TxLastTimeMs[CVCCOM_TX_TABLE_SIZE];
 
 /* ==================================================================
  * API: Swc_CvcCom_Init
@@ -91,135 +54,13 @@ static uint32  CvcCom_TxLastTimeMs[CVCCOM_TX_TABLE_SIZE];
 
 void Swc_CvcCom_Init(void)
 {
-    uint8 i;
-
-    /* Initialize TX E2E state and config */
-    for (i = 0u; i < CVCCOM_TX_TABLE_SIZE; i++)
-    {
-        CvcCom_TxE2eState[i].Counter     = 0u;
-        CvcCom_TxE2eConfig[i].DataId     = CvcCom_TxTable[i].dataId;
-        CvcCom_TxE2eConfig[i].MaxDeltaCounter = 3u;
-        CvcCom_TxE2eConfig[i].DataLength = CvcCom_TxTable[i].dlc;
-        CvcCom_TxLastTimeMs[i]           = 0u;
-    }
-
-    /* Initialize RX E2E state and config */
-    for (i = 0u; i < CVCCOM_RX_TABLE_SIZE; i++)
-    {
-        CvcCom_RxE2eState[i].Counter     = 0u;
-        CvcCom_RxE2eConfig[i].DataId     = CvcCom_RxTable[i].dataId;
-        CvcCom_RxE2eConfig[i].MaxDeltaCounter = 3u;
-        CvcCom_RxE2eConfig[i].DataLength = CvcCom_RxTable[i].dlc;
-
-        CvcCom_RxStatus[i].failCount     = 0u;
-        CvcCom_RxStatus[i].useSafeDefault = FALSE;
-    }
-
     CvcCom_Initialized = TRUE;
 }
 
 /* ==================================================================
- * API: Swc_CvcCom_E2eProtect
+ * NOTE: Swc_CvcCom_E2eProtect, E2eCheck, Receive removed (Phase 2).
+ * E2E is now in Com_MainFunction_Tx/Rx. SWCs use Com_SendSignal only.
  * ================================================================== */
-
-/**
- * @safety_req SWR-CVC-014
- */
-Std_ReturnType Swc_CvcCom_E2eProtect(uint8 txIndex, uint8* payload,
-                                      uint8 length)
-{
-    if (CvcCom_Initialized != TRUE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (txIndex >= CVCCOM_TX_TABLE_SIZE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (payload == NULL_PTR)
-    {
-        return E_NOT_OK;
-    }
-
-    /* E2E protection is now performed by Com_MainFunction_Tx (Phase 2).
-     * This function is retained for API compatibility only. */
-    (void)payload;
-    (void)length;
-    return E_OK;
-}
-
-/* ==================================================================
- * API: Swc_CvcCom_E2eCheck
- * ================================================================== */
-
-/**
- * @safety_req SWR-CVC-015
- */
-Std_ReturnType Swc_CvcCom_E2eCheck(uint8 rxIndex, const uint8* payload,
-                                    uint8 length)
-{
-    E2E_CheckStatusType e2eResult;
-
-    if (CvcCom_Initialized != TRUE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (rxIndex >= CVCCOM_RX_TABLE_SIZE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (payload == NULL_PTR)
-    {
-        return E_NOT_OK;
-    }
-
-    /* E2E check is now performed by Com_RxIndication (Phase 2).
-     * This function is retained for API compatibility only. */
-    (void)payload;
-    (void)length;
-    (void)e2eResult;
-    return E_OK;
-}
-
-/* ==================================================================
- * API: Swc_CvcCom_Receive
- * ================================================================== */
-
-/**
- * @safety_req SWR-CVC-016
- */
-Std_ReturnType Swc_CvcCom_Receive(uint16 canId, const uint8* payload,
-                                   uint8 length)
-{
-    uint8 i;
-
-    if (CvcCom_Initialized != TRUE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (payload == NULL_PTR)
-    {
-        return E_NOT_OK;
-    }
-
-    /* Look up CAN ID in routing table */
-    for (i = 0u; i < CVCCOM_RX_TABLE_SIZE; i++)
-    {
-        if (CvcCom_RxTable[i].canId == canId)
-        {
-            /* Found: apply E2E check */
-            return Swc_CvcCom_E2eCheck(i, payload, length);
-        }
-    }
-
-    /* Unknown CAN ID — not in routing table */
-    return E_NOT_OK;
-}
 
 /* ==================================================================
  * API: Swc_CvcCom_TransmitSchedule
@@ -441,28 +282,4 @@ void Swc_CvcCom_BridgeRxToRte(void)
      * to LOW every cycle because the signal ID was stale. Removed. */
 }
 
-/* ==================================================================
- * API: Swc_CvcCom_GetRxStatus
- * ================================================================== */
-
-Std_ReturnType Swc_CvcCom_GetRxStatus(uint8 rxIndex,
-                                       Swc_CvcCom_RxStatusType* status)
-{
-    if (CvcCom_Initialized != TRUE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (rxIndex >= CVCCOM_RX_TABLE_SIZE)
-    {
-        return E_NOT_OK;
-    }
-
-    if (status == NULL_PTR)
-    {
-        return E_NOT_OK;
-    }
-
-    *status = CvcCom_RxStatus[rxIndex];
-    return E_OK;
-}
+/* GetRxStatus removed — RX status now tracked by Com E2E SM (Com_GetRxPduQuality). */
