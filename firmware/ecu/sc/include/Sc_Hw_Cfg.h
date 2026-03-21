@@ -70,6 +70,7 @@
 
 #define SC_CRC8_POLY                0x1Du
 #define SC_CRC8_INIT                0xFFu
+#define SC_E2E_STATUS_DATA_ID       0u     /**< E2E DataId for SC_Status TX (from DBC BA_) */
 
 /* ==================================================================
  * Heartbeat Timing (in 10ms ticks)

@@ -33,8 +33,8 @@ static uint8 mon_tick;
 /* ==================================================================
  * Internal: Build SC_Status payload (SWR-SC-030 signal layout)
  *
- * Byte 0: SC_AliveCounter (8-bit)
- * Byte 1: SC_CRC8 over bytes 0, 2, 3
+ * Byte 0: [AliveCounter:4 | DataId:4]  (AUTOSAR E2E Profile P01)
+ * Byte 1: CRC-8 SAE-J1850 over payload[2:3] + DataId
  * Byte 2: SC_Mode [3:0] | SC_FaultFlags [7:4]
  * Byte 3: ECU_Health [2:0] | FaultReason [6:3] | RelayState [7]
  * ================================================================== */
@@ -97,17 +97,18 @@ static void mon_build_payload(uint8* frame)
 
     relay_state = (killed == FALSE) ? 1u : 0u;  /* 1=energized, 0=de-energized */
 
-    /* Pack frame */
-    frame[0] = mon_alive_counter;
+    /* Pack frame — AUTOSAR E2E Profile P01 format */
+    frame[0] = (uint8)((mon_alive_counter & 0x0Fu) << 4u)
+             | (uint8)(SC_E2E_STATUS_DATA_ID & 0x0Fu);
     frame[2] = (uint8)(sc_mode & 0x0Fu) | (uint8)((fault_flags & 0x0Fu) << 4u);
     frame[3] = (uint8)(ecu_health & 0x07u)
              | (uint8)((fault_reason & 0x0Fu) << 3u)
              | (uint8)((relay_state & 0x01u) << 7u);
 
-    /* CRC over bytes 0, 2, 3 (byte 1 is the CRC itself) */
-    crc_input[0] = frame[0];
-    crc_input[1] = frame[2];
-    crc_input[2] = frame[3];
+    /* CRC over payload[2:DLC-1] + DataId (matches BSW E2E_ComputePduCrc) */
+    crc_input[0] = frame[2];
+    crc_input[1] = frame[3];
+    crc_input[2] = SC_E2E_STATUS_DATA_ID;
     frame[1] = SC_E2E_ComputeCRC8(crc_input, 3u);
 }
 
