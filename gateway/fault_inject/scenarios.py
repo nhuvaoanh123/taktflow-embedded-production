@@ -3,20 +3,22 @@
 Each scenario sends specific CAN frames on vcan0 to trigger fault paths
 through the real ECU firmware running in Docker containers.
 
-CAN frame layout matches taktflow.dbc.  All E2E-protected messages use
-CRC-8 SAE J1850 (poly 0x1D, init 0xFF) computed over [data_id] + payload[2:].
+CAN frame layout is defined by taktflow_vehicle.dbc.  All encoding uses the
+shared CanEncoder (gateway/lib/dbc_encoder.py) which handles signal packing
+and E2E protection (CRC-8 SAE J1850 + alive counter) automatically.
 """
 
 import json
 import logging
 import os
-import struct
 import time
 from typing import Optional
 
 import can
 import docker
 import paho.mqtt.client as paho_mqtt
+
+from ..lib.dbc_encoder import CanEncoder
 
 # SIL time acceleration: divide wall-clock sleeps by scale factor
 _SIL_SCALE = max(1, min(100, int(os.environ.get("SIL_TIME_SCALE", "1"))))
@@ -54,69 +56,31 @@ def set_mqtt_client(client: paho_mqtt.Client) -> None:
     _mqtt_client = client
 
 # ---------------------------------------------------------------------------
-# CAN IDs (from taktflow.dbc)
+# DBC encoder — single source of truth for CAN encoding + E2E
 # ---------------------------------------------------------------------------
-CAN_ESTOP = 0x001           # EStop_Broadcast  — 4 bytes
-CAN_TORQUE_REQUEST = 0x101  # Torque_Request   — 8 bytes
-CAN_STEER_COMMAND = 0x102   # Steer_Command    — 8 bytes
-CAN_BRAKE_COMMAND = 0x103   # Brake_Command    — 8 bytes
-CAN_BATTERY_STATUS = 0x303  # Battery_Status   — 4 bytes, no E2E
-CAN_DTC_BROADCAST = 0x500   # DTC_Broadcast    — 8 bytes, no E2E
+_encoder = CanEncoder()
 
-# DTC codes — 24-bit big-endian, must match firmware Dem_SetDtcCode() values
-DTC_OVERCURRENT = 0x00E301
-DTC_STEER_FAULT = 0x00D001
-DTC_BRAKE_FAULT = 0x00E202
-DTC_OVERTEMP = 0x00E302
-DTC_BATTERY_UV = 0x00E401
+# CAN IDs — derived from DBC (kept as module-level constants for app.py imports)
+CAN_ESTOP = _encoder.get_id("EStop_Broadcast")
+CAN_TORQUE_REQUEST = _encoder.get_id("Torque_Request")
+CAN_STEER_COMMAND = _encoder.get_id("Steer_Command")
+CAN_BRAKE_COMMAND = _encoder.get_id("Brake_Command")
+CAN_BATTERY_STATUS = _encoder.get_id("Battery_Status")
+CAN_DTC_BROADCAST = _encoder.get_id("DTC_Broadcast")
+
+# DTC codes — 16-bit values matching firmware Dem_SetDtcCode()
+DTC_OVERCURRENT = 0xE301
+DTC_STEER_FAULT = 0xD001
+DTC_BRAKE_FAULT = 0xE202
+DTC_OVERTEMP = 0xE302
+DTC_BATTERY_UV = 0xE401
 ECU_RZC = 3
 ECU_FZC = 2
 
-# E2E Data IDs (lower 4 bits of byte 0, matches DBC DataID field values)
-# These are fixed per message type by convention in the DBC/plant sim.
-DATA_ID_ESTOP = 0x01
-DATA_ID_TORQUE = 0x02
-DATA_ID_STEER = 0x03
-DATA_ID_BRAKE = 0x04
-
-
-# Shared alive counters (per CAN ID, 4-bit wrapping)
-_alive_counters: dict[int, int] = {}
-
 
 # ---------------------------------------------------------------------------
-# E2E helpers — matches plant_sim.simulator._crc8_j1850 exactly
+# CAN bus helpers
 # ---------------------------------------------------------------------------
-
-def _crc8_j1850(data_id: int, payload: bytes, start: int = 2) -> int:
-    """CRC-8 SAE J1850 over [data_id] + payload[start:]."""
-    crc = 0xFF
-    for byte in [data_id] + list(payload[start:]):
-        crc ^= byte
-        for _ in range(8):
-            if crc & 0x80:
-                crc = ((crc << 1) ^ 0x1D) & 0xFF
-            else:
-                crc = (crc << 1) & 0xFF
-    return crc
-
-
-def _next_alive(msg_id: int) -> int:
-    """Increment and return the 4-bit alive counter for a CAN ID."""
-    val = _alive_counters.get(msg_id, 0)
-    _alive_counters[msg_id] = (val + 1) & 0x0F
-    return val
-
-
-def _build_e2e_frame(msg_id: int, data_id: int,
-                     payload: bytearray) -> bytes:
-    """Insert E2E header (byte 0) and CRC (byte 1) into payload."""
-    alive = _next_alive(msg_id)
-    payload[0] = (alive << 4) | (data_id & 0x0F)
-    crc = _crc8_j1850(data_id, bytes(payload))
-    payload[1] = crc
-    return bytes(payload)
-
 
 def _get_bus() -> can.Bus:
     """Create a python-can Bus on the configured channel."""
@@ -132,108 +96,74 @@ def _send(bus: can.Bus, arb_id: int, data: bytes) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Helper frame builders
+# Helper frame builders — delegates to CanEncoder
 # ---------------------------------------------------------------------------
 
-def _torque_frame(duty_pct: int, direction: int) -> bytes:
-    """Build a Torque_Request frame (0x101, 8 bytes).
-
-    Byte layout (little-endian, from DBC):
-      [0] E2E: AliveCounter[7:4] | DataID[3:0]
-      [1] E2E: CRC8
-      [2] TorqueRequest  (0-100 %)
-      [3] Direction[1:0]  (0=stop, 1=fwd, 2=rev)
-      [4..7] PedalPosition1/2, PedalFault (zeroed for injection)
-    """
-    payload = bytearray(8)
-    payload[2] = max(0, min(100, duty_pct))
-    payload[3] = direction & 0x03
-    return _build_e2e_frame(CAN_TORQUE_REQUEST, DATA_ID_TORQUE, payload)
+def _torque_frame(duty_pct: int, direction: int,
+                  corrupt_crc: bool = False,
+                  replay_counter: bool = False) -> bytes:
+    """Build a Torque_Request frame (8 bytes, E2E protected)."""
+    return _encoder.encode("Torque_Request", {
+        "Torque_Request_Command_pct": max(0, min(100, duty_pct)),
+        "Torque_Request_Direction": direction & 0x03,
+        "Torque_Request_PedalPosition1": 0,
+        "Torque_Request_PedalPosition2": 0,
+        "Torque_Request_PedalFault": 0,
+    }, corrupt_crc=corrupt_crc, replay_counter=replay_counter)
 
 
 def _steer_frame(angle_deg: float, rate_limit: float = 10.0,
-                 vehicle_state: int = 1) -> bytes:
-    """Build a Steer_Command frame (0x102, 8 bytes).
-
-    SteerAngleCmd: sint16 at bytes 2-3, plain degrees (no DBC scaling).
-    CVC Com sends 0 = center, +10 = 10° right, -10 = 10° left.
-    """
-    payload = bytearray(8)
-    raw = max(-45, min(45, int(angle_deg)))
-    struct.pack_into('<h', payload, 2, raw)
-    # SteerRateLimit: scale 0.2, byte 4
-    payload[4] = max(0, min(255, int(rate_limit / 0.2)))
-    # VehicleState: 4 bits at byte 5
-    payload[5] = vehicle_state & 0x0F
-    return _build_e2e_frame(CAN_STEER_COMMAND, DATA_ID_STEER, payload)
+                 vehicle_state: int = 1,
+                 corrupt_crc: bool = False,
+                 replay_counter: bool = False) -> bytes:
+    """Build a Steer_Command frame (8 bytes, E2E protected)."""
+    return _encoder.encode("Steer_Command", {
+        "Steer_Command_SteerAngleCmd": max(-45.0, min(45.0, angle_deg)),
+        "Steer_Command_SteerRateLimit": max(0.0, min(51.0, rate_limit)),
+        "Steer_Command_VehicleState": vehicle_state & 0x0F,
+    }, corrupt_crc=corrupt_crc, replay_counter=replay_counter)
 
 
 def _brake_frame(brake_pct: int, brake_mode: int = 1,
-                 vehicle_state: int = 1) -> bytes:
-    """Build a Brake_Command frame (0x103, 8 bytes).
-
-    BrakeForceCmd: 8-bit (0-100 %)
-    BrakeMode: 4 bits at bits 24-27  (0=release, 1=normal, 2=emergency, 3=auto)
-    VehicleState: 4 bits at bits 28-31
-    """
-    payload = bytearray(8)
-    payload[2] = max(0, min(100, brake_pct))
-    payload[3] = (brake_mode & 0x0F) | ((vehicle_state & 0x0F) << 4)
-    return _build_e2e_frame(CAN_BRAKE_COMMAND, DATA_ID_BRAKE, payload)
+                 vehicle_state: int = 1,
+                 corrupt_crc: bool = False,
+                 replay_counter: bool = False) -> bytes:
+    """Build a Brake_Command frame (8 bytes, E2E protected)."""
+    return _encoder.encode("Brake_Command", {
+        "Brake_Command_BrakeForceCmd": max(0, min(100, brake_pct)),
+        "Brake_Command_BrakeMode": brake_mode & 0x0F,
+        "Brake_Command_VehicleState": vehicle_state & 0x0F,
+    }, corrupt_crc=corrupt_crc, replay_counter=replay_counter)
 
 
-def _battery_frame(voltage_mv: int, soc_pct: int, status: int) -> bytes:
-    """Build a Battery_Status frame (0x303, 4 bytes, no E2E).
-
-    Byte layout (from DBC):
-      [0..1] BatteryVoltage_mV  (16-bit LE, 0-20000)
-      [2]    BatterySOC          (0-100 %)
-      [3]    BatteryStatus[3:0]  (0=critical_UV, 1=UV_warn, 2=normal)
-    """
-    payload = bytearray(4)
-    voltage_mv = max(0, min(20000, voltage_mv))
-    payload[0] = voltage_mv & 0xFF
-    payload[1] = (voltage_mv >> 8) & 0xFF
-    payload[2] = max(0, min(100, soc_pct))
-    payload[3] = status & 0x0F
-    return bytes(payload)
+def _battery_frame(voltage_mv: int, soc_pct: int, level: int) -> bytes:
+    """Build a Battery_Status frame (6 bytes, E2E protected)."""
+    return _encoder.encode("Battery_Status", {
+        "Battery_Status_BatteryVoltage_mV": max(0, min(20000, voltage_mv)),
+        "Battery_Status_Level": level & 0x0F,
+    })
 
 
 def _dtc_frame(dtc_code: int, ecu_source: int, occurrence: int = 1) -> bytes:
-    """Build a DTC_Broadcast frame (0x500, 8 bytes, no E2E).
-
-    Byte layout (matches firmware Dem.c 24-bit big-endian):
-      [0]    DTC_Number high byte
-      [1]    DTC_Number mid byte
-      [2]    DTC_Number low byte
-      [3]    DTC_Status      (0x01 = active)
-      [4]    ECU_Source       (1=CVC, 2=FZC, 3=RZC, 4=SC)
-      [5]    OccurrenceCount
-      [6..7] Reserved
-    """
-    payload = bytearray(8)
-    payload[0] = (dtc_code >> 16) & 0xFF   # DTC high byte
-    payload[1] = (dtc_code >> 8) & 0xFF    # DTC mid byte
-    payload[2] = dtc_code & 0xFF           # DTC low byte
-    payload[3] = 0x01  # active
-    payload[4] = ecu_source & 0xFF
-    payload[5] = min(255, occurrence)
-    return bytes(payload)
+    """Build a DTC_Broadcast frame (8 bytes, no E2E)."""
+    return _encoder.encode("DTC_Broadcast", {
+        "DTC_Broadcast_Number": dtc_code & 0xFFFF,
+        "DTC_Broadcast_Status": 0x01,  # active
+        "DTC_Broadcast_ECU_Source": ecu_source & 0xFF,
+        "DTC_Broadcast_OccurrenceCount": min(255, occurrence),
+        "DTC_Broadcast_FreezeFrame0": 0,
+        "DTC_Broadcast_FreezeFrame1": 0,
+    })
 
 
-def _estop_frame(active: bool, source: int = 1) -> bytes:
-    """Build an EStop_Broadcast frame (0x001, 4 bytes).
-
-    Byte layout:
-      [0] E2E: AliveCounter[7:4] | DataID[3:0]
-      [1] E2E: CRC8
-      [2] EStop_Active  (uint8: 0=inactive, 1=active)
-      [3] EStop_Source   (uint8: 0=CVC_button, 1=CAN_request, 2=SC_relay)
-    """
-    payload = bytearray(4)
-    payload[2] = 1 if active else 0
-    payload[3] = source & 0xFF
-    return _build_e2e_frame(CAN_ESTOP, DATA_ID_ESTOP, payload)
+def _estop_frame(active: bool, source: int = 1,
+                 corrupt_crc: bool = False,
+                 replay_counter: bool = False) -> bytes:
+    """Build an EStop_Broadcast frame (4 bytes, E2E protected)."""
+    return _encoder.encode("EStop_Broadcast", {
+        "EStop_Broadcast_Active": 1 if active else 0,
+        "EStop_Broadcast_Source": source & 0xFF,
+    }, corrupt_crc=corrupt_crc, replay_counter=replay_counter)
 
 
 # ---------------------------------------------------------------------------
@@ -373,7 +303,7 @@ def battery_low() -> str:
 
     Sends progressive voltage drops via MQTT to the plant-sim battery model.
     The plant-sim then sends low voltage on virtual sensor CAN (0x401),
-    which the RZC reads via its sensor feeder → IoHwAb → SWC → CAN 0x303.
+    which the RZC reads via its sensor feeder -> IoHwAb -> SWC -> CAN 0x303.
     After the drain sequence, sends a DTC_BATTERY_UV broadcast.
 
     Phase 1 (1.5 s): 12.6 V -> 10.4 V (approach UV_warn zone)
@@ -516,7 +446,7 @@ def creep_from_stop() -> str:
     in dead-zone (torque=0), but plant-sim injects 1000mA motor current.
 
     SC creep guard (SSR-SC-018, SM-024) detects torque=0 AND current>500mA
-    for 2 cycles (20ms) → kill relay → SAFE_STOP.
+    for 2 cycles (20ms) -> kill relay -> SAFE_STOP.
 
     Maps to HE-017 (ASIL D): Unintended vehicle motion from stationary.
     SG-001: Prevent unintended acceleration/motion from motor control fault.
@@ -528,7 +458,7 @@ def creep_from_stop() -> str:
     plant_inject_creep_current(_mqtt_client, 1000.0)
     _scaled_sleep(0.5)  # allow plant-sim to process and SC to detect
     return ("Creep from stop: 1000mA motor current injected via plant-sim "
-            "(BTS7960 FET short). Torque=0, SC creep guard → kill relay → SAFE_STOP.")
+            "(BTS7960 FET short). Torque=0, SC creep guard -> kill relay -> SAFE_STOP.")
 
 
 def babbling_node() -> str:
@@ -702,7 +632,7 @@ def _reset_all_containers() -> list[str]:
 
     client = docker.from_env()
     # Plant-sim IS restarted — MQTT reset alone isn't sufficient because
-    # CVC may still be sending stale commands (e.g. steer=-45° from SAFE_STOP)
+    # CVC may still be sending stale commands (e.g. steer=-45 from SAFE_STOP)
     # between the MQTT reset and the container kill, causing plant-sim to
     # re-track to stale values. Restarting plant-sim ensures clean physics.
     all_ecu_names = _ZONE_CONTAINERS + [_PLANT_CONTAINER, _SC_CONTAINER, _CVC_CONTAINER]
@@ -710,7 +640,7 @@ def _reset_all_containers() -> list[str]:
 
     # Phase 1: stop ALL ECU containers in parallel.
     # Plant-sim stays running — it has already received the MQTT reset
-    # and is publishing neutral CAN frames (brake=0%, steer=0°).
+    # and is publishing neutral CAN frames (brake=0%, steer=0 deg).
     def _stop_container(name: str) -> None:
         try:
             c = client.containers.get(name)
@@ -778,7 +708,7 @@ def reset() -> str:
     """Power-cycle reset: restart ECU containers to clear all latched faults.
 
     Order is critical — plant-sim must be at neutral BEFORE any ECU boots:
-    1. Kill ALL ECU containers — stops stale CAN commands (brake=100%, steer=-45°)
+    1. Kill ALL ECU containers — stops stale CAN commands (brake=100%, steer=-45 deg)
     2. Reset plant-sim via MQTT — with no ECUs sending, physics settles to neutral
     3. Wait 1s for plant-sim to publish neutral CAN frames on vcan0
     4. Start ECU containers in phased order — they read neutral on first cycle
@@ -797,6 +727,7 @@ def reset() -> str:
             client.containers.get(name).stop(timeout=2)
         except Exception:
             pass
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         pool.map(_stop, all_ecu_names)
 
@@ -806,7 +737,7 @@ def reset() -> str:
         _mqtt_client.publish("taktflow/command/reset", reset_payload, qos=1)
         reset_plant_faults(_mqtt_client)
 
-    # Phase 3: Wait for plant-sim to settle at neutral (brake=0%, steer=0°)
+    # Phase 3: Wait for plant-sim to settle at neutral (brake=0%, steer=0 deg)
     _scaled_sleep(2)
 
     # Phase 4: Start zone controllers (heartbeat senders)
@@ -917,7 +848,7 @@ SCENARIOS: dict[str, dict] = {
         "fn": creep_from_stop,
         "description": (
             "Creep from stop: BTS7960 FET short — 1000mA motor current with "
-            "torque=0.  SC creep guard detects cross-plausibility → kill relay → SAFE_STOP."
+            "torque=0.  SC creep guard detects cross-plausibility -> kill relay -> SAFE_STOP."
         ),
     },
     "babbling_node": {
