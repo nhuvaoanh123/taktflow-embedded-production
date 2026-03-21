@@ -127,8 +127,8 @@ Layer 1: Com unit              30/30  ✅
 Layer 2: E2E SM + CanSM        22/22  ✅
 Layer 3: BSW integration        6/6   ✅
 Layer 3: Socket RX              3/3   ✅
-Layer 4: CVC full              28/30  ✅ (2 = Body_Control not impl)
-Layer 5: CVC+FZC full          blocked (FZC needs extern config fix)
+Layer 4: CVC full              30/30  ✅ ALL PASS
+Layer 5: CVC+FZC full          34/34  ✅ ALL PASS
 Layer 6: Full 7-ECU SIL        not started
 ```
 
@@ -159,16 +159,16 @@ Layer 6: Full 7-ECU SIL        not started
 | 9 | Dead E2E code in heartbeats | Layer 4 build | -Werror caught unused vars |
 | 10 | Dead cutoff_data in Swc_Brake | Layer 4 build | -Werror |
 | 11 | 19 zombie CVC processes | Layer 4 timing test | Test scripts didn't cleanup |
+| 12 | PERIODIC TX required pending | Layer 4 timing | Body_Control/E-Stop never sent |
+| 13 | Docker SIL on vcan0 | Layer 4 phantom | Old containers injected frames |
+| 14 | E2E test exact counter | CI | PERIODIC fires multiple times |
 
 ## What's Left
 
-1. **FZC main.c** — replace hand-written CanIf/PduR with extern (same as CVC fix)
-2. **RZC main.c** — same pattern
-3. **Rerun Layer 5** — 34 tests with fixed FZC
-4. **Body_Control_Cmd** — implement in Swc_CvcCom
-5. **Layer 6** — Docker SIL with all 7 ECUs
-6. **16 pre-existing VSM test failures** — stale mock signal IDs
-7. **FZC/RZC main.c** — check for other hand-written configs (CanTp, etc.)
+1. **Layer 6** — Docker SIL with all 7 ECUs
+2. **RZC POSIX build** — needs same extern config + hw_posix
+3. **16 pre-existing VSM test failures** — stale mock signal IDs
+4. **Physical bench flash** — CVC + FZC + RZC on STM32
 
 ## Key Rule
 
