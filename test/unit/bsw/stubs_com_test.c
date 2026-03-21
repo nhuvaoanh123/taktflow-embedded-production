@@ -35,6 +35,20 @@ Std_ReturnType CanIf_Transmit(uint8 TxPduId, const void* PduInfoPtr)
     return E_OK;
 }
 
+/* PduR stub */
+#include "ComStack_Types.h"
+Std_ReturnType PduR_Transmit(PduIdType TxPduId, const PduInfoType* PduInfoPtr)
+{
+    (void)TxPduId; (void)PduInfoPtr;
+    return E_OK;
+}
+
+/* Dem stub */
+void Dem_ReportErrorStatus(uint8 EventId, uint8 EventStatus)
+{
+    (void)EventId; (void)EventStatus;
+}
+
 /* SchM_Timing stubs */
 void SchM_TimingInit(void) {}
 void SchM_TimingStart(uint8 TimingId) { (void)TimingId; }
