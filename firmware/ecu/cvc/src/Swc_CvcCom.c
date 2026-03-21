@@ -20,11 +20,13 @@
 
 #include "Swc_CvcCom.h"
 #include "Cvc_Cfg.h"
-#include "E2E.h"
 #include "Com.h"
 #include "Rte.h"
 #include "Swc_VehicleState.h"
-#include "PduR.h"
+/* NOTE: PduR.h and E2E.h intentionally NOT included here.
+ * SWCs access CAN only through Com_SendSignal/Com_ReceiveSignal.
+ * E2E protection is applied by Com_MainFunction_Tx (Phase 2).
+ * Direct PduR_Transmit/E2E_Protect calls from SWCs are forbidden. */
 
 /* SIL diagnostic logging — compile with -DSIL_DIAG to enable */
 #ifdef SIL_DIAG

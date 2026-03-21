@@ -29,6 +29,14 @@ extern Std_ReturnType PduR_Transmit(PduIdType TxPduId, const PduInfoType* PduInf
 static const Xcp_ConfigType* xcp_config = NULL_PTR;
 static boolean xcp_initialized = FALSE;
 static boolean xcp_connected   = FALSE;
+static boolean xcp_unlocked    = FALSE;  /**< TRUE after successful Seed & Key */
+
+/** Seed & Key state */
+static uint32 xcp_seed         = 0u;     /**< Current seed (0 = no pending challenge) */
+static uint8  xcp_seed_pending = FALSE;  /**< TRUE between GET_SEED and UNLOCK */
+static uint8  xcp_unlock_fail_count = 0u;
+#define XCP_MAX_UNLOCK_ATTEMPTS  3u      /**< Lock out after 3 consecutive failures */
+#define XCP_LOCKOUT_ACTIVE       0xFFu
 
 /** Memory Transfer Address (set by SET_MTA, used by UPLOAD) */
 static uint32 xcp_mta = 0u;
@@ -66,6 +74,49 @@ static void xcp_send_ok(void)
     xcp_send_response(1u);
 }
 
+/* ---- Seed Generation (LFSR-based, deterministic from tick) ---- */
+
+static uint32 xcp_lfsr_state = 0xDEADBEEFu;
+
+/**
+ * @brief  Generate a pseudo-random 32-bit seed using LFSR
+ * @return 32-bit seed value (never 0)
+ */
+static uint32 xcp_generate_seed(void)
+{
+    uint8 i;
+    /* Galois LFSR with polynomial 0x80200003 */
+    for (i = 0u; i < 32u; i++) {
+        if ((xcp_lfsr_state & 1u) != 0u) {
+            xcp_lfsr_state = (xcp_lfsr_state >> 1u) ^ 0x80200003u;
+        } else {
+            xcp_lfsr_state = xcp_lfsr_state >> 1u;
+        }
+    }
+    /* Ensure non-zero */
+    if (xcp_lfsr_state == 0u) {
+        xcp_lfsr_state = 0xDEADBEEFu;
+    }
+    return xcp_lfsr_state;
+}
+
+/**
+ * @brief  Compute expected key from seed (simple XOR-rotate, NOT cryptographic)
+ * @param  seed  The seed value sent to the tester
+ * @return Expected key value
+ *
+ * @note   The same algorithm must be implemented in the XCP master tool.
+ *         For production: replace with CMAC or HMAC-SHA256.
+ */
+static uint32 xcp_compute_key(uint32 seed)
+{
+    /* XOR with secret constant + bit rotation */
+    uint32 key = seed ^ 0x54414B54u;  /* "TAKT" in ASCII */
+    key = ((key << 13u) | (key >> 19u));  /* ROL 13 */
+    key ^= 0x464C4F57u;  /* "FLOW" in ASCII */
+    return key;
+}
+
 /* ---- Command Handlers ---- */
 
 static void xcp_cmd_connect(const uint8* data, uint8 length)
@@ -74,6 +125,9 @@ static void xcp_cmd_connect(const uint8* data, uint8 length)
     (void)length;
 
     xcp_connected = TRUE;
+    xcp_unlocked  = FALSE;  /* Require Seed & Key after every CONNECT */
+    xcp_seed_pending = FALSE;
+    xcp_seed = 0u;
 
     xcp_tx_buf[0] = XCP_RES_OK;
     xcp_tx_buf[1] = XCP_RESOURCE_CAL_PAG;          /* RESOURCE: calibration only */
@@ -88,8 +142,11 @@ static void xcp_cmd_connect(const uint8* data, uint8 length)
 
 static void xcp_cmd_disconnect(void)
 {
-    xcp_connected = FALSE;
-    xcp_mta = 0u;
+    xcp_connected   = FALSE;
+    xcp_unlocked    = FALSE;
+    xcp_seed_pending = FALSE;
+    xcp_seed         = 0u;
+    xcp_mta          = 0u;
     xcp_send_ok();
 }
 
@@ -118,6 +175,98 @@ static void xcp_cmd_get_comm_mode_info(void)
 }
 
 /**
+ * GET_SEED: return a random seed for Seed & Key authentication
+ * Request: [0xF8, mode, resource]
+ * Response: [0xFF, length, seed3, seed2, seed1, seed0]
+ *
+ * mode=0: first part of seed. resource=XCP_RESOURCE_CAL_PAG.
+ * If already unlocked, returns length=0 (no seed needed).
+ */
+static void xcp_cmd_get_seed(const uint8* data, uint8 length)
+{
+    if (length < 3u) {
+        xcp_send_error(XCP_ERR_CMD_SYNTAX);
+        return;
+    }
+
+    if (xcp_unlock_fail_count >= XCP_MAX_UNLOCK_ATTEMPTS) {
+        /* Locked out: too many failed attempts. Requires DISCONNECT + CONNECT to reset. */
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
+
+    if (xcp_unlocked == TRUE) {
+        /* Already unlocked: send length=0 (no seed needed) */
+        xcp_tx_buf[0] = XCP_RES_OK;
+        xcp_tx_buf[1] = 0u;  /* Seed length = 0 → already unlocked */
+        xcp_send_response(2u);
+        return;
+    }
+
+    /* Generate new seed */
+    xcp_seed = xcp_generate_seed();
+    xcp_seed_pending = TRUE;
+
+    xcp_tx_buf[0] = XCP_RES_OK;
+    xcp_tx_buf[1] = 4u;  /* Seed length = 4 bytes */
+    xcp_tx_buf[2] = (uint8)((xcp_seed >> 24u) & 0xFFu);
+    xcp_tx_buf[3] = (uint8)((xcp_seed >> 16u) & 0xFFu);
+    xcp_tx_buf[4] = (uint8)((xcp_seed >>  8u) & 0xFFu);
+    xcp_tx_buf[5] = (uint8)((xcp_seed >>  0u) & 0xFFu);
+    xcp_send_response(6u);
+}
+
+/**
+ * UNLOCK: validate key against previously sent seed
+ * Request: [0xF7, length, key3, key2, key1, key0]
+ * Response: [0xFF, resource] on success, ERR_KEY_REJECTED on failure
+ */
+static void xcp_cmd_unlock(const uint8* data, uint8 length)
+{
+    uint32 received_key;
+    uint32 expected_key;
+
+    if (length < 6u) {
+        xcp_send_error(XCP_ERR_CMD_SYNTAX);
+        return;
+    }
+
+    if (xcp_seed_pending != TRUE) {
+        /* No GET_SEED was issued before UNLOCK */
+        xcp_send_error(XCP_ERR_SEQUENCE);
+        return;
+    }
+
+    if (xcp_unlock_fail_count >= XCP_MAX_UNLOCK_ATTEMPTS) {
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
+
+    received_key = ((uint32)data[2] << 24u) |
+                   ((uint32)data[3] << 16u) |
+                   ((uint32)data[4] <<  8u) |
+                   ((uint32)data[5]);
+
+    expected_key = xcp_compute_key(xcp_seed);
+
+    if (received_key == expected_key) {
+        xcp_unlocked = TRUE;
+        xcp_seed_pending = FALSE;
+        xcp_seed = 0u;
+        xcp_unlock_fail_count = 0u;
+
+        xcp_tx_buf[0] = XCP_RES_OK;
+        xcp_tx_buf[1] = XCP_RESOURCE_CAL_PAG;  /* Unlocked resource */
+        xcp_send_response(2u);
+    } else {
+        xcp_unlock_fail_count++;
+        xcp_seed_pending = FALSE;  /* Must GET_SEED again */
+        xcp_seed = 0u;
+        xcp_send_error(XCP_ERR_KEY_REJECTED);
+    }
+}
+
+/**
  * SHORT_UPLOAD: read N bytes from address
  * Request: [0xF4, N, reserved, addr_ext, addr3, addr2, addr1, addr0]
  * Response: [0xFF, data0, data1, ..., dataN-1]
@@ -128,6 +277,12 @@ static void xcp_cmd_short_upload(const uint8* data, uint8 length)
     uint32 addr;
     const uint8* src;
     uint8 i;
+
+    /* Seed & Key required for memory access */
+    if (xcp_unlocked != TRUE) {
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
 
     if (length < 8u) {
         xcp_send_error(XCP_ERR_CMD_SYNTAX);
@@ -190,6 +345,12 @@ static void xcp_cmd_short_download(const uint8* data, uint8 length)
     uint8* dst;
     uint8 i;
 
+    /* Seed & Key required for memory write */
+    if (xcp_unlocked != TRUE) {
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
+
     if (length < 4u) {
         xcp_send_error(XCP_ERR_CMD_SYNTAX);
         return;
@@ -233,6 +394,11 @@ static void xcp_cmd_short_download(const uint8* data, uint8 length)
  */
 static void xcp_cmd_set_mta(const uint8* data, uint8 length)
 {
+    if (xcp_unlocked != TRUE) {
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
+
     if (length < 8u) {
         xcp_send_error(XCP_ERR_CMD_SYNTAX);
         return;
@@ -256,6 +422,11 @@ static void xcp_cmd_upload(const uint8* data, uint8 length)
     uint8 num_bytes;
     const uint8* src;
     uint8 i;
+
+    if (xcp_unlocked != TRUE) {
+        xcp_send_error(XCP_ERR_ACCESS_DENIED);
+        return;
+    }
 
     if (length < 2u) {
         xcp_send_error(XCP_ERR_CMD_SYNTAX);
@@ -292,6 +463,10 @@ void Xcp_Init(const Xcp_ConfigType* ConfigPtr)
     xcp_config      = ConfigPtr;
     xcp_initialized = TRUE;
     xcp_connected   = FALSE;
+    xcp_unlocked    = FALSE;
+    xcp_seed_pending = FALSE;
+    xcp_seed         = 0u;
+    xcp_unlock_fail_count = 0u;
     xcp_mta         = 0u;
     g_dbg_xcp_rx_count  = 0u;
     g_dbg_xcp_tx_count  = 0u;
@@ -363,6 +538,12 @@ void Xcp_RxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr)
         break;
     case XCP_CMD_UPLOAD:
         xcp_cmd_upload(PduInfoPtr->SduDataPtr, PduInfoPtr->SduLength);
+        break;
+    case XCP_CMD_GET_SEED:
+        xcp_cmd_get_seed(PduInfoPtr->SduDataPtr, PduInfoPtr->SduLength);
+        break;
+    case XCP_CMD_UNLOCK:
+        xcp_cmd_unlock(PduInfoPtr->SduDataPtr, PduInfoPtr->SduLength);
         break;
     default:
         xcp_send_error(XCP_ERR_CMD_UNKNOWN);

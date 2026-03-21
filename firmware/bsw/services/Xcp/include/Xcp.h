@@ -26,6 +26,8 @@
 #define XCP_CMD_SHORT_DOWNLOAD       0xEDu
 #define XCP_CMD_SET_MTA              0xF6u
 #define XCP_CMD_UPLOAD               0xF5u
+#define XCP_CMD_GET_SEED             0xF8u
+#define XCP_CMD_UNLOCK               0xF7u
 
 /* ---- XCP Response Codes ---- */
 
@@ -38,6 +40,8 @@
 #define XCP_ERR_OUT_OF_RANGE         0x22u
 #define XCP_ERR_ACCESS_DENIED        0x24u
 #define XCP_ERR_CMD_SYNTAX           0x21u
+#define XCP_ERR_SEQUENCE             0x29u  /**< Seed/Key sequence error */
+#define XCP_ERR_KEY_REJECTED         0x25u  /**< Invalid key */
 
 /* ---- XCP Resource Bits (GET_STATUS) ---- */
 

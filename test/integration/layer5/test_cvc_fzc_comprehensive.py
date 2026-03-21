@@ -568,17 +568,55 @@ def xcp_connect(bus, req_id, resp_id):
     return wait_for_frame(bus, resp_id, timeout_s=2)
 
 
-# CVC XCP: req 0x550 → resp 0x551
-r = xcp_connect(bus, 0x550, 0x551)
-test("G12.1 CVC XCP CONNECT → response", r is not None,
+def xcp_connect_and_unlock(bus, req_id, resp_id):
+    """Full XCP CONNECT + Seed & Key unlock sequence."""
+    import struct as st
+    # 1. CONNECT
+    r = xcp_connect(bus, req_id, resp_id)
+    if r is None:
+        return None
+
+    # 2. GET_SEED (0xF8, mode=0, resource=1)
+    inject_frame(bus, req_id, [0xF8, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00])
+    seed_resp = wait_for_frame(bus, resp_id, timeout_s=2)
+    if seed_resp is None:
+        return r  # Connected but can't get seed
+
+    seed_len = seed_resp.data[1]
+    if seed_len == 0:
+        return r  # Already unlocked
+
+    # Extract 4-byte seed (big-endian)
+    seed = (seed_resp.data[2] << 24) | (seed_resp.data[3] << 16) | \
+           (seed_resp.data[4] << 8) | seed_resp.data[5]
+
+    # Compute key: XOR with "TAKT", ROL 13, XOR with "FLOW"
+    key = seed ^ 0x54414B54
+    key &= 0xFFFFFFFF
+    key = ((key << 13) | (key >> 19)) & 0xFFFFFFFF
+    key ^= 0x464C4F57
+    key &= 0xFFFFFFFF
+
+    # 3. UNLOCK (0xF7, length=4, key bytes big-endian)
+    inject_frame(bus, req_id, [
+        0xF7, 0x04,
+        (key >> 24) & 0xFF, (key >> 16) & 0xFF,
+        (key >> 8) & 0xFF, key & 0xFF,
+        0x00, 0x00
+    ])
+    unlock_resp = wait_for_frame(bus, resp_id, timeout_s=2)
+    return unlock_resp
+
+
+# CVC XCP: CONNECT + Seed & Key unlock
+r = xcp_connect_and_unlock(bus, 0x550, 0x551)
+test("G12.1 CVC XCP CONNECT + Seed & Key unlock", r is not None,
      f"data={r.data.hex()}" if r else "")
 
-# FZC XCP: req 0x552 → resp 0x553
-# KNOWN BUG: FZC main.c uses hand-written PduR config (no XCP route).
-# Fix: replace with extern fzc_pdur_config from generated PduR_Cfg_Fzc.c
-r = xcp_connect(bus, 0x552, 0x553)
-test("G12.2 FZC XCP CONNECT → response (KNOWN: FZC PduR hand-written)", r is not None,
-     f"data={r.data.hex()}" if r else "FZC PduR needs extern fix")
+# FZC XCP: CONNECT + Seed & Key unlock
+r = xcp_connect_and_unlock(bus, 0x552, 0x553)
+test("G12.2 FZC XCP CONNECT + Seed & Key unlock", r is not None,
+     f"data={r.data.hex()}" if r else "")
 
 # ============================================================
 # Group 13: Kill CVC while FZC alive

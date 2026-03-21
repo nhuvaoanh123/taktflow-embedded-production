@@ -182,6 +182,9 @@ Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataP
     case COM_SINT16:
         *((sint16*)sig->ShadowBuffer) = *((const sint16*)SignalDataPtr);
         break;
+    case COM_UINT32:
+        *((uint32*)sig->ShadowBuffer) = *((const uint32*)SignalDataPtr);
+        break;
     default:
         SchM_Exit_Com_COM_EXCLUSIVE_AREA_0();
         return E_NOT_OK;
@@ -204,8 +207,8 @@ Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataP
                     (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(mask << shift))
                     | (uint8)(val << shift);
             }
-        } else if (sig->BitSize <= 16u) {
-            /* Multi-byte signal packing with sub-byte alignment */
+        } else if ((sig->BitSize <= 16u) && ((byte_offset + 1u) < COM_PDU_SIZE)) {
+            /* Multi-byte signal packing with sub-byte alignment + bounds check */
             uint16 val = *((const uint16*)SignalDataPtr);
             uint8 shift = sig->BitPosition % 8u;
             uint16 mask = (uint16)((1uL << sig->BitSize) - 1u);
@@ -281,6 +284,9 @@ Std_ReturnType Com_ReceiveSignal(Com_SignalIdType SignalId, void* SignalDataPtr)
         break;
     case COM_SINT16:
         *((sint16*)SignalDataPtr) = *((const sint16*)sig->ShadowBuffer);
+        break;
+    case COM_UINT32:
+        *((uint32*)SignalDataPtr) = *((const uint32*)sig->ShadowBuffer);
         break;
     default:
         SchM_Exit_Com_COM_EXCLUSIVE_AREA_0();
@@ -524,6 +530,7 @@ void Com_MainFunction_Tx(void)
     /* Startup delay: suppress all TX until delay expired */
     if (com_startup_delay_cnt < COM_STARTUP_DELAY_CYCLES) {
         com_startup_delay_cnt++;
+        SchM_TimingStop(TIMING_ID_COM_MAIN_TX);
         return;
     }
 
