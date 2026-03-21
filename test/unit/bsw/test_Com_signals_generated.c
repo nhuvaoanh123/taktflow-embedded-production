@@ -1506,7 +1506,7 @@ void test_Signal_Steering_Status_ActualAngle_max(void)
     sint16 result = 0;
     Std_ReturnType ret = Com_ReceiveSignal(CVC_COM_SIG_STEERING_STATUS_ACTUAL_ANGLE, &result);
     TEST_ASSERT_EQUAL_UINT8(E_OK, ret);
-    TEST_ASSERT_EQUAL_INT16(65535, result);
+    TEST_ASSERT_EQUAL_INT16(-1, result);  /* 0xFFFF as sint16 = -1 */
 }
 
 void test_Signal_Steering_Status_ActualAngle_zero(void)
@@ -1566,7 +1566,7 @@ void test_Signal_Steering_Status_CommandedAngle_max(void)
     sint16 result = 0;
     Std_ReturnType ret = Com_ReceiveSignal(CVC_COM_SIG_STEERING_STATUS_COMMANDED_ANGLE, &result);
     TEST_ASSERT_EQUAL_UINT8(E_OK, ret);
-    TEST_ASSERT_EQUAL_INT16(65535, result);
+    TEST_ASSERT_EQUAL_INT16(-1, result);  /* 0xFFFF as sint16 = -1 */
 }
 
 void test_Signal_Steering_Status_CommandedAngle_zero(void)
