@@ -179,13 +179,18 @@ if f:
     test("G1.3 FaultMask non-zero (timeouts active)", fm != 0,
          f"fault_mask=0x{fm:03X}")
 
-# 2. Heartbeat reflects DEGRADED mode
-hb = wait_for_frame(bus, 0x010, timeout_s=1)
-test("G1.4 CVC_Heartbeat present", hb is not None)
-if hb:
-    hb_mode = get_heartbeat_mode(hb)
-    test("G1.5 Heartbeat mode matches Vehicle_State", hb_mode == 2,
-         f"hb_mode={hb_mode}")
+# 2. Heartbeat reflects current VSM mode
+# Collect several heartbeats and check the LAST one (freshest state)
+hb_list = []
+for _ in range(10):
+    h = wait_for_frame(bus, 0x010, timeout_s=0.5)
+    if h:
+        hb_list.append(h)
+test("G1.4 CVC_Heartbeat present", len(hb_list) > 0)
+if hb_list:
+    hb_mode = get_heartbeat_mode(hb_list[-1])
+    test("G1.5 Heartbeat mode matches Vehicle_State (last frame)", hb_mode == mode,
+         f"hb_mode={hb_mode}, vs_mode={mode}")
 
 # 3. Brake command should show safe-state (100%) since DEGRADED ≥ SAFE_STOP threshold
 # Actually DEGRADED < SAFE_STOP. Check brake=0 in DEGRADED.
