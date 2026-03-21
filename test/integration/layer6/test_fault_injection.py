@@ -24,6 +24,9 @@ import can
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 IFACE = "vcan0"
 
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+
 passed = 0
 failed = 0
 total = 0
@@ -34,10 +37,10 @@ def test(name, condition, detail=""):
     total += 1
     if condition:
         passed += 1
-        print(f"  [{total:2d}] {name}: PASS{' — ' + detail if detail else ''}")
+        print(f"  [{total:2d}] {name}: PASS{' — ' + detail if detail else ''}", flush=True)
     else:
         failed += 1
-        print(f"  [{total:2d}] {name}: FAIL{' — ' + detail if detail else ''}")
+        print(f"  [{total:2d}] {name}: FAIL{' — ' + detail if detail else ''}", flush=True)
 
 
 def start_ecu(name):
@@ -96,7 +99,8 @@ bus = can.interface.Bus(interface="socketcan", channel=IFACE)
 # ============================================================
 # Group 1: E2E CRC Corruption
 # ============================================================
-print("--- Group 1: E2E CRC Corruption ---")
+sys.stdout.flush()
+    print("--- Group 1: E2E CRC Corruption ---")
 
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
