@@ -56,6 +56,9 @@ BSW_INC = \
     -I$(BSW)/services/BswM/include \
     -I$(BSW)/services/NvM/include \
     -I$(BSW)/services/CanTp/include \
+    -I$(BSW)/services/CanSM/include \
+    -I$(BSW)/services/FiM/include \
+    -I$(BSW)/services/Xcp/include \
     -I$(BSW)/services/Sil/include \
     -I$(BSW)/ecual/CanIf/include \
     -I$(BSW)/ecual/PduR/include \
@@ -111,6 +114,9 @@ BSW_SRCS = \
     $(BSW)/services/Det/src/Det_Callout_Sil.c \
     $(BSW)/services/SchM/src/SchM.c \
     $(BSW)/services/CanTp/src/CanTp.c \
+    $(BSW)/services/CanSM/src/CanSM.c \
+    $(BSW)/services/Xcp/src/Xcp.c \
+    $(BSW)/services/SchM/src/SchM_Timing.c \
     $(BSW)/rte/src/Rte.c \
     $(BSW)/services/Sil/src/Sil_Time.c \
     $(BSW)/os/bootstrap/src/Os_Core.c \
