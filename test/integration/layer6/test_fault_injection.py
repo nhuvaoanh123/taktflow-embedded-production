@@ -99,8 +99,7 @@ bus = can.interface.Bus(interface="socketcan", channel=IFACE)
 # ============================================================
 # Group 1: E2E CRC Corruption
 # ============================================================
-sys.stdout.flush()
-    print("--- Group 1: E2E CRC Corruption ---")
+print("--- Group 1: E2E CRC Corruption ---", flush=True)
 
 cvc = start_ecu("cvc")
 fzc = start_ecu("fzc")
