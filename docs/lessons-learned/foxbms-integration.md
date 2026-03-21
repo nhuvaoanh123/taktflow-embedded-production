@@ -222,3 +222,23 @@ Multiple CAN 0x222 frames on isolated vcan1.
 
 ### Key Lesson: FAS_ASSERT = NO_OPERATION
 foxBMS has ~100+ assert checks during init for hardware that doesn't exist on POSIX. With assert level 0 (infinite loop), ANY hardware-related check hangs forever. Setting `FAS_ASSERT_LEVEL=2` (no-op) lets foxBMS continue past all hardware checks and reach the running state.
+
+## foxBMS POSIX — BMS in IDLE State, SOC 50% (2026-03-21)
+
+### Achieved
+- SYS state machine reaches RUNNING (state=5)
+- BMS state: IDLE (CAN state 3) — ready for standby request
+- SOC: 50% (default counting method)
+- 2375 CAN frames in 10 seconds (15+ message types)
+- Plant model sends IVT current (0x521) and voltage (0x522)
+
+### Fixes Applied
+- SBC_STATEMACHINE_RUNNING enum value corrected (2 not 3)
+- CAN_IsCurrentSensorPresent bypassed (return true)
+- All 60+ TMS570 register bases redirected to RAM via HALCoGen header patches
+- DIAG_Handler stubbed to always return OK
+
+### Next Steps
+- Send BMS state request (0x210) to transition IDLE → STANDBY → NORMAL
+- Implement CAN RX from SocketCAN so foxBMS receives plant data
+- Fault injection testing
