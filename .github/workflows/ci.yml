@@ -180,7 +180,7 @@ jobs:
           echo "PASS: ${{ matrix.ecu }}"
 
   # -------------------------------------------------------------------
-  # Unit Tests: Com + CanSM + E2E SM (52 tests)
+  # Unit Tests: 750+ tests (existing + generated)
   # -------------------------------------------------------------------
   unit-tests:
     name: Unit Tests
@@ -249,6 +249,60 @@ jobs:
             firmware/bsw/services/E2E/src/E2E.c \
             firmware/lib/vendor/unity/unity.c
           ./test_e2e_sm
+
+      - name: Build and run Com Signal Packing tests (273)
+        run: |
+          INC="-Ifirmware/bsw/include -Ifirmware/bsw/services/Com/include -Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include -Ifirmware/bsw/services/E2E/include -Ifirmware/bsw/services/SchM/include -Ifirmware/bsw/services/WdgM/include -Ifirmware/bsw/services/BswM/include -Ifirmware/bsw/services/NvM/include -Ifirmware/bsw/rte/include -Ifirmware/bsw/ecual/PduR/include -Ifirmware/bsw/ecual/CanIf/include -Ifirmware/bsw/ecual/IoHwAb/include -Ifirmware/bsw/mcal/Can/include -Ifirmware/bsw/mcal/Spi/include -Ifirmware/bsw/mcal/Adc/include -Ifirmware/bsw/mcal/Dio/include -Ifirmware/bsw/mcal/Gpt/include -Ifirmware/bsw/mcal/Pwm/include -Ifirmware/bsw/mcal/Uart/include -Ifirmware/ecu/cvc/include -Ifirmware/ecu/cvc/cfg -Ifirmware/ecu/cvc/cfg/platform_posix -Ifirmware/lib/vendor/unity"
+          gcc -DPLATFORM_POSIX -DUNIT_TEST -g -O0 -std=c99 -Wno-unused-function -Wno-unused-variable \
+            $INC -o test_signals \
+            test/unit/bsw/test_Com_signals_generated.c \
+            firmware/bsw/services/Com/src/Com.c \
+            firmware/bsw/services/E2E/src/E2E.c \
+            firmware/bsw/services/E2E/src/E2E_Sm.c \
+            test/unit/bsw/stubs_com_test.c \
+            firmware/ecu/cvc/cfg/Com_Cfg_Cvc.c \
+            firmware/lib/vendor/unity/unity.c
+          ./test_signals
+
+      - name: Build and run Com Negative tests (52)
+        run: |
+          INC="-Ifirmware/bsw/include -Ifirmware/bsw/services/Com/include -Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include -Ifirmware/bsw/services/E2E/include -Ifirmware/bsw/services/SchM/include -Ifirmware/bsw/services/WdgM/include -Ifirmware/bsw/services/BswM/include -Ifirmware/bsw/services/NvM/include -Ifirmware/bsw/services/Dcm/include -Ifirmware/bsw/services/CanTp/include -Ifirmware/bsw/services/CanSM/include -Ifirmware/bsw/services/FiM/include -Ifirmware/bsw/services/Xcp/include -Ifirmware/bsw/services/Sil/include -Ifirmware/bsw/rte/include -Ifirmware/bsw/ecual/PduR/include -Ifirmware/bsw/ecual/CanIf/include -Ifirmware/bsw/ecual/IoHwAb/include -Ifirmware/bsw/mcal/Can/include -Ifirmware/bsw/mcal/Spi/include -Ifirmware/bsw/mcal/Adc/include -Ifirmware/bsw/mcal/Dio/include -Ifirmware/bsw/mcal/Gpt/include -Ifirmware/bsw/mcal/Pwm/include -Ifirmware/bsw/mcal/Uart/include -Ifirmware/ecu/cvc/include -Ifirmware/ecu/cvc/cfg -Ifirmware/ecu/cvc/cfg/platform_posix -Ifirmware/lib/vendor/unity"
+          gcc -DPLATFORM_POSIX -DUNIT_TEST -g -O0 -std=c99 -Wno-unused-function -Wno-unused-variable \
+            $INC -o test_com_neg \
+            test/unit/bsw/test_Com_negative_generated.c \
+            firmware/bsw/services/Com/src/Com.c \
+            firmware/lib/vendor/unity/unity.c
+          ./test_com_neg
+
+      - name: Build and run E2E Message tests (100)
+        run: |
+          INC="-Ifirmware/bsw/include -Ifirmware/bsw/services/E2E/include -Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include -Ifirmware/bsw/services/SchM/include -Ifirmware/lib/vendor/unity"
+          gcc -DPLATFORM_POSIX -DUNIT_TEST -g -O0 -std=c99 -Wno-unused-function -Wno-unused-variable \
+            $INC -o test_e2e_msg \
+            test/unit/bsw/test_E2E_messages_generated.c \
+            firmware/bsw/services/E2E/src/E2E.c \
+            firmware/bsw/services/Det/src/Det.c \
+            firmware/lib/vendor/unity/unity.c
+          ./test_e2e_msg
+
+      - name: Build and run XCP Security tests (33)
+        run: |
+          INC="-Ifirmware/bsw/include -Ifirmware/bsw/services/Xcp/include -Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include -Ifirmware/bsw/ecual/PduR/include -Ifirmware/bsw/services/SchM/include -Ifirmware/ecu/cvc/include -Ifirmware/ecu/cvc/cfg -Ifirmware/lib/vendor/unity"
+          gcc -DPLATFORM_POSIX -DUNIT_TEST -g -O0 -std=c99 -Wno-unused-function -Wno-unused-variable \
+            $INC -o test_xcp \
+            test/unit/bsw/test_XCP_security_generated.c \
+            firmware/bsw/services/Xcp/src/Xcp.c \
+            firmware/lib/vendor/unity/unity.c
+          ./test_xcp
+
+      - name: Build and run VSM Transition tests (107)
+        run: |
+          INC="-Ifirmware/bsw/include -Ifirmware/bsw/services/Com/include -Ifirmware/bsw/services/Det/include -Ifirmware/bsw/services/Dem/include -Ifirmware/bsw/services/E2E/include -Ifirmware/bsw/services/SchM/include -Ifirmware/bsw/services/WdgM/include -Ifirmware/bsw/services/BswM/include -Ifirmware/bsw/rte/include -Ifirmware/bsw/ecual/PduR/include -Ifirmware/bsw/ecual/CanIf/include -Ifirmware/bsw/ecual/IoHwAb/include -Ifirmware/bsw/mcal/Can/include -Ifirmware/bsw/mcal/Spi/include -Ifirmware/bsw/mcal/Adc/include -Ifirmware/bsw/mcal/Dio/include -Ifirmware/bsw/mcal/Gpt/include -Ifirmware/bsw/mcal/Pwm/include -Ifirmware/ecu/cvc/include -Ifirmware/ecu/cvc/cfg -Ifirmware/ecu/cvc/cfg/platform_posix -Ifirmware/lib/vendor/unity"
+          gcc -DPLATFORM_POSIX -DUNIT_TEST -g -O0 -std=c99 -Wno-unused-function -Wno-unused-variable \
+            $INC -o test_vsm \
+            test/unit/bsw/test_VSM_transitions_generated.c \
+            firmware/lib/vendor/unity/unity.c
+          ./test_vsm
 
   # -------------------------------------------------------------------
   # Traceability Matrix (non-blocking, generates report)
