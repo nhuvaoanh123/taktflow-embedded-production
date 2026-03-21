@@ -373,17 +373,22 @@ void test_Unlock_LockoutResetByReconnect(void)
     (void)xcp_get_seed();
     xcp_unlock(0x33333333u);
 
-    /* Disconnect + reconnect resets failure count */
+    /* Lockout persists through DISCONNECT + CONNECT (security: only Xcp_Init resets).
+     * Verify: reconnect still denied, then re-init resets. */
     xcp_disconnect();
     xcp_connect();
-
-    /* Should be able to GET_SEED again */
     reset_stubs();
     uint32 seed = xcp_get_seed();
+    TEST_ASSERT_EQUAL_HEX8(XCP_RES_ERR, stub_tx_buf[0]);  /* Still locked out */
+
+    /* Re-init (power cycle equivalent) resets lockout */
+    Xcp_Init(&test_xcp_cfg);
+    xcp_connect();
+    reset_stubs();
+    seed = xcp_get_seed();
     TEST_ASSERT_EQUAL_HEX8(XCP_RES_OK, stub_tx_buf[0]);
     TEST_ASSERT_TRUE(seed != 0u);
 
-    /* And authenticate successfully */
     uint32 key = compute_key(seed);
     reset_stubs();
     xcp_unlock(key);
