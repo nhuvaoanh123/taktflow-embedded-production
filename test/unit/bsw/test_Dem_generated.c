@@ -47,8 +47,6 @@ Std_ReturnType NvM_WriteBlock(uint16 BlockId, const void* DataPtr)
  * Mocks: SchM (exclusive area stubs)
  * ================================================================== */
 
-void SchM_Enter_Dem_DEM_EXCLUSIVE_AREA_0(void) { }
-void SchM_Exit_Dem_DEM_EXCLUSIVE_AREA_0(void)  { }
 
 /* ==================================================================
  * Mocks: PduR (DTC broadcast TX)

@@ -13,6 +13,7 @@
  */
 #include "unity.h"
 #include "WdgM.h"
+#include "Det.h"
 
 /* ==================================================================
  * Mock: Dio (watchdog pin toggle)

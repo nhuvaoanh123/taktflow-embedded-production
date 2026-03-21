@@ -16,8 +16,6 @@
  */
 
 /* ---- Test build defines (must precede all includes) ---- */
-#define UNIT_TEST
-#define PLATFORM_POSIX
 
 #include "unity.h"
 
@@ -445,7 +443,7 @@ void test_CalcCRC8_DifferentData_DifferentCrc(void)
     uint8 data2[4] = {0x01, 0x02, 0x03, 0x05};
     uint8 crc1 = E2E_CalcCRC8(data1, 4u, E2E_CRC8_INIT);
     uint8 crc2 = E2E_CalcCRC8(data2, 4u, E2E_CRC8_INIT);
-    TEST_ASSERT_NOT_EQUAL(crc1, crc2);
+    TEST_ASSERT_FALSE(crc1 == crc2);
 }
 
 /* ================================================================

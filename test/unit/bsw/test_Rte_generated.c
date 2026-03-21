@@ -13,6 +13,7 @@
  */
 #include "unity.h"
 #include "Rte.h"
+#include "Det.h"
 
 /* ==================================================================
  * Mock: WdgM (checkpoint tracking)

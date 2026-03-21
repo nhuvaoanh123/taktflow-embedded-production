@@ -98,11 +98,13 @@ static void go_valid(const E2E_SmConfigType *cfg)
     feed_ok(cfg, cfg->MinOkStateInit);
 }
 
-/** Get SM to INVALID state via VALID (from INIT) */
+/** Get SM to INVALID state via VALID (from INIT).
+ *  Fills the entire window with errors so OkCount = 0. */
 static void go_invalid(const E2E_SmConfigType *cfg)
 {
     go_valid(cfg);
-    feed_error(cfg, cfg->MaxErrorStateValid + 1u);
+    /* Feed enough errors to fill window, evicting all OKs */
+    feed_error(cfg, cfg->WindowSize);
 }
 
 /* ==================================================================
@@ -266,8 +268,10 @@ void test_window_filling_mixed_ok_error(void)
             (void)E2E_Sm_Check(&cfg_std, &sm, E2E_STATUS_ERROR);
         }
     }
-    /* 4 OK, 4 ERROR in window. MinOkStateInit=4 -> should be VALID */
-    TEST_ASSERT_EQUAL(E2E_SM_VALID, sm.Status);
+    /* 4 OK, 4 ERROR in window.
+     * SM went INIT->VALID at 4th OK (sample 7), then VALID->INVALID at
+     * 4th ERROR (sample 8) because ErrorCount(4) > MaxErrorStateValid(1). */
+    TEST_ASSERT_EQUAL(E2E_SM_INVALID, sm.Status);
     TEST_ASSERT_EQUAL(4u, sm.OkCount);
     TEST_ASSERT_EQUAL(4u, sm.ErrorCount);
 }
