@@ -205,10 +205,18 @@ Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataP
                     | (uint8)(val << shift);
             }
         } else if (sig->BitSize <= 16u) {
-            /* Little-endian packing */
+            /* Multi-byte signal packing with sub-byte alignment */
             uint16 val = *((const uint16*)SignalDataPtr);
-            com_tx_pdu_buf[sig->PduId][byte_offset]     = (uint8)(val & 0xFFu);
-            com_tx_pdu_buf[sig->PduId][byte_offset + 1u] = (uint8)((val >> 8u) & 0xFFu);
+            uint8 shift = sig->BitPosition % 8u;
+            uint16 mask = (uint16)((1uL << sig->BitSize) - 1u);
+            uint16 shifted_val  = (uint16)((val & mask) << shift);
+            uint16 shifted_mask = (uint16)(mask << shift);
+            com_tx_pdu_buf[sig->PduId][byte_offset] =
+                (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(shifted_mask & 0xFFu))
+                | (uint8)(shifted_val & 0xFFu);
+            com_tx_pdu_buf[sig->PduId][byte_offset + 1u] =
+                (com_tx_pdu_buf[sig->PduId][byte_offset + 1u] & (uint8)~((shifted_mask >> 8u) & 0xFFu))
+                | (uint8)((shifted_val >> 8u) & 0xFFu);
         } else {
             /* BitSize > 16 not supported — no action */
         }
@@ -401,8 +409,11 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
                 *((uint8*)sig->ShadowBuffer) = v;
                 rte_val = (uint32)v;
             } else if (sig->BitSize <= 16u) {
-                uint16 v = (uint16)com_rx_pdu_buf[ComRxPduId][byte_offset] |
-                           ((uint16)com_rx_pdu_buf[ComRxPduId][byte_offset + 1u] << 8u);
+                uint16 raw16 = (uint16)com_rx_pdu_buf[ComRxPduId][byte_offset] |
+                               ((uint16)com_rx_pdu_buf[ComRxPduId][byte_offset + 1u] << 8u);
+                uint8  shift16 = sig->BitPosition % 8u;
+                uint16 mask16  = (uint16)((1uL << sig->BitSize) - 1u);
+                uint16 v = (raw16 >> shift16) & mask16;
                 *((uint16*)sig->ShadowBuffer) = v;
                 rte_val = (uint32)v;
             } else {
