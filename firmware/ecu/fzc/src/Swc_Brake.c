@@ -154,7 +154,6 @@ void Swc_Brake_MainFunction(void)
     uint8  brake_cmd;
     uint8  new_fault;
     uint8  deviation;
-    uint32 cutoff_data;
 
     /* ----------------------------------------------------------
      * Guard: not initialized -> safe no-op

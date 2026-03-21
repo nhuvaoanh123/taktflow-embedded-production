@@ -88,25 +88,7 @@ static uint16 FzcCom_TxScheduleCycle;
 volatile uint32 g_dbg_steer_com_send = 0u;   /* Com_SendSignal calls */
 volatile uint32 g_dbg_steer_rte_dispatch = 0u; /* TransmitSchedule calls */
 
-/** @brief E2E configs for TX data messages — shared BSW E2E (Profile 1)
- *  @safety_req SWR-FZC-019 */
-static const E2E_ConfigType fzc_e2e_brake_fault_cfg = {
-    0x0Bu,  /* E2E_DataID=11 from DBC Brake_Fault */
-    15u, 8u
-};
-static E2E_StateType fzc_e2e_brake_fault_state;
-
-static const E2E_ConfigType fzc_e2e_motor_cutoff_cfg = {
-    0x0Cu,  /* E2E_DataID=12 from DBC Motor_Cutoff_Req */
-    15u, 8u
-};
-static E2E_StateType fzc_e2e_motor_cutoff_state;
-
-static const E2E_ConfigType fzc_e2e_lidar_cfg = {
-    FZC_E2E_LIDAR_DATA_ID,        /* 0x22 */
-    15u, 8u
-};
-static E2E_StateType fzc_e2e_lidar_state;
+/* E2E protection moved to Com_MainFunction_Tx (Phase 2) */
 
 /* ==================================================================
  * Private: CRC-8 Calculation
@@ -155,9 +137,6 @@ void Swc_FzcCom_Init(void)
     FzcCom_HbCycleCount     = 0u;
     FzcCom_TxPendLidarWarn  = FALSE;
     FzcCom_TxScheduleCycle  = 0u;
-    fzc_e2e_brake_fault_state.Counter  = 0u;
-    fzc_e2e_motor_cutoff_state.Counter = 0u;
-    fzc_e2e_lidar_state.Counter        = 0u;
     FzcCom_Initialized      = TRUE;
 }
 
