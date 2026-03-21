@@ -29,8 +29,15 @@ CAN_VSENSOR_RZC  = 0x601     # Plant-sim → CAN: virtual sensor (motor temp at 
 CAN_DTC          = 0x500     # Dem → CAN: DTC broadcast
 
 
+def can_flush(bus):
+    """Drain all buffered CAN frames."""
+    while bus.recv(timeout=0) is not None:
+        pass
+
+
 def can_recv(bus, target_id, timeout=3.0):
-    """Receive a specific CAN frame."""
+    """Receive a specific CAN frame (flushes stale buffer first)."""
+    can_flush(bus)
     end = time.time() + timeout
     while time.time() < end:
         msg = bus.recv(timeout=0.5)
@@ -104,9 +111,7 @@ def main():
 
     # Hop 2: MQTT injection changes temp on 0x601
     print("Hop 2: MQTT inject 110°C → 0x601 (sustained 3s)")
-    bus.shutdown()
     inject_temp(110.0, sustained_sec=3)
-    bus = can.interface.Bus(channel="vcan0", interface="socketcan")
     decoded = can_recv_decoded(db, bus, CAN_VSENSOR_RZC, timeout=3)
     if decoded:
         temp_dc = decoded.get("RZC_Virtual_Sensors_MotorTemp_dC", 0)
@@ -131,7 +136,7 @@ def main():
     time.sleep(3)
     decoded = can_recv_decoded(db, bus, CAN_MOTOR_TEMP, timeout=3)
     if decoded:
-        t1 = decoded.get("WindingTemp1_C", 0)
+        t1 = decoded.get("Motor_Temperature_WindingTemp1_C", 0)
         check(3, f"0x302 temp={t1:.0f}°C (expect >80)", t1 > 80,
                f"temp={t1}°C, expected >80")
     else:
@@ -143,7 +148,7 @@ def main():
     time.sleep(3)  # Give time for TempMonitor (100ms) + Motor (10ms)
     decoded = can_recv_decoded(db, bus, CAN_MOTOR_STATUS, timeout=3)
     if decoded:
-        fault = decoded.get("MotorFaultStatus", 0)
+        fault = decoded.get("Motor_Status_MotorFaultStatus", 0)
         check(4, f"MotorFaultStatus={fault} (expect 4=OVERTEMP)",
                fault == 4, f"MotorFaultStatus={fault}")
     else:
@@ -154,7 +159,7 @@ def main():
     time.sleep(3)
     decoded = can_recv_decoded(db, bus, CAN_VEHICLE_STATE, timeout=3)
     if decoded:
-        vs = decoded.get("VehicleState", "?")
+        vs = decoded.get("Vehicle_State_Mode", "?")
         check(5, f"VehicleState={vs} (expect SAFE_STOP)",
                vs in ("SAFE_STOP", 4), f"VehicleState={vs}")
     else:
