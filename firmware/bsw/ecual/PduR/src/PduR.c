@@ -51,9 +51,13 @@ void PduR_CanIfRxIndication(PduIdType RxPduId, const PduInfoType* PduInfoPtr)
 
     /* Look up RxPduId in routing table */
 #ifdef SIL_DIAG
-    if (RxPduId == 18u) {
-        fprintf(stderr, "[PDUR] Looking for RxPduId=%u in %u entries\n",
-                (unsigned)RxPduId, (unsigned)pdur_config->routingCount);
+    {
+        static uint32 pdur_rx_seen[64] = {0};
+        if (RxPduId < 64u && pdur_rx_seen[RxPduId] == 0u) {
+            fprintf(stderr, "[PDUR] First RX PduId=%u (count=%u)\n",
+                    (unsigned)RxPduId, (unsigned)pdur_config->routingCount);
+            pdur_rx_seen[RxPduId] = 1u;
+        }
     }
 #endif
     for (i = 0u; i < pdur_config->routingCount; i++) {
