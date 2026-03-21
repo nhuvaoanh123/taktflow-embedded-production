@@ -36,9 +36,8 @@
 
 #include "Rte.h"
 #include "Com.h"
-#include "PduR.h"
 #include "Dem.h"
-#include "E2E.h"
+/* PduR.h and E2E.h removed — E2E protection is in Com layer (Phase 2) */
 #include "Swc_RzcSafety.h"
 
 
@@ -93,50 +92,10 @@ static uint8   RzcCom_HbCycleCount;
  * Byte layout: [0]=counter:4|dataId:4, [1]=CRC-8, [2..7]=payload
  * ================================================================== */
 
-/** E2E RX config: one entry per E2E-protected RX PDU (indexed by PDU ID) */
-static E2E_ConfigType RzcCom_RxE2eConfig[3];
-
-/** E2E RX state: alive counter tracking per PDU */
-static E2E_StateType  RzcCom_RxE2eState[3];
+/* E2E config/state removed — E2E protection is now in Com layer (Phase 2) */
 
 /** TransmitSchedule cycle counter (for motor_temp and battery pacing) */
 static uint16  RzcCom_TxScheduleCycle;
-
-/* ==================================================================
- * E2E Configuration for TX data messages (shared BSW E2E module)
- * ================================================================== */
-
-/** @brief E2E config for Motor Status (0x300) */
-static const E2E_ConfigType rzc_e2e_motor_status_cfg = {
-    RZC_E2E_MOTOR_STATUS_DATA_ID,   /* DataId = 0x0E */
-    15u,                             /* MaxDeltaCounter */
-    8u                               /* DataLength */
-};
-static E2E_StateType rzc_e2e_motor_status_state;
-
-/** @brief E2E config for Motor Current (0x301) */
-static const E2E_ConfigType rzc_e2e_motor_current_cfg = {
-    RZC_E2E_MOTOR_CURRENT_DATA_ID,  /* DataId = 0x0F */
-    15u,                             /* MaxDeltaCounter */
-    8u                               /* DataLength */
-};
-static E2E_StateType rzc_e2e_motor_current_state;
-
-/** @brief E2E config for Motor Temp (0x302) */
-static const E2E_ConfigType rzc_e2e_motor_temp_cfg = {
-    RZC_E2E_MOTOR_TEMP_DATA_ID,     /* DataId = 0x10 */
-    15u,                             /* MaxDeltaCounter */
-    8u                               /* DataLength */
-};
-static E2E_StateType rzc_e2e_motor_temp_state;
-
-/** @brief E2E config for Battery Status (0x303) */
-static const E2E_ConfigType rzc_e2e_battery_cfg = {
-    RZC_E2E_BATTERY_DATA_ID,        /* DataId = 0x11 */
-    15u,                             /* MaxDeltaCounter */
-    8u                               /* DataLength */
-};
-static E2E_StateType rzc_e2e_battery_state;
 
 /* ==================================================================
  * Private Helper: CRC-8 calculation (polynomial 0x1D)
@@ -218,32 +177,7 @@ static uint8 RzcCom_GetRxDataId(uint8 pduId)
     }
 }
 
-/* ==================================================================
- * API: Rzc_E2eRxCheck — CanIf E2E callback
- * ================================================================== */
-
-/**
- * @brief  E2E RX validation callback for CanIf
- *
- * Only E2E-checks PDUs with configured Data IDs (0x001 E-stop, 0x100
- * Vehicle_State). Virtual sensors (0x401) bypass E2E.
- *
- * @param  pduId   Upper-layer PDU ID
- * @param  data    Pointer to received data
- * @param  length  Data length
- * @return E_OK to accept frame, E_NOT_OK to drop it
- *
- * @safety_req SWR-RZC-020
- */
-Std_ReturnType Rzc_E2eRxCheck(uint8 pduId, const uint8* data, uint8 length)
-{
-    /* E2E check is now performed by Com_RxIndication (Phase 2).
-     * This function is retained for API compatibility only. */
-    (void)pduId;
-    (void)data;
-    (void)length;
-    return E_OK;
-}
+/* Rzc_E2eRxCheck removed — E2E is now in Com layer (Phase 2) */
 
 /* ==================================================================
  * API: Swc_RzcCom_Init
@@ -263,31 +197,6 @@ void Swc_RzcCom_Init(void)
     RzcCom_TorqueTimeout   = 0u;
     RzcCom_HbCycleCount    = 0u;
     RzcCom_TxScheduleCycle = 0u;
-
-    /* Initialize shared BSW E2E states for TX data messages */
-    rzc_e2e_motor_status_state.Counter  = 0u;
-    rzc_e2e_motor_current_state.Counter = 0u;
-    rzc_e2e_motor_temp_state.Counter    = 0u;
-    rzc_e2e_battery_state.Counter       = 0u;
-
-    /* Initialize shared BSW E2E config and state for RX messages.
-     * DataId/MaxDeltaCounter must match CVC TX E2E configuration. */
-    RzcCom_RxE2eConfig[RZC_COM_RX_ESTOP].DataId          = RZC_E2E_ESTOP_DATA_ID;
-    RzcCom_RxE2eConfig[RZC_COM_RX_ESTOP].MaxDeltaCounter  = 3u;
-    RzcCom_RxE2eConfig[RZC_COM_RX_ESTOP].DataLength        = 8u;
-    RzcCom_RxE2eState[RZC_COM_RX_ESTOP].Counter            = 0u;
-
-    RzcCom_RxE2eConfig[RZC_COM_RX_VEHICLE_TORQUE].DataId          = RZC_E2E_VEHSTATE_DATA_ID;
-    RzcCom_RxE2eConfig[RZC_COM_RX_VEHICLE_TORQUE].MaxDeltaCounter  = 3u;
-    RzcCom_RxE2eConfig[RZC_COM_RX_VEHICLE_TORQUE].DataLength        = 8u;
-    RzcCom_RxE2eState[RZC_COM_RX_VEHICLE_TORQUE].Counter            = 0u;
-
-    /* VIRT_SENSORS (index 2) not E2E-protected — zero-init for safety */
-    RzcCom_RxE2eConfig[RZC_COM_RX_VIRT_SENSORS].DataId          = 0u;
-    RzcCom_RxE2eConfig[RZC_COM_RX_VIRT_SENSORS].MaxDeltaCounter  = 0u;
-    RzcCom_RxE2eConfig[RZC_COM_RX_VIRT_SENSORS].DataLength        = 0u;
-    RzcCom_RxE2eState[RZC_COM_RX_VIRT_SENSORS].Counter            = 0u;
-
     RzcCom_Initialized     = TRUE;
 }
 
