@@ -192,7 +192,18 @@ Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataP
         uint8 byte_offset = com_get_byte_offset(sig->BitPosition);
 
         if (sig->BitSize <= 8u) {
-            com_tx_pdu_buf[sig->PduId][byte_offset] = *((const uint8*)SignalDataPtr);
+            if (sig->BitSize == 8u) {
+                /* Full-byte signal: direct write */
+                com_tx_pdu_buf[sig->PduId][byte_offset] = *((const uint8*)SignalDataPtr);
+            } else {
+                /* Sub-byte signal: mask and shift to preserve neighboring bits */
+                uint8 shift = sig->BitPosition % 8u;
+                uint8 mask  = (uint8)((1u << sig->BitSize) - 1u);
+                uint8 val   = *((const uint8*)SignalDataPtr) & mask;
+                com_tx_pdu_buf[sig->PduId][byte_offset] =
+                    (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(mask << shift))
+                    | (uint8)(val << shift);
+            }
         } else if (sig->BitSize <= 16u) {
             /* Little-endian packing */
             uint16 val = *((const uint16*)SignalDataPtr);
@@ -377,7 +388,16 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
             uint32 rte_val = 0u;
 
             if (sig->BitSize <= 8u) {
-                uint8 v = com_rx_pdu_buf[ComRxPduId][byte_offset];
+                uint8 raw = com_rx_pdu_buf[ComRxPduId][byte_offset];
+                uint8 v;
+                if (sig->BitSize == 8u) {
+                    v = raw;
+                } else {
+                    /* Sub-byte signal: shift and mask */
+                    uint8 shift = sig->BitPosition % 8u;
+                    uint8 mask  = (uint8)((1u << sig->BitSize) - 1u);
+                    v = (raw >> shift) & mask;
+                }
                 *((uint8*)sig->ShadowBuffer) = v;
                 rte_val = (uint32)v;
             } else if (sig->BitSize <= 16u) {
