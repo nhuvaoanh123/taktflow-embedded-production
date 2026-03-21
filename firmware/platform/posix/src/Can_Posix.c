@@ -172,6 +172,8 @@ void Can_Hw_Stop(void)
  */
 Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
 {
+    Can_Posix_TrackTx(id);  /* Track for loopback filtering */
+
     if (can_posix_fd < 0) {
         return E_NOT_OK;
     }
@@ -206,6 +208,32 @@ Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
  * @param  dlc   Output: data length
  * @return TRUE if a frame was received, FALSE otherwise
  */
+/** Track last N TX CAN IDs for loopback filtering on vcan.
+ *  vcan ignores CAN_RAW_RECV_OWN_MSGS — we filter in software. */
+#define CAN_POSIX_TX_TRACK_SIZE 32u
+static Can_IdType can_posix_tx_ids[CAN_POSIX_TX_TRACK_SIZE];
+static uint8      can_posix_tx_count = 0u;
+
+void Can_Posix_TrackTx(Can_IdType id)
+{
+    uint8 i;
+    for (i = 0u; i < can_posix_tx_count; i++) {
+        if (can_posix_tx_ids[i] == id) return;  /* Already tracked */
+    }
+    if (can_posix_tx_count < CAN_POSIX_TX_TRACK_SIZE) {
+        can_posix_tx_ids[can_posix_tx_count++] = id;
+    }
+}
+
+static boolean can_posix_is_own_tx(Can_IdType id)
+{
+    uint8 i;
+    for (i = 0u; i < can_posix_tx_count; i++) {
+        if (can_posix_tx_ids[i] == id) return TRUE;
+    }
+    return FALSE;
+}
+
 boolean Can_Hw_Receive(Can_IdType* id, uint8* data, uint8* dlc)
 {
     if (can_posix_fd < 0) {
@@ -216,13 +244,25 @@ boolean Can_Hw_Receive(Can_IdType* id, uint8* data, uint8* dlc)
     }
 
     struct can_frame frame;
-    memset(&frame, 0, sizeof(frame));
 
-    ssize_t nbytes = CAN_POSIX_RECVFROM_FN(
-        can_posix_fd, &frame, sizeof(frame), MSG_DONTWAIT, NULL_PTR, NULL_PTR);
+    /* Read frames, skip own TX loopback (vcan limitation) */
+    while (1) {
+        memset(&frame, 0, sizeof(frame));
 
-    if (nbytes <= 0) {
-        return FALSE;
+        ssize_t nbytes = CAN_POSIX_RECVFROM_FN(
+            can_posix_fd, &frame, sizeof(frame), MSG_DONTWAIT, NULL_PTR, NULL_PTR);
+
+        if (nbytes <= 0) {
+            return FALSE;  /* No more frames in socket buffer */
+        }
+
+        /* Skip own TX loopback frames */
+        if (can_posix_is_own_tx((Can_IdType)frame.can_id)) {
+            continue;  /* Read next frame */
+        }
+
+        /* External frame — return it */
+        break;
     }
 
     *id  = (Can_IdType)frame.can_id;

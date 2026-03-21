@@ -22,10 +22,10 @@
 /* ---- Constants ---- */
 
 #define CAN_MAX_DLC         8u    /**< CAN 2.0B max data length      */
-#define CAN_MAX_RX_PER_CALL 4096u /**< Max RX messages per MainFunc.
-                                        *  Large value to drain loopback
-                                        *  frames on vcan (which ignores
-                                        *  CAN_RAW_RECV_OWN_MSGS).
+#define CAN_MAX_RX_PER_CALL 64u   /**< Max RX messages per MainFunc.
+                                        *  With software loopback filter in
+                                        *  Can_Posix.c, this only counts
+                                        *  external frames.
                                         */
 
 /* ---- Types ---- */
