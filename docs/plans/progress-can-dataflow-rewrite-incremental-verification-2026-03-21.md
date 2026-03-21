@@ -134,7 +134,9 @@ Layer 6a: RZC single ECU        5/5 TX correct ✅
 Layer 6b: CVC+FZC+RZC 3-ECU    20 CAN IDs correct ✅
 Layer 6c-f: BCM+ICU+TCU+SC     all build clean ✅
 Layer 6g: Full 7-ECU vcan       27 CAN IDs, 1265 frames/s ✅
-Layer 6h: Docker SIL            next session
+Layer 6h: Fault injection       3/3 PASS (CRC corruption resilience)
+Layer 6i: SC integration        SC E2E format mismatch FOUND (custom vs P01)
+Layer 6j: Docker SIL            blocked on SC fix + plant-sim deploy
 ```
 
 ## Test Suite — 1,021 Tests (CI GREEN)
@@ -216,14 +218,37 @@ Layer 6h: Docker SIL            next session
 | Dead code in Swc_CvcCom | MAJOR | FIXED (191 lines removed) |
 | VSM GetRxStatus linker | MAJOR | FIXED |
 
-## What's Next — Layer 6
+## Phase 0 Completed — Plant-Sim + Fault-Inject Rewrite
 
-1. **Build remaining 5 ECUs** (RZC, SC, BCM, ICU, TCU) for POSIX
-2. **Fix RZC main.c** — same extern config pattern as CVC/FZC
-3. **Docker SIL** — all 7 ECUs + plant-sim + CAN gateway
-4. **SIL scenario tests** — 16 scenarios from test/sil/scenarios/
-5. **Physical bench flash** — CVC + FZC + RZC on STM32
+| Item | Before | After | Status |
+|------|--------|-------|--------|
+| DBC encoder lib | N/A | `gateway/lib/dbc_encoder.py` 19/19 tests | DONE |
+| Plant-sim | 51 hardcoded `payload[]`, no XOR-out | cantools encode, proper E2E | DONE |
+| Fault-inject | 67 hardcoded bytes | cantools encode, corrupt/replay modes | DONE |
+| SC E2E audit | Unknown | Custom format found (8-bit counter, different CRC input) | GAP |
 
-## Key Rule
+### SC E2E Format Gap (MAJOR)
+SC_Status (0x013) uses custom E2E: 8-bit alive counter, CRC over bytes 0,2,3.
+BSW uses P01: 4-bit counter+DataId in byte 0, CRC over payload[2:]+DataId.
+**Fix required before Docker SIL.** See `docs/safety/audit/sc-e2e-gap-2026-03-21.md`.
 
-**Never hand-write what codegen generates.** All config structs in ECU main.c must be `extern` to generated `*_Cfg_*.c` files. No exceptions.
+## FTTI Analysis — 12/20 Violations
+
+Complete FTTI analysis in `docs/safety/analysis/ftti-complete.md`.
+12 messages exceed FTTI with MaxDeltaCounter=3. Fix: reduce per-message.
+**Fix required before HIL (Phase 3).**
+
+## What's Next
+
+1. **Fix SC E2E** — align sc_monitoring.c to P01 format (4 lines)
+2. **Fix FTTI** — update DBC MaxDeltaCounter per message
+3. **Docker SIL rebuild** on Netcup with new plant-sim + fault-inject
+4. **16 SIL scenarios** — run on Netcup
+5. **HIL bench** — flash STM32 boards
+6. **HIL → Cloud** — PCAN → MQTT → dashboard
+
+## Key Rules
+
+1. **Never hand-write what codegen generates.** All config structs in ECU main.c must be `extern` to generated `*_Cfg_*.c` files.
+2. **DBC is truth.** All encoding via cantools + DBC encoder lib. No hardcoded byte offsets.
+3. **Single E2E format.** All ECUs must use AUTOSAR E2E P01. No custom formats.
