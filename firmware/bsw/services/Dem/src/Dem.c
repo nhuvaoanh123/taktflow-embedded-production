@@ -16,6 +16,9 @@
 #include "NvM.h"
 
 #include <string.h>
+#ifdef SIL_DIAG
+#include <stdio.h>
+#endif
 
 /* ---- Forward declaration for PduR_Transmit (avoids circular include) ---- */
 extern Std_ReturnType PduR_Transmit(PduIdType TxPduId,
@@ -112,6 +115,15 @@ void Dem_ReportErrorStatus(Dem_EventIdType EventId,
 
     Dem_EventDataType* ev = &dem_events[EventId];
 
+#ifdef SIL_DIAG
+    /* Only trace event 1 (overtemp) to avoid boot DTC noise */
+    if (EventId == 1u) {
+        (void)fprintf(stderr, "[DEM] ev=1 status=%u deb=%u stb=0x%02X\n",
+                      (unsigned)EventStatus,
+                      (unsigned)ev->debounceCounter, (unsigned)ev->statusByte);
+    }
+#endif
+
     if (EventStatus == DEM_EVENT_STATUS_FAILED) {
         /* Increment debounce counter toward fail threshold */
         if (ev->debounceCounter < DEM_DEBOUNCE_FAIL_THRESHOLD) {
@@ -126,6 +138,11 @@ void Dem_ReportErrorStatus(Dem_EventIdType EventId,
         if (ev->debounceCounter >= DEM_DEBOUNCE_FAIL_THRESHOLD) {
             ev->statusByte |= DEM_STATUS_CONFIRMED_DTC;
             ev->occurrenceCounter++;
+#ifdef SIL_DIAG
+            (void)fprintf(stderr, "[DEM] CONFIRMED ev=%u dtc=0x%06X occ=%u\n",
+                          (unsigned)EventId, (unsigned)dem_dtc_codes[EventId],
+                          (unsigned)ev->occurrenceCounter);
+#endif
             Det_ReportRuntimeError(DET_MODULE_DEM, (uint8)EventId,
                                    DEM_API_REPORT_ERROR_STATUS, DET_E_DBG_DTC_CONFIRMED);
         }
@@ -264,10 +281,21 @@ void Dem_MainFunction(void)
                 continue;  /* Skip unmapped event IDs */
             }
 
-            /* Pack DTC_Broadcast frame */
-            pdu_data[0] = (uint8)((dtc_code >> 16u) & 0xFFu);  /* DTC high */
-            pdu_data[1] = (uint8)((dtc_code >> 8u) & 0xFFu);   /* DTC mid */
-            pdu_data[2] = (uint8)(dtc_code & 0xFFu);            /* DTC low */
+            /* Pack DTC_Broadcast frame — DBC layout (little-endian):
+             *   Byte 0-1: DTC_Broadcast_Number (16-bit LE, bit 7|16@1+)
+             *   Byte 3:   DTC_Broadcast_Status (8-bit, bit 24|8)
+             *   Byte 4:   DTC_Broadcast_ECU_Source (8-bit, bit 32|8)
+             *   Byte 5:   DTC_Broadcast_OccurrenceCount (8-bit, bit 40|8)
+             *   Byte 6:   DTC_Broadcast_FreezeFrame0 (8-bit, bit 48|8)
+             *   Byte 7:   DTC_Broadcast_FreezeFrame1 (8-bit, bit 56|8)
+             * DTC code is 24-bit UDS but DBC Number field is 16-bit.
+             * Pack lower 16 bits in LE: byte0=low, byte1=high. */
+            {
+                uint16 dtc_16 = (uint16)(dtc_code & 0xFFFFu);
+                pdu_data[0] = (uint8)(dtc_16 & 0xFFu);          /* DTC low byte (LE) */
+                pdu_data[1] = (uint8)((dtc_16 >> 8u) & 0xFFu);  /* DTC high byte (LE) */
+            }
+            pdu_data[2] = 0x00u;                                    /* Reserved (was DTC byte 2) */
             pdu_data[3] = dem_events[i].statusByte;              /* Status */
             pdu_data[4] = dem_ecu_id;                               /* ECU source */
             pdu_data[5] = (uint8)(dem_events[i].occurrenceCounter & 0xFFu);
@@ -284,9 +312,23 @@ void Dem_MainFunction(void)
              * called Dem_Init but not Dem_SetBroadcastPduId yet). */
             if (dem_broadcast_pdu_id != 0xFFFFu)
             {
+#ifdef SIL_DIAG
+                (void)fprintf(stderr, "[DEM] BROADCAST ev=%u dtc=0x%06X pdu=%u\n",
+                              (unsigned)i, (unsigned)dtc_code,
+                              (unsigned)dem_broadcast_pdu_id);
+#endif
                 Det_ReportRuntimeError(DET_MODULE_DEM, (uint8)i,
                                        DEM_API_MAIN_FUNCTION, DET_E_DBG_DTC_BROADCAST);
-                (void)PduR_Transmit(dem_broadcast_pdu_id, &pdu_info);
+                {
+                    Std_ReturnType tx_ret = PduR_Transmit(dem_broadcast_pdu_id, &pdu_info);
+#ifdef SIL_DIAG
+                    (void)fprintf(stderr, "[DEM] PduR_Transmit ret=%u data=[%02X %02X %02X %02X %02X %02X %02X %02X]\n",
+                                  (unsigned)tx_ret,
+                                  pdu_data[0], pdu_data[1], pdu_data[2], pdu_data[3],
+                                  pdu_data[4], pdu_data[5], pdu_data[6], pdu_data[7]);
+#endif
+                    (void)tx_ret;
+                }
             }
 
             /* Persist to NvM (outside critical section).

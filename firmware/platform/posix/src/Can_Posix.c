@@ -177,6 +177,13 @@ Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
 {
     Can_Posix_TrackTx(id);  /* Track for loopback filtering */
 
+#ifdef SIL_DIAG
+    if (id == 0x500u) {
+        fprintf(stderr, "[CAN_TX] id=0x%03X dlc=%u fd=%d\n",
+                (unsigned)id, (unsigned)dlc, can_posix_fd);
+    }
+#endif
+
     if (can_posix_fd < 0) {
         return E_NOT_OK;
     }
