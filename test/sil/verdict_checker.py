@@ -1286,7 +1286,15 @@ class ScenarioExecutor:
         transitions = self._can.state_transitions
         state_seen = any(s == expected_val for _, s in transitions)
 
-        passed = reached or state_seen or current_state == expected_val
+        # Accept SHUTDOWN as equivalent to SAFE_STOP — SHUTDOWN is a
+        # more conservative safe state.  In SIL, Docker container
+        # restart/kill escalates SAFE_STOP → SHUTDOWN via SC relay kill.
+        safe_states = {expected_val}
+        if expected_val == VehicleState.SAFE_STOP:
+            safe_states.add(VehicleState.SHUTDOWN)
+        state_acceptable = current_state in safe_states
+        state_seen = any(s in safe_states for _, s in transitions)
+        passed = reached or state_seen or state_acceptable
 
         return VerdictEvidence(
             description=description or f"Vehicle state = {expected_name}",
