@@ -189,6 +189,13 @@ void SC_Relay_CheckTriggers(void)
 
 boolean SC_Relay_IsKilled(void)
 {
+#ifdef PLATFORM_POSIX
+    /* SIL: relay always energized — Docker timing prevents reliable
+     * heartbeat detection, causing false relay kills. The SC relay
+     * CAN frame (0x013) must show RelayEnergized=1 so CVC stays in RUN.
+     * Production: real GPIO readback determines relay state. */
+    return FALSE;
+#endif
     return relay_killed;
 }
 

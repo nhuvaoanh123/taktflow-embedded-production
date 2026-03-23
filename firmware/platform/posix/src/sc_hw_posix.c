@@ -256,6 +256,13 @@ static void sc_posix_can_init(void)
     int flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
+    /* Increase receive buffer to 4MB — default ~32KB overflows at 1400 msg/s,
+     * causing heartbeat frames (20/s) to be dropped. */
+    {
+        int rcvbuf = 4194304;  /* 4MB */
+        setsockopt(fd, SOL_SOCKET, SO_RCVBUFFORCE, &rcvbuf, sizeof(rcvbuf));
+    }
+
     dcan_fd = fd;
 #endif
 }
@@ -328,7 +335,7 @@ boolean dcan1_get_mailbox_data(uint8 mbIndex, uint8* data, uint8* dlc)
     if (rx_drained == FALSE) {
         struct can_frame frame;
         uint8 s;
-        int max_reads = 256;
+        int max_reads = 4096;  /* drain aggressively — 1400 msg/s × 10ms = ~14 frames, but buffer backlog can be thousands */
 
         for (s = 0u; s < 6u; s++) {
             rx_slot[s].valid = FALSE;
@@ -342,6 +349,31 @@ boolean dcan1_get_mailbox_data(uint8 mbIndex, uint8* data, uint8* dlc)
             }
 
             uint32 rx_id = frame.can_id & 0x7FFu;
+
+            /* Software filter — skip IDs not in our mailbox list.
+             * This is critical on busy buses (1400 msg/s) where
+             * heartbeats (20/s) would be drowned out. */
+            boolean id_match = FALSE;
+            for (s = 0u; s < 6u; s++) {
+                if (rx_id == mb_can_id[s]) {
+                    id_match = TRUE;
+                    break;
+                }
+            }
+            if (id_match == FALSE) {
+                continue;  /* Skip irrelevant frame */
+            }
+
+#ifdef SIL_DIAG
+            {
+                static uint32 sc_rx_count = 0u;
+                sc_rx_count++;
+                if (sc_rx_count <= 10u || (sc_rx_count % 1000u == 0u)) {
+                    fprintf(stderr, "[SC_CAN] rx_id=0x%03X fd=%d cnt=%u\n",
+                            (unsigned)rx_id, dcan_fd, (unsigned)sc_rx_count);
+                }
+            }
+#endif
             for (s = 0u; s < 6u; s++) {
                 if (rx_id == mb_can_id[s]) {
                     uint8 j;
