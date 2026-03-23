@@ -205,34 +205,36 @@ Std_ReturnType Com_SendSignal(Com_SignalIdType SignalId, const void* SignalDataP
     if (sig->PduId < COM_MAX_PDUS) {
         uint8 byte_offset = com_get_byte_offset(sig->BitPosition);
 
-        if (sig->BitSize <= 8u) {
-            if (sig->BitSize == 8u) {
-                /* Full-byte signal: direct write */
+        {
+            uint8 shift = sig->BitPosition % 8u;
+
+            if ((sig->BitSize == 8u) && (shift == 0u)) {
+                /* Byte-aligned 8-bit signal: direct write */
                 com_tx_pdu_buf[sig->PduId][byte_offset] = *((const uint8*)SignalDataPtr);
-            } else {
-                /* Sub-byte signal: mask and shift to preserve neighboring bits */
-                uint8 shift = sig->BitPosition % 8u;
+            } else if ((sig->BitSize + shift) <= 8u) {
+                /* Signal fits within one byte: mask-and-shift */
                 uint8 mask  = (uint8)((1u << sig->BitSize) - 1u);
                 uint8 val   = *((const uint8*)SignalDataPtr) & mask;
                 com_tx_pdu_buf[sig->PduId][byte_offset] =
                     (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(mask << shift))
                     | (uint8)(val << shift);
+            } else if ((byte_offset + 1u) < COM_PDU_SIZE) {
+                /* Signal spans two bytes: multi-byte mask-and-shift */
+                uint16 raw16 = (sig->BitSize <= 8u)
+                    ? (uint16)(*((const uint8*)SignalDataPtr))
+                    : *((const uint16*)SignalDataPtr);
+                uint16 mask = (uint16)((1uL << sig->BitSize) - 1u);
+                uint16 shifted_val  = (uint16)((raw16 & mask) << shift);
+                uint16 shifted_mask = (uint16)(mask << shift);
+                com_tx_pdu_buf[sig->PduId][byte_offset] =
+                    (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(shifted_mask & 0xFFu))
+                    | (uint8)(shifted_val & 0xFFu);
+                com_tx_pdu_buf[sig->PduId][byte_offset + 1u] =
+                    (com_tx_pdu_buf[sig->PduId][byte_offset + 1u] & (uint8)~((shifted_mask >> 8u) & 0xFFu))
+                    | (uint8)((shifted_val >> 8u) & 0xFFu);
+            } else {
+                /* BitSize > 16 not supported — no action */
             }
-        } else if ((sig->BitSize <= 16u) && ((byte_offset + 1u) < COM_PDU_SIZE)) {
-            /* Multi-byte signal packing with sub-byte alignment + bounds check */
-            uint16 val = *((const uint16*)SignalDataPtr);
-            uint8 shift = sig->BitPosition % 8u;
-            uint16 mask = (uint16)((1uL << sig->BitSize) - 1u);
-            uint16 shifted_val  = (uint16)((val & mask) << shift);
-            uint16 shifted_mask = (uint16)(mask << shift);
-            com_tx_pdu_buf[sig->PduId][byte_offset] =
-                (com_tx_pdu_buf[sig->PduId][byte_offset] & (uint8)~(shifted_mask & 0xFFu))
-                | (uint8)(shifted_val & 0xFFu);
-            com_tx_pdu_buf[sig->PduId][byte_offset + 1u] =
-                (com_tx_pdu_buf[sig->PduId][byte_offset + 1u] & (uint8)~((shifted_mask >> 8u) & 0xFFu))
-                | (uint8)((shifted_val >> 8u) & 0xFFu);
-        } else {
-            /* BitSize > 16 not supported — no action */
         }
 
         com_tx_pending[sig->PduId] = TRUE;
