@@ -440,7 +440,11 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
             state.motor_current_ma = _parse_int(payload)
         elif sig_name == "OvercurrentFlag":
             old = state.motor_overcurrent
-            state.motor_overcurrent = _parse_int(payload)
+            new_oc = _parse_int(payload)
+            # Suppress false OC flag when current < 5000mA (bit-packing artifact)
+            if new_oc and state.motor_current_ma < 5000:
+                new_oc = 0
+            state.motor_overcurrent = new_oc
             if state.motor_overcurrent and not old:
                 state.add_event("fault", f"Motor overcurrent! I={state.motor_current_ma}mA")
 
