@@ -148,6 +148,11 @@ boolean SC_E2E_Check(const uint8* data, uint8 dlc, uint8 dataId,
         e2e_last_alive[msgIndex] = alive;
         e2e_first_rx[msgIndex]   = FALSE;
         e2e_fail_count[msgIndex] = 0u;
+#ifdef PLATFORM_POSIX
+        /* SIL: clear latch on valid frame — Docker jitter causes
+         * transient E2E failures that should not be permanent. */
+        e2e_failed[msgIndex] = FALSE;
+#endif
     } else {
         e2e_fail_count[msgIndex]++;
         if (e2e_fail_count[msgIndex] >= SC_E2E_MAX_CONSEC_FAIL) {

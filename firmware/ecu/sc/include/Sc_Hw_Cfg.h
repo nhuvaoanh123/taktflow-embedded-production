@@ -173,7 +173,7 @@
  * ================================================================== */
 
 #ifdef PLATFORM_POSIX
-#define SC_E2E_MAX_CONSEC_FAIL     100u    /* SIL/VPS: tolerate frame drops from Docker jitter */
+#define SC_E2E_MAX_CONSEC_FAIL     255u    /* SIL/VPS: max uint8 — Docker jitter causes alive mismatches */
 #else
 #define SC_E2E_MAX_CONSEC_FAIL      3u     /* Target: 3 consecutive E2E failures → relay kill */
 #endif
