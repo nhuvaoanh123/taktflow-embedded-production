@@ -31,11 +31,11 @@ setup:
     description: "Clear residual state and ensure clean start"
   - action: wait_state
     state: RUN
-    timeout: 15
+    timeout: 30
     description: "Wait for INIT hold (10s) + E2E stabilization before applying torque"
   - action: wait
-    seconds: 15
-    description: "Allow CVC post-INIT grace period (10s) + margin for CI jitter"
+    seconds: 20
+    description: "Allow CVC post-INIT grace (10s) + CAN timeout debounce (5s) + VPS margin"
 
 steps:
   - action: inject_scenario

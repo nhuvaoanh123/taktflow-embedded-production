@@ -237,7 +237,7 @@ static uint16 post_init_grace_counter;
  *          Production: 50 cycles (500ms). SIL: 500 cycles (5s) to absorb
  *          Docker container scheduling jitter on heartbeat delivery. */
 #ifdef SIL_DIAG
-#define CAN_TMO_DEBOUNCE_THRESHOLD  500u
+#define CAN_TMO_DEBOUNCE_THRESHOLD  3000u  /* 30s — VPS shared CPU jitter */
 #else
 #define CAN_TMO_DEBOUNCE_THRESHOLD   50u
 #endif

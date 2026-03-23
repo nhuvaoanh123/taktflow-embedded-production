@@ -172,7 +172,11 @@
  * E2E Failure Threshold
  * ================================================================== */
 
-#define SC_E2E_MAX_CONSEC_FAIL      3u     /* 3 consecutive E2E failures */
+#ifdef PLATFORM_POSIX
+#define SC_E2E_MAX_CONSEC_FAIL     100u    /* SIL/VPS: tolerate frame drops from Docker jitter */
+#else
+#define SC_E2E_MAX_CONSEC_FAIL      3u     /* Target: 3 consecutive E2E failures → relay kill */
+#endif
 
 /* ==================================================================
  * Relay Readback

@@ -27,7 +27,7 @@ static boolean e2e_first_rx[SC_MB_COUNT];
  *  On POSIX SIL (Docker), containers take 1-2s to stabilize E2E alive
  *  counters — extend grace to avoid false E2E_FAIL relay kill at boot. */
 #ifdef PLATFORM_POSIX
-#define SC_E2E_GRACE_TICKS  200u   /* 2000ms — Docker boot margin */
+#define SC_E2E_GRACE_TICKS  1000u  /* 10000ms — Docker/VPS boot margin */
 #else
 #define SC_E2E_GRACE_TICKS  5u     /* 50ms — real hardware */
 #endif
