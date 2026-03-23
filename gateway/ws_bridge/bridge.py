@@ -492,12 +492,16 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
     elif msg_name == "Lidar_Distance":
         if sig_name in ("Distance_cm", "Range_cm"):
             val = _parse_int(payload)
-            if val > 0:  # filter E2E counter glitch (0 is not a valid reading)
+            if val > 0:
                 state.lidar_distance_cm = val
-        elif sig_name == "ObstacleZone":
-            state.lidar_zone = _parse_int(payload)
-        elif sig_name == "SignalStrength":
-            state.lidar_signal_strength = _parse_int(payload)
+        elif sig_name in ("ObstacleZone", "Zone"):
+            val = _parse_int(payload)
+            if val > 0:
+                state.lidar_zone = val
+        elif sig_name in ("SignalStrength",):
+            val = _parse_int(payload)
+            if val > 0:
+                state.lidar_signal_strength = val
         elif sig_name == "SensorStatus":
             state.lidar_sensor_status = _parse_int(payload)
 
