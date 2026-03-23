@@ -18,7 +18,10 @@ import can
 import docker
 import paho.mqtt.client as paho_mqtt
 
-from ..lib.dbc_encoder import CanEncoder
+try:
+    from ..lib.dbc_encoder import CanEncoder
+except ImportError:
+    from lib.dbc_encoder import CanEncoder
 
 # SIL time acceleration: divide wall-clock sleeps by scale factor
 _SIL_SCALE = max(1, min(100, int(os.environ.get("SIL_TIME_SCALE", "1"))))

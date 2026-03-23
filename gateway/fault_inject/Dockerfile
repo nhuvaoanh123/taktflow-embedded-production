@@ -6,8 +6,12 @@ COPY gateway/fault_inject/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/fault_inject/ /app/fault_inject/
+COPY gateway/lib/ /app/lib/
+COPY gateway/taktflow_vehicle.dbc /app/taktflow_vehicle.dbc
+RUN touch /app/__init__.py
 
 ENV CAN_CHANNEL=vcan0
 ENV FAULT_PORT=8091
+ENV DBC_PATH=/app/taktflow_vehicle.dbc
 
 CMD ["python", "-m", "fault_inject.app"]

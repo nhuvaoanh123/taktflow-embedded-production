@@ -40,7 +40,9 @@ class CanEncoder:
 
     def __init__(self, dbc_path: Optional[str] = None):
         if dbc_path is None:
-            # Auto-find DBC relative to this file
+            # Check DBC_PATH env first (Docker), then auto-find relative to this file
+            dbc_path = os.environ.get("DBC_PATH")
+        if dbc_path is None:
             repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             dbc_path = os.path.join(repo, "gateway", "taktflow_vehicle.dbc")
         self.db = cantools.database.load_file(dbc_path)
