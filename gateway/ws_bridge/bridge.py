@@ -255,7 +255,11 @@ def on_mqtt_message(client, userdata, msg):
         if len(parts) >= 4:
             msg_name = parts[2]
             sig_name = parts[3]
-            _update_signal(msg_name, sig_name, payload)
+            # DBC signal names have message prefix (e.g., "Motor_Status_MotorSpeed_RPM").
+            # Strip the prefix to get the short field name for matching.
+            prefix = msg_name + "_"
+            short_sig = sig_name[len(prefix):] if sig_name.startswith(prefix) else sig_name
+            _update_signal(msg_name, short_sig, payload)
 
     # Stats
     elif topic == "taktflow/telemetry/stats/can_msgs_per_sec":
@@ -432,7 +436,7 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
 
     # Motor Current (0x301)
     elif msg_name == "Motor_Current":
-        if sig_name == "Current_mA":
+        if sig_name in ("Current_mA", "Phase_mA"):
             state.motor_current_ma = _parse_int(payload)
         elif sig_name == "OvercurrentFlag":
             old = state.motor_overcurrent
@@ -481,12 +485,12 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
             state.battery_voltage_mv = _parse_int(payload)
         elif sig_name == "BatterySOC":
             state.battery_soc_pct = _parse_int(payload)
-        elif sig_name == "BatteryStatus":
+        elif sig_name in ("BatteryStatus", "Level"):
             state.battery_status = _parse_int(payload)
 
     # Lidar Distance (0x220)
     elif msg_name == "Lidar_Distance":
-        if sig_name == "Distance_cm":
+        if sig_name in ("Distance_cm", "Range_cm"):
             state.lidar_distance_cm = _parse_int(payload)
         elif sig_name == "ObstacleZone":
             state.lidar_zone = _parse_int(payload)
@@ -497,7 +501,7 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
 
     # Vehicle State (0x100)
     elif msg_name == "Vehicle_State":
-        if sig_name == "VehicleState":
+        if sig_name in ("Mode", "VehicleState"):
             old = state.vehicle_state
             new = _parse_int(payload)
             if old != new:
@@ -513,7 +517,7 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
             state.speed_limit = _parse_int(payload)
 
     # E-Stop — only react to the EStop_Active signal, not Source/E2E fields
-    elif msg_name == "EStop_Broadcast" and sig_name == "EStop_Active":
+    elif msg_name == "EStop_Broadcast" and sig_name in ("EStop_Active", "Active"):
         val = _parse_int(payload)
         if val and not getattr(state, "_estop_active", False):
             state._estop_active = True
@@ -524,7 +528,7 @@ def _update_signal(msg_name: str, sig_name: str, payload: str):
 
     # DTC_Broadcast (0x500) — belt-and-suspenders with taktflow/alerts/dtc/
     elif msg_name == "DTC_Broadcast":
-        if sig_name == "DTC_Number":
+        if sig_name in ("DTC_Number", "Number"):
             dtc_num = _parse_int(payload)
             if dtc_num:
                 now = time.time()
