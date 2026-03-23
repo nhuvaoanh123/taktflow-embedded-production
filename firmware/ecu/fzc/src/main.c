@@ -263,11 +263,13 @@ static const BswM_ConfigType bswm_config = {
  * @safety_req SWR-FZC-025
  * @traces_to  SSR-FZC-019
  */
+#ifndef PLATFORM_HIL
 static uint8 Main_RunSelfTest(void)
 {
     /* Item 1: Plant stack canary for stack overflow detection */
     Main_Hw_PlantStackCanary();
 
+#ifndef PLATFORM_HIL
     /* Item 2: Servo neutral — steering centers, brake releases */
     if (Main_Hw_ServoNeutralTest() != E_OK)
     {
@@ -288,6 +290,7 @@ static uint8 Main_RunSelfTest(void)
         Dem_ReportErrorStatus(FZC_DTC_LIDAR_TIMEOUT, DEM_EVENT_STATUS_FAILED);
         return FZC_SELF_TEST_FAIL;
     }
+#endif /* !PLATFORM_HIL — sensors not present on HIL bench */
 
     /* Item 5: CAN loopback — CAN controller self-test */
     if (Main_Hw_CanLoopbackTest() != E_OK)
@@ -314,6 +317,7 @@ static uint8 Main_RunSelfTest(void)
     Det_ReportRuntimeError(DET_MODULE_FZC_MAIN, 0u, MAIN_API_SELF_TEST, DET_E_DBG_SELF_TEST_PASS);
     return FZC_SELF_TEST_PASS;
 }
+#endif /* !PLATFORM_HIL */
 
 /* ==================================================================
  * Tick Counters
@@ -471,7 +475,11 @@ int main(void)
     Det_ReportRuntimeError(DET_MODULE_FZC_MAIN, 0u, MAIN_API_INIT, DET_E_DBG_SWC_INIT_OK);
 
     /* ---- Step 4: Self-test sequence (7 items, SWR-FZC-025) ---- */
+#ifdef PLATFORM_HIL
+    self_test_result = FZC_SELF_TEST_PASS;  /* HIL: skip all self-tests */
+#else
     self_test_result = Main_RunSelfTest();
+#endif
 
     /* Write self-test result to RTE for Swc_FzcSafety */
     (void)Rte_Write(FZC_SIG_SELF_TEST_RESULT, (uint32)self_test_result);

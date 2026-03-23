@@ -1,0 +1,79 @@
+# HIL Mixed Bench Docker Compose
+# 3 vECUs (BCM, TCU, ICU) on laptop + plant-sim + MQTT
+# Physical ECUs (CVC, FZC, RZC, SC) run on real hardware via CAN bridge
+#
+# Prerequisites:
+#   sudo scripts/hil/setup_can_bridge.sh    # vcan0 ↔ can0 bridge
+#   scripts/hil/flash_all.sh                # flash physical ECUs
+#
+# Usage:
+#   docker compose -f docker/docker-compose.hil.yml up --build
+
+version: "3.8"
+
+services:
+  # --- vECUs (QM, POSIX on laptop) ---
+
+  # Body Control Module (QM)
+  bcm:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: bcm
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - CAN_INTERFACE=vcan0
+    restart: unless-stopped
+
+  # Telematic Control Unit (QM)
+  tcu:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: tcu
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - CAN_INTERFACE=vcan0
+    restart: unless-stopped
+
+  # Instrument Cluster Unit (QM)
+  icu:
+    build:
+      context: ..
+      dockerfile: docker/ecu/Dockerfile.ecu
+      args:
+        ECU_NAME: icu
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - CAN_INTERFACE=vcan0
+      - TERM=dumb
+    restart: unless-stopped
+
+  # --- Infrastructure ---
+
+  # Plant Simulator (generates physics on vcan0, bridged to physical ECUs)
+  plant-sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.plant-sim
+    network_mode: host
+    cap_add: [NET_ADMIN]
+    environment:
+      - MQTT_HOST=localhost
+      - MQTT_PORT=1883
+      - CAN_INTERFACE=vcan0
+    depends_on: [mqtt]
+    restart: unless-stopped
+
+  # MQTT Broker (fault injection + telemetry)
+  mqtt:
+    image: eclipse-mosquitto:2
+    network_mode: host
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped

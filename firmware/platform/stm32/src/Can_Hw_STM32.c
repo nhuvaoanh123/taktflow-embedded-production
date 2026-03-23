@@ -275,7 +275,17 @@ boolean Can_Hw_IsBusOff(void)
         return TRUE;  /* fail-closed: assume bus-off if unreadable */
     }
 
-    return (psr.BusOff != 0u) ? TRUE : FALSE;
+    /* Auto bus-off recovery: FDCAN stays in bus-off until software
+     * intervention. If bus-off detected, stop and restart the FDCAN
+     * to trigger the 128-occurrence recovery sequence per ISO 11898. */
+    if (psr.BusOff != 0u)
+    {
+        (void)HAL_FDCAN_Stop(&hfdcan1);
+        (void)HAL_FDCAN_Start(&hfdcan1);
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /**

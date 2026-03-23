@@ -83,23 +83,45 @@ static Std_ReturnType Lidar_ParseFrame(uint16* dist_out, uint16* strength_out)
         return E_NOT_OK;
     }
 
-    /* Read from UART */
-    bytes_read = 0u;
-    ret = Uart_ReadRxData(Lidar_FrameBuf, FZC_LIDAR_FRAME_SIZE, &bytes_read);
+    /* Frame synchronization: TFMini-S sends 9-byte frames continuously.
+     * The UART circular buffer has no frame alignment — we must scan for
+     * the 0x59 0x59 header, then read the remaining 7 bytes.
+     * Drain bytes until we find the header or run out of data. */
+    {
+        uint8 sync_byte;
+        uint8 sync_count = 0u;
+        uint8 max_scan = 32u;  /* Don't scan more than 32 bytes per call */
 
-    if (ret != E_OK) {
-        return E_NOT_OK;
-    }
+        /* Find first 0x59 */
+        while (max_scan > 0u) {
+            bytes_read = 0u;
+            ret = Uart_ReadRxData(&sync_byte, 1u, &bytes_read);
+            if ((ret != E_OK) || (bytes_read == 0u)) {
+                return E_NOT_OK;
+            }
+            max_scan--;
+            if (sync_byte == FZC_LIDAR_HEADER_BYTE) {
+                sync_count++;
+                if (sync_count >= 2u) {
+                    break;  /* Found 0x59 0x59 */
+                }
+            } else {
+                sync_count = 0u;
+            }
+        }
 
-    /* Need exactly 9 bytes for a complete frame */
-    if (bytes_read < FZC_LIDAR_FRAME_SIZE) {
-        return E_NOT_OK;
-    }
+        if (sync_count < 2u) {
+            return E_NOT_OK;  /* Header not found */
+        }
 
-    /* Validate header bytes */
-    if ((Lidar_FrameBuf[0] != FZC_LIDAR_HEADER_BYTE) ||
-        (Lidar_FrameBuf[1] != FZC_LIDAR_HEADER_BYTE)) {
-        return E_NOT_OK;
+        /* Header found — read remaining 7 bytes */
+        Lidar_FrameBuf[0] = FZC_LIDAR_HEADER_BYTE;
+        Lidar_FrameBuf[1] = FZC_LIDAR_HEADER_BYTE;
+        bytes_read = 0u;
+        ret = Uart_ReadRxData(&Lidar_FrameBuf[2], 7u, &bytes_read);
+        if ((ret != E_OK) || (bytes_read < 7u)) {
+            return E_NOT_OK;  /* Incomplete frame */
+        }
     }
 
     /* Validate checksum: low byte of sum of bytes 0-7 */

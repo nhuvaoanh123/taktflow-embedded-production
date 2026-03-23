@@ -116,6 +116,9 @@ CFLAGS += -I$(BSW)/services/Dcm/include
 CFLAGS += -I$(BSW)/services/BswM/include
 CFLAGS += -I$(BSW)/services/NvM/include
 CFLAGS += -I$(BSW)/services/CanTp/include
+CFLAGS += -I$(BSW)/services/CanSM/include
+CFLAGS += -I$(BSW)/services/FiM/include
+CFLAGS += -I$(BSW)/services/Xcp/include
 CFLAGS += -I$(BSW)/rte/include
 CFLAGS += -I$(BSW)/os/include
 CFLAGS += -I$(PLAT)/include
@@ -152,7 +155,7 @@ BSW_SRCS = \
     $(PLAT)/src/Spi_Hw_STM32.c \
     $(BSW)/ecual/CanIf/src/CanIf.c \
     $(BSW)/ecual/PduR/src/PduR.c \
-    $(BSW)/ecual/IoHwAb/src/IoHwAb.c \
+    $(if $(HIL),$(BSW)/ecual/IoHwAb/src/IoHwAb_Hil.c,$(BSW)/ecual/IoHwAb/src/IoHwAb.c) \
     $(BSW)/services/Com/src/Com.c \
     $(BSW)/services/Dcm/src/Dcm.c \
     $(BSW)/services/Dem/src/Dem.c \
@@ -164,6 +167,10 @@ BSW_SRCS = \
     $(BSW)/services/Det/src/Det.c \
     $(BSW)/services/SchM/src/SchM.c \
     $(BSW)/services/CanTp/src/CanTp.c \
+    $(BSW)/services/CanSM/src/CanSM.c \
+    $(BSW)/services/FiM/src/FiM.c \
+    $(BSW)/services/Xcp/src/Xcp.c \
+    $(BSW)/services/SchM/src/SchM_Timing.c \
     $(BSW)/rte/src/Rte.c
 
 # --- FZC additionally needs Uart MCAL ---
@@ -171,6 +178,7 @@ ifeq ($(TARGET),fzc)
   BSW_SRCS += $(BSW)/mcal/Uart/src/Uart.c
   BSW_SRCS += $(PLAT)/src/Uart_Hw_STM32.c
 endif
+
 
 # --- CubeMX HAL sources (matching CubeMX-generated Makefile) ---
 HAL_SRCS = \

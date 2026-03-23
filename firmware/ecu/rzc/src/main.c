@@ -208,11 +208,13 @@ static const BswM_ConfigType bswm_config = {
  * @safety_req SWR-RZC-025
  * @traces_to  SSR-RZC-013
  */
+#ifndef PLATFORM_HIL
 static uint8 Main_RunSelfTest(void)
 {
     /* Item 1: Plant stack canary for stack overflow detection */
     Main_Hw_PlantStackCanary();
 
+#ifndef PLATFORM_HIL
     /* Item 2: BTS7960 GPIO toggle — verify R_EN/L_EN control path */
     if (Main_Hw_Bts7960GpioTest() != E_OK)
     {
@@ -240,6 +242,7 @@ static uint8 Main_RunSelfTest(void)
         Dem_ReportErrorStatus(RZC_DTC_ENCODER, DEM_EVENT_STATUS_FAILED);
         return RZC_SELF_TEST_FAIL;
     }
+#endif /* !PLATFORM_HIL — sensors not present on HIL bench */
 
     /* Item 6: CAN loopback — CAN controller self-test */
     if (Main_Hw_CanLoopbackTest() != E_OK)
@@ -264,6 +267,7 @@ static uint8 Main_RunSelfTest(void)
 
     return RZC_SELF_TEST_PASS;
 }
+#endif /* !PLATFORM_HIL */
 
 /* ==================================================================
  * Tick Counters
@@ -351,7 +355,11 @@ int main(void)
 
     /* ---- Step 4: Self-test sequence (8 items, SWR-RZC-025) ---- */
     Det_ReportRuntimeError(DET_MODULE_RZC_MAIN, 0u, MAIN_API_SELF_TEST, DET_E_DBG_SELF_TEST_START);
+#ifdef PLATFORM_HIL
+    self_test_result = RZC_SELF_TEST_PASS;  /* HIL: skip all self-tests */
+#else
     self_test_result = Main_RunSelfTest();
+#endif
     Det_ReportRuntimeError(DET_MODULE_RZC_MAIN, 0u, MAIN_API_SELF_TEST,
                            (self_test_result == RZC_SELF_TEST_PASS) ? DET_E_DBG_SELF_TEST_PASS
                                                                      : DET_E_DBG_SELF_TEST_FAIL);
@@ -360,6 +368,15 @@ int main(void)
     (void)Rte_Write(RZC_SIG_SELF_TEST_RESULT, (uint32)self_test_result);
 
     /* ---- Step 5: Start CAN controller ---- */
+#ifdef PLATFORM_HIL
+    /* HIL: delay CAN start to let USB-CAN adapter initialize first.
+     * Without this, bxCAN transmits into void → error frames → adapter
+     * goes error-passive before it can receive our frames. */
+    {
+        volatile uint32_t delay;
+        for (delay = 0u; delay < 5000000u; delay++) { __asm volatile("nop"); }
+    }
+#endif
     (void)Can_SetControllerMode(0u, CAN_CS_STARTED);
     Det_ReportRuntimeError(DET_MODULE_RZC_MAIN, 0u, MAIN_API_INIT, DET_E_DBG_CAN_STARTED);
 

@@ -1,20 +1,18 @@
 /**
  * @file    Can_Hw_STM32F4.c
- * @brief   STM32F4 bxCAN1 hardware backend for CAN MCAL driver
- * @date    2026-03-14
+ * @brief   STM32F4 bxCAN1 bare-metal hardware backend for CAN MCAL driver
+ * @date    2026-03-23
  *
- * @details bxCAN1 HAL implementation for STM32F413ZH (NUCLEO-F413ZH).
- *          Configures CAN1 at 500 kbps (PSC=6, BS1=13, BS2=2 @48MHz APB1).
- *          Accept-all standard ID filter to FIFO0.
- *          Includes internal loopback self-test for power-on validation.
+ * @details Bare-metal bxCAN1 driver for STM32F413ZH (NUCLEO-F413ZH).
+ *          No HAL dependency for CAN — direct register access to avoid
+ *          HAL_CAN_Init sleep-mode deadlock (HAL doesn't clear SLEEP
+ *          before requesting INRQ, causing init to hang if CAN_RX has
+ *          no recessive level at boot).
  *
  *          Pin assignment: PD0 = CAN1_RX, PD1 = CAN1_TX (AF9)
+ *          Baudrate: 500 kbps @ 48 MHz APB1 (PSC=6, BS1=13, BS2=2)
  *
- * @safety_req SWR-BSW-001: CAN initialization
- * @safety_req SWR-BSW-002: CAN transmit
- * @safety_req SWR-BSW-003: CAN receive processing
- * @safety_req SWR-BSW-004: Bus-off recovery
- * @safety_req SWR-BSW-005: Error reporting
+ * @safety_req SWR-BSW-001..005
  * @copyright Taktflow Systems 2026
  */
 
@@ -25,151 +23,208 @@
 #include "stm32f4xx_hal.h"
 
 /* ==================================================================
- * Static State
+ * bxCAN1 Register Definitions (from RM0430 Section 32.9)
+ *
+ * CAN1 base: 0x40006400
+ * MCR  +0x00  Master Control
+ * MSR  +0x04  Master Status
+ * TSR  +0x08  Transmit Status
+ * RF0R +0x0C  Receive FIFO 0
+ * IER  +0x14  Interrupt Enable
+ * ESR  +0x18  Error Status
+ * BTR  +0x1C  Bit Timing
+ * TI0R +0x180 TX Mailbox 0 Identifier
+ * TDT0R+0x184 TX Mailbox 0 Data Length/Timestamp
+ * TDL0R+0x188 TX Mailbox 0 Data Low
+ * TDH0R+0x18C TX Mailbox 0 Data High
+ * RI0R +0x1B0 RX FIFO 0 Identifier
+ * RDT0R+0x1B4 RX FIFO 0 Data Length/Timestamp
+ * RDL0R+0x1B8 RX FIFO 0 Data Low
+ * RDH0R+0x1BC RX FIFO 0 Data High
+ * FMR  +0x200 Filter Master
+ * FM1R +0x204 Filter Mode
+ * FS1R +0x20C Filter Scale
+ * FFA1R+0x214 Filter FIFO Assignment
+ * FA1R +0x21C Filter Activation
+ * FR1  +0x240 Filter Bank 0 Register 1
+ * FR2  +0x244 Filter Bank 0 Register 2
  * ================================================================== */
 
-static CAN_HandleTypeDef hcan1;
+/* MCR bits */
+#define MCR_INRQ    (1u << 0)
+#define MCR_SLEEP   (1u << 1)
+#define MCR_TXFP    (1u << 2)
+#define MCR_RFLM    (1u << 3)
+#define MCR_NART    (1u << 4)
+#define MCR_AWUM    (1u << 5)
+#define MCR_ABOM    (1u << 6)
+#define MCR_TTCM    (1u << 7)
+#define MCR_DBF     (1u << 16)
+
+/* MSR bits */
+#define MSR_INAK    (1u << 0)
+#define MSR_SLAK    (1u << 1)
+
+/* TSR bits */
+#define TSR_TME0    (1u << 26)
+#define TSR_TME1    (1u << 27)
+#define TSR_TME2    (1u << 28)
+
+/* RF0R bits */
+#define RF0R_FMP0   (3u << 0)
+#define RF0R_RFOM0  (1u << 5)
+
+/* ESR bits */
+#define ESR_BOFF    (1u << 2)
+
+/* TIxR bits */
+#define TIR_TXRQ    (1u << 0)
+
+/* BTR: BRP=5 (prescaler-1=5→PSC=6), BS1=12 (seg1-1=12→BS1=13), BS2=1 (seg2-1=1→BS2=2), SJW=0
+ * Bit time = 6 * (1 + 13 + 2) = 6 * 16 = 96
+ * Baudrate = 48,000,000 / 96 = 500,000 bps
+ * Sample point = (1+13)/16 = 87.5% — matches proven-working HAL config */
+#define BTR_500K_48MHZ  (0x001C0005u)  /* SJW=0, BS2=1, BS1=12, BRP=5 */
+
+/* Timeout for register waits */
+#define CAN_TIMEOUT  1000000u
 
 /* ==================================================================
- * Static Helpers
+ * GPIO Configuration (bare-metal)
  * ================================================================== */
 
-/**
- * @brief  Configure accept-all standard ID filter to FIFO0
- * @return E_OK on success, E_NOT_OK on failure
- */
-static Std_ReturnType Can_Hw_ConfigureFilter(void)
+static void Can_Hw_ConfigGpio(void)
 {
-    CAN_FilterTypeDef filter;
+    /* Enable GPIOD clock */
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
 
-    filter.FilterBank           = 0u;
-    filter.FilterMode           = CAN_FILTERMODE_IDMASK;
-    filter.FilterScale          = CAN_FILTERSCALE_32BIT;
-    filter.FilterIdHigh         = 0x0000u;
-    filter.FilterIdLow          = 0x0000u;
-    filter.FilterMaskIdHigh     = 0x0000u;   /* mask 0 = accept all */
-    filter.FilterMaskIdLow      = 0x0000u;
-    filter.FilterFIFOAssignment = CAN_RX_FIFO0;
-    filter.FilterActivation     = ENABLE;
-    filter.SlaveStartFilterBank = 14u;       /* CAN2 filter bank start */
+    /* PD0 = CAN1_RX (AF9), PD1 = CAN1_TX (AF9)
+     * MODER: alternate function (10)
+     * OSPEEDR: very high speed (11)
+     * PUPDR: no pull (00)
+     * AFR[0]: AF9 = 0x9 for pins 0 and 1 */
 
-    if (HAL_CAN_ConfigFilter(&hcan1, &filter) != HAL_OK)
+    /* MODER: bits [1:0]=10 (PD0), bits [3:2]=10 (PD1) */
+    GPIOD->MODER = (GPIOD->MODER & ~(0xFu << 0)) | (0xAu << 0);
+
+    /* OSPEEDR: very high for both */
+    GPIOD->OSPEEDR |= (0xFu << 0);
+
+    /* No pull-up/pull-down */
+    GPIOD->PUPDR &= ~(0xFu << 0);
+
+    /* AFR[0]: PD0 = AF9, PD1 = AF9 */
+    GPIOD->AFR[0] = (GPIOD->AFR[0] & ~(0xFFu << 0)) | (0x99u << 0);
+}
+
+/* ==================================================================
+ * CAN Init (bare-metal)
+ * ================================================================== */
+
+Std_ReturnType Can_Hw_Init(uint32 baudrate)
+{
+    volatile uint32_t timeout;
+    (void)baudrate;
+
+    /* 1. Enable CAN1 peripheral clock */
+    RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
+    (void)(RCC->APB1ENR & RCC_APB1ENR_CAN1EN);
+
+    /* 2. Configure GPIO PD0/PD1 for CAN */
+    Can_Hw_ConfigGpio();
+
+    /* 3. Exit SLEEP and enter INIT mode.
+     * Safe bring-up: start in SILENT mode (SILM=1 in BTR) to avoid
+     * bus disruption during init. NART=1 to disable auto-retransmission
+     * so a single TX failure doesn't flood error frames. */
+    CAN1->MCR = MCR_DBF | MCR_ABOM | MCR_NART | MCR_INRQ;
+
+    /* 4. Wait for INAK=1 and SLAK=0 */
+    timeout = CAN_TIMEOUT;
+    while (timeout > 0u)
+    {
+        uint32_t msr = CAN1->MSR;
+        if (((msr & MSR_INAK) != 0u) && ((msr & MSR_SLAK) == 0u))
+        {
+            break;
+        }
+        timeout--;
+    }
+    if (timeout == 0u)
     {
         return E_NOT_OK;
+    }
+
+    /* 5. Configure bit timing in SILENT mode first — listens but won't TX.
+     * SILM=1 (bit 31): silent mode, no TX on bus.
+     * This lets us verify the bus is healthy before transmitting. */
+    CAN1->BTR = BTR_500K_48MHZ | (1u << 31);  /* SILM=1 */
+
+    /* 6. Configure accept-all filter (bank 0, mask mode, 32-bit, FIFO0) */
+    CAN1->FMR |= 1u;          /* FINIT — enter filter init mode */
+    CAN1->FA1R &= ~(1u << 0); /* Deactivate filter 0 */
+    CAN1->FS1R |= (1u << 0);  /* 32-bit scale for filter 0 */
+    CAN1->FM1R &= ~(1u << 0); /* Mask mode for filter 0 */
+    CAN1->FFA1R &= ~(1u << 0);/* Assign filter 0 to FIFO0 */
+    /* Filter ID and mask = 0 → accept all */
+    *(volatile uint32_t *)(0x40006640u) = 0u; /* Filter bank 0 register 1 */
+    *(volatile uint32_t *)(0x40006644u) = 0u; /* Filter bank 0 register 2 */
+    CAN1->FA1R |= (1u << 0);  /* Activate filter 0 */
+    CAN1->FMR &= ~1u;         /* Exit filter init mode */
+
+    /* 7. Leave INIT mode — clear INRQ, wait for INAK=0 */
+    CAN1->MCR &= ~MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) != 0u) && (timeout > 0u))
+    {
+        timeout--;
     }
 
     return E_OK;
 }
 
-/**
- * @brief  Internal CAN1 init with specified mode
- * @param  mode  CAN_MODE_NORMAL or CAN_MODE_LOOPBACK
- * @return E_OK on success, E_NOT_OK on failure
- */
-static Std_ReturnType Can_Hw_InitMode(uint32 mode)
+/* ==================================================================
+ * Start / Stop
+ * ================================================================== */
+
+void Can_Hw_Start(void)
 {
-    /* bxCAN uses APB1 clock directly — no separate kernel clock config.
-     * F413ZH APB1 = 48 MHz (SYSCLK 96 MHz / APB1 div 2).
-     *
-     * CAN bit time = PSC * (1 + BS1 + BS2) = 6 * (1 + 13 + 2) = 96
-     * Baudrate = 48,000,000 / 96 = 500,000 bps
-     * SJW=1 (HSE-based PLL, low jitter between ECUs). */
-    hcan1.Instance                = CAN1;
-    hcan1.Init.Prescaler          = 6u;
-    hcan1.Init.Mode               = mode;
-    hcan1.Init.SyncJumpWidth      = CAN_SJW_1TQ;
-    hcan1.Init.TimeSeg1           = CAN_BS1_13TQ;
-    hcan1.Init.TimeSeg2           = CAN_BS2_2TQ;
-    hcan1.Init.TimeTriggeredMode  = DISABLE;
-    hcan1.Init.AutoBusOff         = ENABLE;
-    hcan1.Init.AutoWakeUp         = ENABLE;
-    hcan1.Init.AutoRetransmission = ENABLE;
-    hcan1.Init.ReceiveFifoLocked  = DISABLE;
-    hcan1.Init.TransmitFifoPriority = DISABLE;
+    volatile uint32_t timeout;
 
-    if (HAL_CAN_Init(&hcan1) != HAL_OK)
-    {
-        return E_NOT_OK;
-    }
+    /* Transition from SILENT mode → NORMAL mode.
+     * Re-enter INIT, change BTR (clear SILM), exit INIT.
+     * Also switch from NART=1 (single-shot) to NART=0 (auto-retransmit)
+     * now that we know the bus is alive. */
+    CAN1->MCR |= MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) == 0u) && (timeout > 0u)) { timeout--; }
 
-    /* Explicitly exit sleep mode AFTER HAL_CAN_Init (clock now enabled).
-     * bxCAN defaults to sleep after reset. HAL_CAN_Init requests INRQ
-     * but may not clear SLEEP on some STM32F4 revisions. */
-    CAN1->MCR &= ~CAN_MCR_SLEEP;
-    while ((CAN1->MSR & CAN_MSR_SLAK) != 0u) {}
+    /* Clear SILM — normal mode. Keep NART=1 (single-shot TX) to avoid
+     * bus flooding on error. Dropped frames are retried by Com at the
+     * next cycle, not by the CAN controller. */
+    CAN1->BTR = BTR_500K_48MHZ;  /* SILM=0, LBKM=0 */
+    CAN1->MCR = MCR_DBF | MCR_ABOM | MCR_NART;  /* NART=1, ABOM=1, clear INRQ */
 
-    return Can_Hw_ConfigureFilter();
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) != 0u) && (timeout > 0u)) { timeout--; }
+}
+
+void Can_Hw_Stop(void)
+{
+    /* Enter INIT mode */
+    CAN1->MCR |= MCR_INRQ;
+    volatile uint32_t timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) == 0u) && (timeout > 0u)) { timeout--; }
 }
 
 /* ==================================================================
- * Can_Hw_* API implementations
+ * Transmit
  * ================================================================== */
-
-/**
- * @brief  Initialize CAN1 hardware at 500 kbps in normal mode
- * @param  baudrate  Baudrate in bps (currently only 500000 supported)
- * @return E_OK on success, E_NOT_OK on failure
- *
- * @note   HAL_CAN_Init() triggers MspInit which configures GPIO PD0/PD1
- *         AF9 and enables CAN1 clock.
- */
-Std_ReturnType Can_Hw_Init(uint32 baudrate)
-{
-    (void)baudrate;
-
-    /* Init in SILENT loopback first — bxCAN can't exit sleep in normal
-     * mode without seeing recessive level on RX pin. Silent loopback
-     * bypasses this WITHOUT driving the TX pin (no bus disruption).
-     * After init succeeds (clock enabled, SLAK cleared), switch to
-     * normal mode. */
-    if (Can_Hw_InitMode(CAN_MODE_SILENT_LOOPBACK) != E_OK)
-    {
-        return E_NOT_OK;
-    }
-
-    /* Now re-init in normal mode — peripheral is awake, clock running */
-    return Can_Hw_InitMode(CAN_MODE_NORMAL);
-}
-
-/**
- * @brief  Start CAN1 controller (enter normal/loopback mode)
- */
-void Can_Hw_Start(void)
-{
-    (void)HAL_CAN_Start(&hcan1);
-
-    /* bxCAN may still have SLEEP set in MCR after HAL_CAN_Start.
-     * Explicitly clear it and wait for SLAK to deassert. */
-    CAN1->MCR &= ~CAN_MCR_SLEEP;
-    {
-        volatile uint32_t timeout = 100000u;
-        while (((CAN1->MSR & CAN_MSR_SLAK) != 0u) && (timeout > 0u)) { timeout--; }
-    }
-}
-
-/**
- * @brief  Stop CAN1 controller (enter init mode)
- */
-void Can_Hw_Stop(void)
-{
-    (void)HAL_CAN_Stop(&hcan1);
-}
-
-/**
- * @brief  Transmit a CAN frame via CAN1 TX mailbox
- * @param  id    CAN identifier (11-bit standard)
- * @param  data  Pointer to payload data
- * @param  dlc   Data length (0..8)
- * @return E_OK on success, E_NOT_OK if TX mailbox full or invalid DLC
- */
-#define CAN_HW_TX_RETRY_LIMIT  5000u
 
 Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
 {
-    CAN_TxHeaderTypeDef txHeader;
-    uint8 txData[8];
-    uint32_t txMailbox;
-    uint8 i;
+    uint32_t mailbox = 0u;
+    uint32_t tsr;
     uint16 retry;
 
     if (dlc > 8u)
@@ -177,191 +232,188 @@ Std_ReturnType Can_Hw_Transmit(Can_IdType id, const uint8* data, uint8 dlc)
         return E_NOT_OK;
     }
 
-    txHeader.StdId              = (uint32)id;
-    txHeader.ExtId              = 0u;
-    txHeader.IDE                = CAN_ID_STD;
-    txHeader.RTR                = CAN_RTR_DATA;
-    txHeader.DLC                = (uint32)dlc;
-    txHeader.TransmitGlobalTime = DISABLE;
-
-    /* Copy data to local buffer (HAL expects non-const pointer) */
-    for (i = 0u; i < dlc; i++)
+    /* Find an empty TX mailbox */
+    for (retry = 0u; retry < 5000u; retry++)
     {
-        txData[i] = data[i];
+        tsr = CAN1->TSR;
+        if (tsr & TSR_TME0)      { mailbox = 0u; break; }
+        else if (tsr & TSR_TME1) { mailbox = 1u; break; }
+        else if (tsr & TSR_TME2) { mailbox = 2u; break; }
+    }
+    if (retry >= 5000u)
+    {
+        return E_NOT_OK;
     }
 
-    /* Try to enqueue; if mailboxes full, spin-wait for one to free up. */
-    for (retry = 0u; retry < CAN_HW_TX_RETRY_LIMIT; retry++)
+    /* Write identifier (standard 11-bit, shifted left by 21) */
+    CAN1->sTxMailBox[mailbox].TIR = ((uint32_t)id << 21);
+
+    /* Write DLC */
+    CAN1->sTxMailBox[mailbox].TDTR = (uint32_t)dlc;
+
+    /* Write data bytes */
     {
-        if (HAL_CAN_AddTxMessage(&hcan1, &txHeader, txData, &txMailbox) == HAL_OK)
+        uint32_t dl = 0u, dh = 0u;
+        uint8 i;
+        for (i = 0u; i < dlc && i < 4u; i++)
         {
-            return E_OK;
+            dl |= ((uint32_t)data[i]) << (i * 8u);
         }
+        for (i = 4u; i < dlc && i < 8u; i++)
+        {
+            dh |= ((uint32_t)data[i]) << ((i - 4u) * 8u);
+        }
+        CAN1->sTxMailBox[mailbox].TDLR = dl;
+        CAN1->sTxMailBox[mailbox].TDHR = dh;
     }
 
-    return E_NOT_OK;
+    /* Request transmission */
+    CAN1->sTxMailBox[mailbox].TIR |= TIR_TXRQ;
+
+    return E_OK;
 }
 
-/**
- * @brief  Non-blocking receive of a CAN frame from CAN1 RX FIFO0
- * @param  id    Output: received CAN identifier
- * @param  data  Output: received payload (min 8 bytes)
- * @param  dlc   Output: data length
- * @return TRUE if a frame was received, FALSE if FIFO empty
- */
+/* ==================================================================
+ * Receive
+ * ================================================================== */
+
 boolean Can_Hw_Receive(Can_IdType* id, uint8* data, uint8* dlc)
 {
-    CAN_RxHeaderTypeDef rxHeader;
+    uint32_t rir, rdtr, rdlr, rdhr;
+    uint8 len, i;
 
-    if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) == 0u)
+    /* Check if FIFO0 has messages */
+    if ((CAN1->RF0R & RF0R_FMP0) == 0u)
     {
         return FALSE;
     }
 
-    if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rxHeader, data) != HAL_OK)
-    {
-        return FALSE;
-    }
+    /* Read mailbox */
+    rir  = CAN1->sFIFOMailBox[0].RIR;
+    rdtr = CAN1->sFIFOMailBox[0].RDTR;
+    rdlr = CAN1->sFIFOMailBox[0].RDLR;
+    rdhr = CAN1->sFIFOMailBox[0].RDHR;
 
-    *id = (Can_IdType)rxHeader.StdId;
-    *dlc = (uint8)rxHeader.DLC;
+    /* Release FIFO */
+    CAN1->RF0R |= RF0R_RFOM0;
+
+    /* Extract ID (standard only) */
+    *id = (Can_IdType)((rir >> 21) & 0x7FFu);
+
+    /* Extract DLC */
+    len = (uint8)(rdtr & 0xFu);
+    if (len > 8u) { len = 8u; }
+    *dlc = len;
+
+    /* Extract data */
+    for (i = 0u; i < len && i < 4u; i++)
+    {
+        data[i] = (uint8)(rdlr >> (i * 8u));
+    }
+    for (i = 4u; i < len; i++)
+    {
+        data[i] = (uint8)(rdhr >> ((i - 4u) * 8u));
+    }
 
     return TRUE;
 }
 
-/**
- * @brief  Check if CAN bus is in bus-off state
- * @return TRUE if bus-off, FALSE otherwise
- * @note   Fail-closed: returns TRUE (bus-off) if state unreadable.
- */
+/* ==================================================================
+ * Status / Diagnostics
+ * ================================================================== */
+
 boolean Can_Hw_IsBusOff(void)
 {
-    uint32 esr = hcan1.Instance->ESR;
-    return ((esr & CAN_ESR_BOFF) != 0u) ? TRUE : FALSE;
+    return ((CAN1->ESR & ESR_BOFF) != 0u) ? TRUE : FALSE;
 }
 
-/**
- * @brief  Get CAN1 HAL state for debug diagnostics
- * @return HAL_CAN_StateTypeDef
- */
 uint8 Can_Hw_GetHalState(void)
 {
-    return (uint8)HAL_CAN_GetState(&hcan1);
+    /* Map bxCAN state to a simple enum:
+     * 0=RESET, 1=READY, 2=LISTENING, 3=SLEEP_PENDING, 4=SLEEP, 5=ERROR */
+    if (CAN1->MSR & MSR_SLAK) return 4u;
+    if (CAN1->MSR & MSR_INAK) return 0u;
+    if (CAN1->ESR & ESR_BOFF) return 5u;
+    return 1u; /* READY */
 }
 
-/**
- * @brief  Get CAN error counters (TEC and REC)
- * @param  tec  Output: transmit error counter
- * @param  rec  Output: receive error counter
- */
 void Can_Hw_GetErrorCounters(uint8* tec, uint8* rec)
 {
-    uint32 esr = hcan1.Instance->ESR;
-
-    if (tec != NULL_PTR)
-    {
-        *tec = (uint8)((esr >> 16u) & 0xFFu);  /* TEC field: bits [23:16] */
-    }
-    if (rec != NULL_PTR)
-    {
-        *rec = (uint8)((esr >> 24u) & 0xFFu);  /* REC field: bits [31:24] */
-    }
+    uint32_t esr = CAN1->ESR;
+    if (tec != NULL_PTR) { *tec = (uint8)((esr >> 16u) & 0xFFu); }
+    if (rec != NULL_PTR) { *rec = (uint8)((esr >> 24u) & 0xFFu); }
 }
 
 /* ==================================================================
- * CAN Loopback Self-Test
+ * Loopback Self-Test (bare-metal)
  * ================================================================== */
 
-#define CAN_LB_TEST_ID     0x7FFu
-#define CAN_LB_TEST_DLC    8u
-#define CAN_LB_TIMEOUT_MS  100u
-
-static const uint8 can_lb_test_data[8] = {
-    0xCAu, 0xFEu, 0xBAu, 0xBEu, 0xDEu, 0xADu, 0x01u, 0x02u
-};
-
-/**
- * @brief  CAN internal loopback self-test
- * @return E_OK if loopback TX->RX verified, E_NOT_OK on failure
- *
- * @details Sequence:
- *   1. Stop CAN
- *   2. Reconfigure in LOOPBACK mode
- *   3. Start, TX test frame (ID=0x7FF, 8 bytes)
- *   4. Poll RX FIFO0 with 100ms timeout
- *   5. Verify ID + data match
- *   6. Stop, reconfigure back to NORMAL mode
- *   7. Leave stopped (caller starts CAN later)
- */
 Std_ReturnType Can_Hw_LoopbackTest(void)
 {
+    volatile uint32_t timeout;
     Can_IdType rxId;
     uint8 rxData[8];
     uint8 rxDlc;
-    uint32 start;
+    static const uint8 testData[8] = {0xCA,0xFE,0xBA,0xBE,0xDE,0xAD,0x01,0x02};
     uint8 i;
 
-    /* Step 1-2: DeInit and switch to loopback */
-    (void)HAL_CAN_Stop(&hcan1);
-    (void)HAL_CAN_DeInit(&hcan1);
+    /* Enter INIT mode */
+    CAN1->MCR |= MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) == 0u) && (timeout > 0u)) { timeout--; }
 
-    if (Can_Hw_InitMode(CAN_MODE_LOOPBACK) != E_OK)
+    /* Set loopback + silent mode in BTR (LBKM=1, SILM=1) */
+    CAN1->BTR = BTR_500K_48MHZ | (1u << 30) | (1u << 31);
+
+    /* Leave INIT */
+    CAN1->MCR &= ~MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) != 0u) && (timeout > 0u)) { timeout--; }
+
+    /* Transmit test frame */
+    if (Can_Hw_Transmit(0x7FFu, testData, 8u) != E_OK)
     {
-        (void)HAL_CAN_DeInit(&hcan1);
-        (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
-        return E_NOT_OK;
+        goto restore;
     }
 
-    /* Step 3: Start and transmit test frame */
-    if (HAL_CAN_Start(&hcan1) != HAL_OK)
-    {
-        (void)HAL_CAN_DeInit(&hcan1);
-        (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
-        return E_NOT_OK;
-    }
-
-    if (Can_Hw_Transmit(CAN_LB_TEST_ID, can_lb_test_data, CAN_LB_TEST_DLC) != E_OK)
-    {
-        (void)HAL_CAN_Stop(&hcan1);
-        (void)HAL_CAN_DeInit(&hcan1);
-        (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
-        return E_NOT_OK;
-    }
-
-    /* Step 4: Poll RX with timeout */
-    start = HAL_GetTick();
-    while ((HAL_GetTick() - start) < CAN_LB_TIMEOUT_MS)
+    /* Wait for RX */
+    timeout = 1000000u;
+    while (timeout > 0u)
     {
         if (Can_Hw_Receive(&rxId, rxData, &rxDlc) == TRUE)
         {
-            /* Step 5: Verify ID + data match */
-            if ((rxId == CAN_LB_TEST_ID) && (rxDlc == CAN_LB_TEST_DLC))
+            if (rxId == 0x7FFu && rxDlc == 8u)
             {
                 boolean match = TRUE;
-                for (i = 0u; i < CAN_LB_TEST_DLC; i++)
+                for (i = 0u; i < 8u; i++)
                 {
-                    if (rxData[i] != can_lb_test_data[i])
-                    {
-                        match = FALSE;
-                        break;
-                    }
+                    if (rxData[i] != testData[i]) { match = FALSE; break; }
                 }
-                if (match == TRUE)
+                if (match)
                 {
-                    /* Step 6-7: Restore normal mode, leave stopped */
-                    (void)HAL_CAN_Stop(&hcan1);
-                    (void)HAL_CAN_DeInit(&hcan1);
-                    (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
+                    /* Restore normal mode */
+                    CAN1->MCR |= MCR_INRQ;
+                    timeout = CAN_TIMEOUT;
+                    while (((CAN1->MSR & MSR_INAK) == 0u) && (timeout > 0u)) { timeout--; }
+                    CAN1->BTR = BTR_500K_48MHZ;
+                    CAN1->MCR &= ~MCR_INRQ;
+                    timeout = CAN_TIMEOUT;
+                    while (((CAN1->MSR & MSR_INAK) != 0u) && (timeout > 0u)) { timeout--; }
                     return E_OK;
                 }
             }
         }
+        timeout--;
     }
 
-    /* Timeout — restore normal mode */
-    (void)HAL_CAN_Stop(&hcan1);
-    (void)HAL_CAN_DeInit(&hcan1);
-    (void)Can_Hw_InitMode(CAN_MODE_NORMAL);
+restore:
+    CAN1->MCR |= MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) == 0u) && (timeout > 0u)) { timeout--; }
+    CAN1->BTR = BTR_500K_48MHZ;
+    CAN1->MCR &= ~MCR_INRQ;
+    timeout = CAN_TIMEOUT;
+    while (((CAN1->MSR & MSR_INAK) != 0u) && (timeout > 0u)) { timeout--; }
     return E_NOT_OK;
 }
 

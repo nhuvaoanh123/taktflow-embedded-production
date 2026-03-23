@@ -265,6 +265,12 @@ Std_ReturnType IoHwAb_ReadMotorTemp(uint16* Temp_dC)
     return E_OK;
 }
 
+Std_ReturnType IoHwAb_ReadMotorTemp2(uint16* Temp_dC)
+{
+    /* Dual-NTC cross-check: in HIL mode, return same value as primary sensor */
+    return IoHwAb_ReadMotorTemp(Temp_dC);
+}
+
 Std_ReturnType IoHwAb_ReadBatteryVoltage(uint16* Voltage_mV)
 {
     uint16 raw_adc;

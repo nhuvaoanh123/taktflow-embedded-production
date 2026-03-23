@@ -346,17 +346,25 @@ void Swc_FzcCom_TransmitSchedule(void)
         (void)Com_SendSignal(FZC_COM_SIG_MOTOR_CUTOFF_REQ_REQUEST_TYPE, &cutoff_val8);
     }
 
-    /* ---- TX: 0x220 Lidar Warning (event-driven via Com) ---- */
-    (void)Rte_Read(FZC_SIG_LIDAR_ZONE, &rteVal);
-    /* Only broadcast obstacle warnings (WARNING/BRAKING/EMERGENCY),
-     * NOT sensor FAULT — FAULT means invalid data, not an obstacle. */
-    if ((rteVal >= (uint32)FZC_LIDAR_ZONE_WARNING)
-        && (rteVal <= (uint32)FZC_LIDAR_ZONE_EMERGENCY)) {
-        uint8 zone_val8 = (uint8)rteVal;
+    /* ---- TX: 0x220 Lidar Distance (periodic) ---- */
+    /* Always send distance and zone so all ECUs have current data.
+     * Zone classification: CLEAR/WARNING/BRAKING/EMERGENCY/FAULT.
+     * Consumers (CVC) decide how to act on the zone. */
+    {
+        uint8 zone_val8;
         uint16 dist_val16;
+        uint8 sig_val8;
+
+        (void)Rte_Read(FZC_SIG_LIDAR_ZONE, &rteVal);
+        zone_val8 = (uint8)rteVal;
         (void)Com_SendSignal(FZC_COM_SIG_LIDAR_DISTANCE_OBSTACLE_ZONE, &zone_val8);
+
         (void)Rte_Read(FZC_SIG_LIDAR_DIST, &rteVal);
         dist_val16 = (uint16)rteVal;
         (void)Com_SendSignal(FZC_COM_SIG_LIDAR_DISTANCE_RANGE_CM, &dist_val16);
+
+        (void)Rte_Read(FZC_SIG_LIDAR_SIGNAL, &rteVal);
+        sig_val8 = (uint8)(rteVal >> 8);  /* Signal strength high byte */
+        (void)Com_SendSignal(FZC_COM_SIG_LIDAR_DISTANCE_SIGNAL_STRENGTH, &sig_val8);
     }
 }

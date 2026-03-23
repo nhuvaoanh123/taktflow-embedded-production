@@ -22,9 +22,13 @@
   #define SC_HB_CONFIRM_TICKS       3u
 #endif
 
-/** @brief  Startup grace: 5s (must >= CVC INIT hold) */
+/** @brief  Startup grace: 5s production, 10s HIL (Docker vECUs need time) */
 #ifndef SC_HB_STARTUP_GRACE_TICKS
-  #define SC_HB_STARTUP_GRACE_TICKS 500u
+  #ifdef PLATFORM_HIL
+    #define SC_HB_STARTUP_GRACE_TICKS 1000u  /* 10s — wait for Docker vECUs */
+  #else
+    #define SC_HB_STARTUP_GRACE_TICKS 500u   /* 5s — production */
+  #endif
 #endif
 
 /** @brief  Plausibility debounce: 50ms (real FOC inverter <1ms response) */

@@ -52,16 +52,18 @@ static void Ecu_SystemClock_Config(void)
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-    /* HSI 16 MHz -> PLL: M=16, N=384, P=4 -> 96 MHz */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState       = RCC_HSI_ON;
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    /* HSE 8 MHz (ST-LINK MCO bypass) -> PLL: M=4, N=96, P=2 -> 96 MHz
+     * VCO = 8/4 * 96 = 192 MHz, SYSCLK = 192/2 = 96 MHz
+     * APB1 = 96/2 = 48 MHz -> CAN = 48M/(6*16) = 500 kbps
+     * HSE crystal accuracy ~20ppm vs HSI ±1% — required for CAN spec. */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState       = RCC_HSE_BYPASS;  /* MCO from ST-LINK */
     RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSI;
-    RCC_OscInitStruct.PLL.PLLM       = 16u;
-    RCC_OscInitStruct.PLL.PLLN       = 384u;
-    RCC_OscInitStruct.PLL.PLLP       = RCC_PLLP_DIV4;
-    RCC_OscInitStruct.PLL.PLLQ       = 8u;
+    RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM       = 4u;
+    RCC_OscInitStruct.PLL.PLLN       = 96u;
+    RCC_OscInitStruct.PLL.PLLP       = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ       = 4u;
 
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {

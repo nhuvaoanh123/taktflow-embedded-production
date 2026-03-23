@@ -45,6 +45,12 @@ static uint8   CanMon_Status;
 
 /** Silence counter: cycles since last RX notification */
 static uint16  CanMon_SilenceCount;
+static uint16  CanMon_GraceCycles;    /**< Boot grace period — suppress monitoring */
+
+/** Grace period: 500 cycles × 10ms = 5 seconds.
+ *  Allows other ECUs time to boot and start sending CAN frames
+ *  before the silence monitor starts checking. */
+#define FZC_CAN_GRACE_CYCLES  500u
 
 /** Error warning sustained counter */
 static uint16  CanMon_ErrWarnCount;
@@ -62,6 +68,7 @@ void Swc_FzcCanMonitor_Init(void)
     CanMon_SilenceCount = 0u;
     CanMon_ErrWarnCount = 0u;
     CanMon_SafeLatched  = FALSE;
+    CanMon_GraceCycles  = 0u;
     CanMon_Initialized  = TRUE;
 }
 
@@ -101,9 +108,38 @@ void Swc_FzcCanMonitor_Check(void)
         return;
     }
 
-    /* Once safe state is latched, maintain it forever (no recovery) */
+    /* Safe state recovery: in production, safe-state latches forever
+     * (fail-closed). In HIL mode, allow recovery so transient boot
+     * errors don't permanently disable the ECU. */
+#ifdef PLATFORM_HIL
+    if (CanMon_SafeLatched == TRUE) {
+        /* Check if condition cleared — if so, unlatch */
+        Can_StateType cm = Can_GetControllerMode(0u);
+        uint8 t = 0u, r = 0u;
+        (void)Can_GetErrorCounters(0u, &t, &r);
+        if ((cm == CAN_CS_STARTED) && (t < 96u) && (r < 96u)) {
+            CanMon_SafeLatched = FALSE;
+            CanMon_Status = FZC_CAN_OK;
+            CanMon_SilenceCount = 0u;
+            CanMon_ErrWarnCount = 0u;
+        } else {
+            CanMon_ApplySafeState();
+            return;
+        }
+    }
+#else
     if (CanMon_SafeLatched == TRUE) {
         CanMon_ApplySafeState();
+        return;
+    }
+#endif
+
+    /* Boot grace period — don't monitor until other ECUs have time to start.
+     * In HIL, ECUs boot at different times (flash order, reset timing).
+     * Without this, the silence counter latches before CVC/RZC come online. */
+    if (CanMon_GraceCycles < FZC_CAN_GRACE_CYCLES) {
+        CanMon_GraceCycles++;
+        CanMon_SilenceCount = 0u;
         return;
     }
 

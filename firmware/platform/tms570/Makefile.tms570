@@ -40,6 +40,11 @@ ifdef DIAG
   COMMON_CFLAGS += -DSIL_DIAG
 endif
 
+# --- HIL mode (pass HIL=1 to extend E2E grace period) ---
+ifdef HIL
+  COMMON_CFLAGS += -DPLATFORM_HIL
+endif
+
 # --- Directories (production layout) ---
 FW           = firmware
 ECU          = $(FW)/ecu

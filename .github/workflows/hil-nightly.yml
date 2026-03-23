@@ -13,8 +13,84 @@ on:
         description: 'Enable verbose HIL runner logs'
         type: boolean
         default: false
+      bench_type:
+        description: 'Bench topology'
+        type: choice
+        options: ['mixed', 'vecu-only']
+        default: 'mixed'
 
 jobs:
+  # --- Python hop-by-hop tests (mixed bench: 3 vECU + 4 physical) ---
+  hil-hop-tests:
+    name: HIL Hop ${{ matrix.test }}
+    runs-on: self-hosted
+    if: inputs.bench_type == 'mixed'
+    timeout-minutes: 5
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - test: test_hil_heartbeat
+          - test: test_hil_vsm
+          - test: test_hil_overtemp
+          - test: test_hil_battery
+          - test: test_hil_e2e
+          - test: test_hil_body
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install -r test/hil/requirements.txt
+
+      - name: Verify CAN interface
+        run: |
+          CHANNEL="${{ inputs.hil_channel || 'can0' }}"
+          if ! ip link show "$CHANNEL" 2>/dev/null | grep -q "UP"; then
+            echo "::error::CAN interface $CHANNEL is not UP."
+            exit 1
+          fi
+          echo "$CHANNEL is UP"
+
+      - name: Run HIL hop test ${{ matrix.test }}
+        id: hil_hop_run
+        env:
+          CAN_INTERFACE: ${{ inputs.hil_channel || 'can0' }}
+          MQTT_HOST: ${{ inputs.hil_mqtt_host || 'localhost' }}
+        run: |
+          cd test/hil
+          python3 ${{ matrix.test }}.py 2>&1 | tee ../../hil_hop_output.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Upload HIL hop test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hil-hop-results-${{ matrix.test }}
+          path: hil_hop_output.log
+          retention-days: 90
+
+      - name: Set job outcome
+        if: always()
+        run: |
+          EXIT_CODE="${{ steps.hil_hop_run.outputs.exit_code }}"
+          if [ "$EXIT_CODE" = "0" ]; then
+            echo "HIL hop ${{ matrix.test }} passed."
+          elif [ -z "$EXIT_CODE" ]; then
+            echo "::error::HIL hop ${{ matrix.test }} did not produce an exit code."
+            exit 1
+          else
+            echo "::error::HIL hop ${{ matrix.test }} failed with exit code $EXIT_CODE."
+            exit 1
+          fi
+
+  # --- YAML scenario tests (works on both bench types) ---
   hil-tests:
     name: HIL ${{ matrix.scenario }}
     runs-on: self-hosted
