@@ -122,24 +122,10 @@ void SC_CAN_Init(void)
     /* Configure 6 receive mailboxes with SC CAN IDs */
     dcan1_setup_mailboxes();
 
-#ifdef PLATFORM_HIL
-    /* HIL: DCAN silent mode — RX only, TX internally ACKed.
-     * Normal mode causes ES=0x231 (error-passive + stuff error) within
-     * seconds, killing RX and triggering heartbeat timeout → relay kill.
-     * Root cause under investigation:
-     *   - NOT bus-off (bit 7 never set)
-     *   - NOT VCC dropout (scope confirms steady 5V)
-     *   - Suspect: DCAN1TX PINMUX, bit timing mismatch, or TJA1051T/3
-     *     TX signal integrity on breadboard wiring
-     * Next: verify DCAN1TX pin config against LaunchPad schematic,
-     *   check bit timing with oscilloscope on TXD pin */
-    dcan1_reg_write(DCAN_CTL_OFFSET, 0xC1u);    /* Init=1, CCE=1, Test=1 */
-    dcan1_reg_write(DCAN_TEST_OFFSET, 0x08u);   /* TEST.Silent = 1 */
-    dcan1_reg_write(DCAN_CTL_OFFSET, 0x80u);    /* Exit Init: Test=1, Init=0, CCE=0 */
-#else
-    /* Production: normal (non-silent) operation per SWR-SC-029. */
+    /* Exit init: normal CAN mode. HIL and production both use normal mode
+     * for RX. HIL skips SC_Status TX in SC_CAN_TransmitStatus() instead.
+     * Previous silent mode approach failed — DCAN never received frames. */
     dcan1_reg_write(DCAN_CTL_OFFSET, 0x00u);    /* Init and CCE cleared — normal operation */
-#endif
 
     can_initialized = TRUE;
 }
@@ -271,5 +257,13 @@ void SC_CAN_TransmitStatus(const uint8* payload, uint8 dlc)
     if ((payload == NULL_PTR) || (dlc == 0u) || (can_initialized == FALSE)) {
         return;
     }
+#ifdef PLATFORM_HIL
+    /* HIL: skip TX — SC transceiver TX causes error-passive on bench.
+     * Root cause: DCAN1TX PINMUX or TJA1051T signal integrity issue.
+     * RX works in normal mode, so just suppress TX. */
+    (void)payload;
+    (void)dlc;
+#else
     dcan1_transmit(SC_MB_TX_STATUS, payload, dlc);
+#endif
 }
