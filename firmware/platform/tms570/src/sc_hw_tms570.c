@@ -672,9 +672,8 @@ boolean dcan1_get_mailbox_data(uint8 mbIndex, uint8* data, uint8* dlc)
         msg_dlc = 8u;
     }
 
-    /* Read data registers — DCAN stores data in big-endian word order:
-     * DATA register: byte0 in bits 7:0, byte1 in 15:8, byte2 in 23:16, byte3 in 31:24
-     * DATB register: byte4 in bits 7:0, byte5 in 15:8, byte6 in 23:16, byte7 in 31:24 */
+    /* Read data registers — DCAN stores CAN bytes in register words.
+     * TMS570 DCAN: byte0 in bits 7:0 of IF2DATA (per TRM Table 16-25). */
     data_a = reg_read(DCAN1_BASE, DCAN_IF2DATA);
     data_b = reg_read(DCAN1_BASE, DCAN_IF2DATB);
 
