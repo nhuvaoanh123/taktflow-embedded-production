@@ -63,20 +63,27 @@ def main():
     # Hop 2: Overcurrent → MotorFaultStatus on 0x300 (physical RZC)
     print("Hop 2: Overcurrent → MotorFaultStatus on 0x300")
     if not hc.stopped:
-        mqtt_reset()  # Clear any residual faults from previous test runs
+        mqtt_reset()  # Clear plant-sim + RZC firmware fault latches (UDS ECUReset)
         time.sleep(2)
+        # Verify RZC fault cleared before injecting new fault
+        pre_val, _ = poll_signal(
+            db, bus, CAN_MOTOR_STATUS, "Motor_Status_MotorFaultStatus",
+            lambda v: int(v) == 0, timeout=5.0,
+        )
+        if pre_val is not None and int(pre_val) != 0:
+            print(f"  [WARN] Stale MotorFaultStatus={int(pre_val)} after reset")
         mqtt_inject("overcurrent")
         val, elapsed = poll_signal(
             db, bus, CAN_MOTOR_STATUS, "Motor_Status_MotorFaultStatus",
-            lambda v: int(v) >= 3, timeout=10.0,
+            lambda v: int(v) == 3, timeout=10.0,
         )
         if elapsed is not None:
-            fault_names = {3: "OVERCURRENT", 4: "OVERTEMP", 5: "STALL"}
-            name = fault_names.get(int(val), str(val))
-            hc.check(2, f"MotorFaultStatus={int(val)} ({name}) in {elapsed:.0f}ms", True)
+            hc.check(2, f"MotorFaultStatus=3 (OVERCURRENT) in {elapsed:.0f}ms", True)
         else:
-            hc.check(2, f"MotorFaultStatus={val} (expect >=3)", False,
-                     f"MotorFaultStatus={val}")
+            fault_names = {0: "NO_FAULT", 3: "OVERCURRENT", 4: "OVERTEMP", 5: "STALL"}
+            name = fault_names.get(int(val) if val is not None else -1, str(val))
+            hc.check(2, f"MotorFaultStatus={val} (expect 3=OVERCURRENT)", False,
+                     f"MotorFaultStatus={name} — stale latch?" if val is not None and int(val) == 4 else f"MotorFaultStatus={name}")
 
     # Hop 3: CVC receives overcurrent signal (verify CAN chain, not state transition)
     # HIL: CVC fault events are bypassed (no physical sensors). Verify the

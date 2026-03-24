@@ -8,7 +8,7 @@
  *
  * @details  Implements UDS services for the RZC:
  *           1. DiagnosticSessionControl (0x10) — default session only
- *           2. ECUReset (0x11) — acknowledged but not executed here
+ *           2. ECUReset (0x11) — re-initializes Motor + TempMonitor SWCs
  *           3. TesterPresent (0x3E) — keep-alive response
  *           4. ReadDataByIdentifier (0x22) — 7 DIDs:
  *              0xF030 motor current (mA, 2 bytes)
@@ -36,6 +36,13 @@
  * ================================================================== */
 
 #include "Rte.h"
+
+/* ==================================================================
+ * SWC Includes (for ECUReset re-initialization)
+ * ================================================================== */
+
+#include "Swc_Motor.h"
+#include "Swc_TempMonitor.h"
 
 /* ==================================================================
  * Constants
@@ -173,6 +180,13 @@ Std_ReturnType Swc_RzcDcm_HandleRequest(const uint8 *reqData,
 
         /* ---- ECUReset (0x11) ---- */
         case RZC_UDS_SID_ECU_RESET:
+            /* Re-initialize SWCs to clear fault latches (Motor_FaultLatched,
+             * TM_TempFault, etc.) without a full MCU power cycle.
+             * Safe: handler runs in main-loop context, not ISR.
+             * Motor outputs go to safe state (both EN LOW, PWM 0) during
+             * re-init and resume on next MainFunction cycle. */
+            Swc_Motor_Init();
+            Swc_TempMonitor_Init();
             respData[0] = (uint8)(sid + 0x40u);
             respData[1] = 0x01u;  /* Hard reset */
             *respLen = 2u;

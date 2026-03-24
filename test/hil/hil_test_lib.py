@@ -225,12 +225,49 @@ def mqtt_inject(cmd_type, **kwargs):
                     hostname=MQTT_HOST, port=MQTT_PORT)
 
 
+def uds_ecu_reset_rzc(bus_or_channel=None):
+    """Send UDS ECUReset (SID 0x11) to RZC to clear firmware fault latches.
+
+    RZC physical request: 0x7E2, response: 0x7EA.
+    Clears Motor_FaultLatched, TM_TempFault, and all SWC state via
+    Swc_Motor_Init() + Swc_TempMonitor_Init() on the RZC firmware side.
+    """
+    own_bus = False
+    if bus_or_channel is None:
+        bus_or_channel = can.interface.Bus(channel=CAN_CHANNEL, interface="socketcan")
+        own_bus = True
+    elif isinstance(bus_or_channel, str):
+        bus_or_channel = can.interface.Bus(channel=bus_or_channel, interface="socketcan")
+        own_bus = True
+
+    # UDS ECUReset: SID=0x11, sub=0x01 (hardReset)
+    req = can.Message(arbitration_id=0x7E2, data=[0x02, 0x11, 0x01, 0, 0, 0, 0, 0],
+                      is_extended_id=False)
+    bus_or_channel.send(req)
+
+    # Wait for positive response (0x51 0x01) on 0x7EA
+    end = time.time() + 2.0
+    got_response = False
+    while time.time() < end:
+        msg = bus_or_channel.recv(timeout=0.5)
+        if msg and msg.arbitration_id == 0x7EA:
+            if len(msg.data) >= 2 and msg.data[1] == 0x51:
+                got_response = True
+                break
+
+    if own_bus:
+        bus_or_channel.shutdown()
+    return got_response
+
+
 def mqtt_reset():
-    """Reset all faults to nominal."""
+    """Reset all faults to nominal (plant-sim + RZC firmware latches)."""
     mqtt_inject("reset")
     mqtt_inject("voltage", mV=12600, soc=100)
     mqtt_inject("clear_temp_override")
     mqtt_inject("inject_temp", temp_c=25.0)
+    # Clear RZC firmware fault latches via UDS ECUReset
+    uds_ecu_reset_rzc()
 
 
 # ---------------------------------------------------------------------------

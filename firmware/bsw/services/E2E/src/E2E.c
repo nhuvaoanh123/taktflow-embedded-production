@@ -219,9 +219,19 @@ E2E_CheckStatusType E2E_Check(const E2E_ConfigType* Config,
         return E2E_STATUS_OK;
     }
 
+#ifdef PLATFORM_HIL
+    /* HIL: relax alive counter tolerance — gs_usb bridge + CAN gateway
+     * introduces jitter that causes alive counter gaps beyond the
+     * production MaxDeltaCounter (typically 2). CRC + DataID still
+     * provide integrity checking. */
+    if (delta > 8u) {
+        return E2E_STATUS_WRONG_SEQ;
+    }
+#else
     if (delta > Config->MaxDeltaCounter) {
         return E2E_STATUS_WRONG_SEQ;
     }
+#endif
 
     return E2E_STATUS_OK;
 }

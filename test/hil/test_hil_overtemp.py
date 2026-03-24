@@ -29,7 +29,7 @@ import cantools
 import paho.mqtt.publish as mqtt_pub
 
 from hil_test_lib import (
-    DBC_PATH, MQTT_HOST, MQTT_TOPIC,
+    DBC_PATH, MQTT_HOST, MQTT_PORT, MQTT_TOPIC,
     CAN_VEHICLE_STATE, CAN_MOTOR_STATUS, CAN_MOTOR_TEMP,
     CAN_RZC_VSENSOR, CAN_DTC,
     STATE_NAMES, ECU_NAMES,
@@ -54,6 +54,14 @@ def main():
         bus.shutdown()
         sys.exit(1)
     print()
+
+    # Verify RZC fault latches cleared (guards against stale overtemp from previous run)
+    pre_motor, _ = poll_signal(
+        db, bus, CAN_MOTOR_STATUS, "Motor_Status_MotorFaultStatus",
+        lambda v: int(v) == 0, timeout=5.0,
+    )
+    if pre_motor is not None and int(pre_motor) != 0:
+        print(f"  [WARN] Stale MotorFaultStatus={int(pre_motor)} — UDS ECUReset may not have reached RZC")
 
     # Hop 0: Negative test
     print("Hop 0: Normal operation (5s) — CVC stays in RUN")
@@ -89,7 +97,7 @@ def main():
     def _sustain():
         while not _inject_stop.is_set():
             mqtt_pub.single(MQTT_TOPIC, json.dumps({"type": "inject_temp", "temp_c": 110.0}),
-                            hostname=MQTT_HOST, port=1883)
+                            hostname=MQTT_HOST, port=MQTT_PORT)
             time.sleep(0.1)
     t = threading.Thread(target=_sustain, daemon=True)
     t.start()

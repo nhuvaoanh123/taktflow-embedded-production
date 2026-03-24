@@ -91,6 +91,16 @@ extern Std_ReturnType  Swc_RzcDcm_HandleRequest(const uint8 *reqData,
                                                   uint8 *respLen);
 
 /* ==================================================================
+ * Mock: Swc_Motor_Init / Swc_TempMonitor_Init (called by ECUReset)
+ * ================================================================== */
+
+static uint8 mock_motor_init_count;
+static uint8 mock_temp_init_count;
+
+void Swc_Motor_Init(void)       { mock_motor_init_count++; }
+void Swc_TempMonitor_Init(void) { mock_temp_init_count++; }
+
+/* ==================================================================
  * Mock: Rte_Read / Rte_Write
  * ================================================================== */
 
@@ -127,6 +137,8 @@ void setUp(void)
     for (i = 0u; i < MOCK_RTE_MAX_SIGNALS; i++) {
         mock_rte_signals[i] = 0u;
     }
+    mock_motor_init_count = 0u;
+    mock_temp_init_count  = 0u;
     Swc_RzcDcm_Init();
 }
 
@@ -165,6 +177,29 @@ void test_RzcDcm_supported_services(void)
     respLen = 0u;
     (void)Swc_RzcDcm_HandleRequest(req, 2u, resp, &respLen);
     TEST_ASSERT_EQUAL_UINT8(0x51u, resp[0]);  /* 0x11 + 0x40 */
+}
+
+/** @verifies SWR-RZC-029 -- ECUReset (0x11) re-initializes Motor + TempMonitor SWCs */
+void test_RzcDcm_ecu_reset_reinitializes_swcs(void)
+{
+    uint8 req[2];
+    uint8 resp[16];
+    uint8 respLen;
+
+    req[0] = RZC_UDS_SID_ECU_RESET;
+    req[1] = 0x01u;  /* hardReset */
+    respLen = 0u;
+
+    (void)Swc_RzcDcm_HandleRequest(req, 2u, resp, &respLen);
+
+    /* Positive response */
+    TEST_ASSERT_EQUAL_UINT8(0x51u, resp[0]);
+    TEST_ASSERT_EQUAL_UINT8(0x01u, resp[1]);
+    TEST_ASSERT_EQUAL_UINT8(2u, respLen);
+
+    /* Verify SWC init functions were called */
+    TEST_ASSERT_EQUAL_UINT8(1u, mock_motor_init_count);
+    TEST_ASSERT_EQUAL_UINT8(1u, mock_temp_init_count);
 }
 
 /** @verifies SWR-RZC-029 -- ReadDataByIdentifier 0xF030 returns motor current */
@@ -252,6 +287,7 @@ int main(void)
 
     /* SWR-RZC-029: UDS Service Support */
     RUN_TEST(test_RzcDcm_supported_services);
+    RUN_TEST(test_RzcDcm_ecu_reset_reinitializes_swcs);
     RUN_TEST(test_RzcDcm_read_did_motor_current);
     RUN_TEST(test_RzcDcm_read_did_battery_voltage);
     RUN_TEST(test_RzcDcm_unsupported_service_nrc);
@@ -274,5 +310,7 @@ int main(void)
 #define WDGM_H
 #define DEM_H
 #define IOHWAB_H
+#define SWC_MOTOR_H
+#define SWC_TEMPMONITOR_H
 
 #include "../src/Swc_RzcDcm.c"

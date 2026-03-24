@@ -44,6 +44,14 @@ def main():
         sys.exit(1)
     print()
 
+    # Verify RZC fault latches cleared (guards against stale overtemp from previous test)
+    pre_motor, _ = poll_signal(
+        db, bus, CAN_MOTOR_STATUS, "Motor_Status_MotorFaultStatus",
+        lambda v: int(v) == 0, timeout=5.0,
+    )
+    if pre_motor is not None and int(pre_motor) != 0:
+        print(f"  [WARN] Stale MotorFaultStatus={int(pre_motor)} — UDS ECUReset may not have reached RZC")
+
     # Hop 0: Negative test
     print("Hop 0: Normal operation (5s) — no false UV fault")
     ok, detail = verify_normal_operation(db, bus, duration=5.0)
