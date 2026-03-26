@@ -28,6 +28,22 @@ volatile uint32 g_can_rx_count = 0u;
 volatile uint32 g_can_rx_last_id = 0xFFFFFFFFu;
 /** Debug: CAN TX busy (FIFO full) counter */
 volatile uint32 g_can_tx_busy_count = 0u;
+/** Debug: TX queue high watermark */
+volatile uint32 g_can_tx_queue_hwm = 0u;
+
+/* ---- TX Software Queue (for bxCAN with only 3 HW mailboxes) ---- */
+
+#define CAN_TX_QUEUE_SIZE  16u  /**< Must be power of 2 */
+
+typedef struct {
+    Can_IdType id;
+    uint8      data[CAN_MAX_DLC];
+    uint8      dlc;
+} Can_TxQueueEntry;
+
+static Can_TxQueueEntry can_tx_queue[CAN_TX_QUEUE_SIZE];
+static volatile uint8   can_tx_queue_head = 0u;  /**< Next write slot  */
+static volatile uint8   can_tx_queue_tail = 0u;  /**< Next read slot   */
 /** Debug: CAN RX counter for specific ID 0x012 (heartbeat trace) */
 volatile uint32 g_can_rx_012_count = 0u;
 /** Debug: CAN RX counter for specific ID 0x011 (FZC heartbeat trace) */
@@ -140,11 +156,59 @@ Can_ReturnType Can_Write(uint8 Hth, const Can_PduType* PduInfo)
     SchM_Exit_Can_CAN_EXCLUSIVE_AREA_0();
 
     if (hw_ret != E_OK) {
-        g_can_tx_busy_count++;
-        return CAN_BUSY;
+        /* HW mailbox full — enqueue in software TX buffer.
+         * Can_MainFunction_Write drains this queue each tick.
+         * On FDCAN (32-deep HW FIFO) this path is never reached. */
+        uint8 next_head = (can_tx_queue_head + 1u) & (CAN_TX_QUEUE_SIZE - 1u);
+        if (next_head == can_tx_queue_tail) {
+            /* Queue full — truly drop (should not happen with 16 slots) */
+            g_can_tx_busy_count++;
+            return CAN_BUSY;
+        }
+        Can_TxQueueEntry* entry = &can_tx_queue[can_tx_queue_head];
+        entry->id  = PduInfo->id;
+        entry->dlc = PduInfo->length;
+        {
+            uint8 j;
+            for (j = 0u; j < PduInfo->length; j++) {
+                entry->data[j] = PduInfo->sdu[j];
+            }
+        }
+        can_tx_queue_head = next_head;
+
+        /* Track high watermark */
+        {
+            uint8 depth = (can_tx_queue_head - can_tx_queue_tail) & (CAN_TX_QUEUE_SIZE - 1u);
+            if (depth > g_can_tx_queue_hwm) {
+                g_can_tx_queue_hwm = depth;
+            }
+        }
     }
 
     return CAN_OK;
+}
+
+void Can_MainFunction_Write(void)
+{
+    if (can_state != CAN_CS_STARTED) {
+        return;
+    }
+
+    /* Drain software TX queue into hardware mailboxes.
+     * Stops on first CAN_BUSY (mailbox still full). */
+    while (can_tx_queue_tail != can_tx_queue_head) {
+        Can_TxQueueEntry* entry = &can_tx_queue[can_tx_queue_tail];
+
+        SchM_Enter_Can_CAN_EXCLUSIVE_AREA_0();
+        Std_ReturnType hw_ret = Can_Hw_Transmit(entry->id, entry->data, entry->dlc);
+        SchM_Exit_Can_CAN_EXCLUSIVE_AREA_0();
+
+        if (hw_ret != E_OK) {
+            break;  /* HW still busy — try again next tick */
+        }
+
+        can_tx_queue_tail = (can_tx_queue_tail + 1u) & (CAN_TX_QUEUE_SIZE - 1u);
+    }
 }
 
 void Can_MainFunction_Read(void)

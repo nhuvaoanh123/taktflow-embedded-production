@@ -390,9 +390,51 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
     }
 #endif
 
-    /* ---- E2E disabled for ThreadX bringup — isolate signal extraction ----
-     * TODO:HARDWARE — Re-enable after ThreadX timer jitter is characterized.
-     * E2E_Protect still runs on TX side. Only RX check is skipped. */
+    /* ---- E2E RX check with supervision state machine ---- */
+    {
+        uint8 rx_idx;
+        for (rx_idx = 0u; rx_idx < com_config->rxPduCount; rx_idx++) {
+            if (com_config->rxPduConfig[rx_idx].PduId == ComRxPduId) {
+                if (com_config->rxPduConfig[rx_idx].E2eProtected == TRUE) {
+                    E2E_ConfigType e2e_cfg;
+                    E2E_CheckStatusType e2e_status;
+                    E2E_SMStateType sm_state;
+
+                    e2e_cfg.DataId          = com_config->rxPduConfig[rx_idx].E2eDataId;
+                    e2e_cfg.MaxDeltaCounter = com_config->rxPduConfig[rx_idx].E2eMaxDelta;
+                    e2e_cfg.DataLength      = (uint16)PduInfoPtr->SduLength;
+
+                    e2e_status = E2E_Check(&e2e_cfg, &com_e2e_rx_state[ComRxPduId],
+                                           com_rx_pdu_buf[ComRxPduId],
+                                           PduInfoPtr->SduLength);
+
+                    /* SM params from generated config (computed from cycle time) */
+                    {
+                        E2E_SMConfigType sm_cfg;
+                        sm_cfg.WindowSizeValid   = com_config->rxPduConfig[rx_idx].E2eSmWindowValid;
+                        sm_cfg.WindowSizeInvalid = com_config->rxPduConfig[rx_idx].E2eSmWindowInvalid;
+                        sm_cfg.WindowSizeInit    = 1u;
+
+                        sm_state = E2E_SMCheck(&sm_cfg,
+                                               &com_e2e_rx_sm[ComRxPduId],
+                                               e2e_status);
+                    }
+
+                    if (sm_state == E2E_SM_INVALID) {
+                        com_rx_pdu_quality[ComRxPduId] = COM_SIGNAL_QUALITY_E2E_FAIL;
+                        g_dbg_com_e2e_rx_fail[ComRxPduId]++;
+                        if (com_config->rxPduConfig[rx_idx].E2eDemEventId != COM_DEM_EVENT_NONE) {
+                            Dem_ReportErrorStatus(
+                                (Dem_EventIdType)com_config->rxPduConfig[rx_idx].E2eDemEventId,
+                                DEM_EVENT_STATUS_FAILED);
+                        }
+                        return;  /* E2E fail: discard frame */
+                    }
+                }
+                break;
+            }
+        }
+    }
 
     /* Short lock: unpack RX signals into shadow buffers + push to RTE.
      * Uses rxSignalConfig[] — only RX signals, no TX collision. */

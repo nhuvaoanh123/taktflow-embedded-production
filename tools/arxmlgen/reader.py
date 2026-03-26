@@ -1002,10 +1002,23 @@ class ArxmlReader:
                 # RX timeout: 3× the TX period (AUTOSAR default)
                 computed_timeout = tx_cycle_ms * 3
 
+                # E2E SM window params: derived from FTTI / cycle_time
+                # WindowSizeValid: consecutive OKs to recover from INVALID
+                #   Default: 3 (standard AUTOSAR), raise for fast messages
+                # WindowSizeInvalid: consecutive errors before INVALID
+                #   Default: max(3, 100ms / cycle_ms) — tolerate jitter
+                computed_sm_valid = 3
+                computed_sm_invalid = max(3, math.ceil(100.0 / tx_cycle_ms))
+
                 # Only override if computed value differs from DBC default
                 if pdu.e2e_max_delta != computed_delta:
                     pdu.e2e_max_delta = computed_delta
                     updated += 1
+
+                if pdu.e2e_sm_window_valid == 0:
+                    pdu.e2e_sm_window_valid = computed_sm_valid
+                if pdu.e2e_sm_window_invalid == 0:
+                    pdu.e2e_sm_window_invalid = computed_sm_invalid
 
                 if pdu.timeout_ms == 0:
                     pdu.timeout_ms = computed_timeout

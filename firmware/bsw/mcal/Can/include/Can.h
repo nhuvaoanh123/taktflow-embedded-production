@@ -111,6 +111,15 @@ Can_StateType Can_GetControllerMode(uint8 Controller);
 Can_ReturnType Can_Write(uint8 Hth, const Can_PduType* PduInfo);
 
 /**
+ * @brief Drain software TX queue into hardware mailboxes (called cyclically)
+ *
+ * On bxCAN (3 HW mailboxes), Can_Write enqueues frames that didn't fit.
+ * This function retries them each tick until the HW drains.
+ * On FDCAN (32-deep HW FIFO), the queue stays empty — zero overhead.
+ */
+void Can_MainFunction_Write(void);
+
+/**
  * @brief Process received CAN frames (called cyclically, 5 ms)
  */
 void Can_MainFunction_Read(void);
@@ -141,6 +150,7 @@ Std_ReturnType Can_GetControllerErrorState(uint8 ControllerId, uint8* ErrorState
 extern volatile uint32 g_can_rx_count;
 extern volatile uint32 g_can_rx_last_id;
 extern volatile uint32 g_can_tx_busy_count;
+extern volatile uint32 g_can_tx_queue_hwm;
 extern volatile uint32 g_can_rx_012_count;
 extern volatile uint32 g_can_rx_011_count;
 

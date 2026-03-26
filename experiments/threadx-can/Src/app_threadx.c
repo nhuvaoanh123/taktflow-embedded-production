@@ -218,10 +218,6 @@ UINT App_ThreadX_Init(VOID *memory_ptr)
   Swc_Buzzer_Init();
   Swc_FzcSensorFeeder_Init();
 
-  /* Write constant RTE signals — auto-pulled by Com_MainFunction_Tx */
-  (void)Rte_Write(FZC_SIG_VEHICLE_STATE, 1u);           /* Force RUN for standalone test */
-  (void)Rte_Write(FZC_SIG_FZC_HEARTBEAT_ECU_ID, (uint32)FZC_ECU_ID);
-
   /* Start CAN controller via BSW API */
   (void)Can_SetControllerMode(0u, CAN_CS_STARTED);
 
@@ -306,18 +302,15 @@ void MainThread_Entry(ULONG thread_input)
     HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 
     {
-      extern volatile uint32 g_dbg_com_autopull_ecu_val;
-      extern volatile uint32 g_dbg_com_autopull_ecu_cnt;
+      extern volatile uint32 g_dbg_com_e2e_rx_fail[];
+      extern volatile uint32 g_can_rx_count;
       uint32 vs = 99u;
-      uint32 ecuid = 99u;
       (void)Rte_Read(FZC_SIG_VEHICLE_STATE, &vs);
-      (void)Rte_Read(FZC_SIG_FZC_HEARTBEAT_ECU_ID, &ecuid);
-      printf("t=%lu vs=%lu rte76=%lu pull=%lu/%lu\r\n",
+      printf("t=%lu rx=%lu vs=%lu e2eF=%lu\r\n",
              (unsigned long)tx_time_get(),
+             (unsigned long)g_can_rx_count,
              (unsigned long)vs,
-             (unsigned long)ecuid,
-             (unsigned long)g_dbg_com_autopull_ecu_val,
-             (unsigned long)g_dbg_com_autopull_ecu_cnt);
+             (unsigned long)g_dbg_com_e2e_rx_fail[FZC_COM_RX_VEHICLE_STATE]);
     }
 
     /* Thread sleep for 5s (5000 ticks at 1000Hz) */
@@ -508,9 +501,6 @@ static void CAN_Periodic_Callback(ULONG arg)
 static void BSW_1ms_Callback(ULONG arg)
 {
   (void)arg;
-  /* Force constant signals every cycle — ensures auto-pull sees them */
-  (void)Rte_Write(FZC_SIG_FZC_HEARTBEAT_ECU_ID, (uint32)FZC_ECU_ID);
-  (void)Rte_Write(FZC_SIG_VEHICLE_STATE, 1u);
   Rte_MainFunction();
 }
 

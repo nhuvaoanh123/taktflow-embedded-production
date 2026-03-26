@@ -248,10 +248,10 @@ boolean Can_Hw_Receive(Can_IdType* id, uint8* data, uint8* dlc)
 
     *id = (Can_IdType)rxHeader.Identifier;
 
-    /* Convert HAL DLC constant back to byte count.
-     * STM32G4 HAL: FDCAN_DLC_BYTES_0..8 = 0..8 (raw DLC code).
-     * Classic CAN: DLC 0-8 maps 1:1 to byte count. */
-    dlcRaw = rxHeader.DataLength;
+    /* Convert HAL FDCAN DLC constant to byte count.
+     * STM32G4 HAL: FDCAN_DLC_BYTES_N = (N << 16), NOT raw DLC code.
+     * Shift right 16 to get actual byte count. */
+    dlcRaw = rxHeader.DataLength >> 16u;
     if (dlcRaw > 8u)
     {
         dlcRaw = 8u;

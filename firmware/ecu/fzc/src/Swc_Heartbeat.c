@@ -70,6 +70,9 @@ void Swc_Heartbeat_Init(void)
     Hb_CycleCounter = 0u;
     Hb_AliveCounter = 0u;
     Hb_Initialized  = TRUE;
+
+    /* Write constant heartbeat fields to RTE — auto-pulled by Com TX */
+    (void)Rte_Write(FZC_SIG_FZC_HEARTBEAT_ECU_ID, (uint32)FZC_ECU_ID);
 }
 
 /* ==================================================================
@@ -107,9 +110,9 @@ void Swc_Heartbeat_MainFunction(void)
         return;
     }
 
-    /* Heartbeat TX handled by Swc_FzcCom bridge via Com_SendSignal */
-
-    /* Write alive counter to RTE for diagnostics */
+    /* Write heartbeat TX signals to RTE — auto-pulled by Com_MainFunction_Tx */
+    (void)Rte_Write(FZC_SIG_FZC_HEARTBEAT_OPERATING_MODE, vehicle_state & 0x0Fu);
+    (void)Rte_Write(FZC_SIG_FZC_HEARTBEAT_FAULT_STATUS, fault_mask & 0x0Fu);
     (void)Rte_Write(FZC_SIG_HEARTBEAT_ALIVE, (uint32)Hb_AliveCounter);
 
     /* Increment alive counter with wrap */

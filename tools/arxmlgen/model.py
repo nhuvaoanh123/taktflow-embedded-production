@@ -47,6 +47,8 @@ class Pdu:
     e2e_counter_bit: int | None = None
     e2e_crc_bit: int | None = None
     e2e_max_delta: int = 2
+    e2e_sm_window_valid: int = 0    # 0 = use default (computed from cycle time)
+    e2e_sm_window_invalid: int = 0  # 0 = use default (computed from cycle time)
     satisfies: str = ""    # Requirement traceability (e.g., "TSR-022 FSR-001")
     asil: str = "QM"       # ASIL classification
 
