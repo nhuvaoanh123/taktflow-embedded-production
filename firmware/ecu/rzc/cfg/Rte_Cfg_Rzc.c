@@ -257,13 +257,13 @@ static const Rte_SignalConfigType rzc_signal_config[RZC_SIG_COUNT] = {
 
 static const Rte_RunnableConfigType rzc_runnable_config[] = {
     /* func,                        periodMs, priority, seId */
-    { Can_MainFunction_Read,                       1u,    11u, 0xFFu },
-    { Com_MainFunction_Rx,                        10u,    10u, 0xFFu },
-    { Swc_RzcSensorFeeder_MainFunction,           10u,     9u, 0xFFu },
-    { Swc_CurrentMonitor_MainFunction,             1u,     8u, 0x00u },
-    { Swc_Encoder_MainFunction,                   10u,     7u, 0x02u },
-    { Swc_Motor_MainFunction,                     10u,     7u, 0x01u },
-    { Swc_RzcCom_Receive,                         10u,     6u, 0xFFu },
+    { Swc_CurrentMonitor_MainFunction,             1u,    11u, 0x00u },
+    { Swc_Encoder_MainFunction,                   10u,    10u, 0x02u },
+    { Swc_Motor_MainFunction,                     10u,    10u, 0x01u },
+    { Can_MainFunction_Read,                       1u,     9u, 0xFFu },
+    { Com_MainFunction_Rx,                        10u,     8u, 0xFFu },
+    { Swc_RzcCom_Receive,                         10u,     7u, 0xFFu },
+    { Swc_RzcSensorFeeder_MainFunction,           10u,     6u, 0xFFu },
     { Swc_RzcCom_TransmitSchedule,                10u,     5u, 0xFFu },
     { Swc_Battery_MainFunction,                  100u,     4u, 0x04u },
     { Com_MainFunction_Tx,                        10u,     4u, 0xFFu },
