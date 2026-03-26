@@ -89,9 +89,8 @@ static Com_SignalQualityType com_rx_pdu_quality[COM_MAX_PDUS];
 /* Debug: E2E RX failure count per PDU */
 volatile uint32 g_dbg_com_e2e_rx_fail[COM_MAX_PDUS];
 
-/* Debug: TX auto-pull diagnostic for ECU_ID */
-volatile uint32 g_dbg_com_autopull_ecu_val;
-volatile uint32 g_dbg_com_autopull_ecu_cnt;
+/* E2E SM previous state — for INVALID→VALID recovery detection */
+static E2E_SMStateType com_e2e_prev_sm[COM_MAX_PDUS];
 
 /* RX deadline monitoring period: 10ms per cycle (matches RTE scheduler) */
 /* COM_RX_CYCLE_MS removed — uses com_main_period_ms (per-ECU from config) */
@@ -428,8 +427,43 @@ void Com_RxIndication(PduIdType ComRxPduId, const PduInfoType* PduInfoPtr)
                                 (Dem_EventIdType)com_config->rxPduConfig[rx_idx].E2eDemEventId,
                                 DEM_EVENT_STATUS_FAILED);
                         }
+                        com_e2e_prev_sm[ComRxPduId] = sm_state;
+
+                        /* Zero all RX signal shadow buffers + RTE for this PDU
+                         * so SWCs see safe defaults, not stale values */
+                        {
+                            const Com_SignalConfigType* sig_table =
+                                (com_config->rxSignalConfig != NULL_PTR)
+                                ? com_config->rxSignalConfig : com_config->signalConfig;
+                            uint16 sig_count =
+                                (com_config->rxSignalConfig != NULL_PTR)
+                                ? com_config->rxSignalCount : (uint16)com_config->signalCount;
+                            uint16 k;
+                            for (k = 0u; k < sig_count; k++) {
+                                if (sig_table[k].PduId == ComRxPduId) {
+                                    if (sig_table[k].ShadowBuffer != NULL_PTR) {
+                                        *((uint8*)sig_table[k].ShadowBuffer) = 0u;
+                                    }
+                                    if (sig_table[k].RteSignalId != COM_RTE_SIGNAL_NONE) {
+                                        Rte_Write((Rte_SignalIdType)sig_table[k].RteSignalId, 0u);
+                                    }
+                                }
+                            }
+                        }
                         return;  /* E2E fail: discard frame */
                     }
+
+                    /* Recovery: INVALID → VALID — clear DTC */
+                    if ((com_e2e_prev_sm[ComRxPduId] == E2E_SM_INVALID) &&
+                        (sm_state == E2E_SM_VALID)) {
+                        if (com_config->rxPduConfig[rx_idx].E2eDemEventId != COM_DEM_EVENT_NONE) {
+                            Dem_ReportErrorStatus(
+                                (Dem_EventIdType)com_config->rxPduConfig[rx_idx].E2eDemEventId,
+                                DEM_EVENT_STATUS_PASSED);
+                        }
+                        com_rx_pdu_quality[ComRxPduId] = COM_SIGNAL_QUALITY_FRESH;
+                    }
+                    com_e2e_prev_sm[ComRxPduId] = sm_state;
                 }
                 break;
             }

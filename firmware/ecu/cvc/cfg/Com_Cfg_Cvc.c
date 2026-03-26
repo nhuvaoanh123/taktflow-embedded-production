@@ -622,9 +622,9 @@ static const Com_TxPduConfigType cvc_tx_pdu_config[] = {
 
 static const Com_RxPduConfigType cvc_rx_pdu_config[] = {
     /* pduId,                     dlc, timeoutMs, e2eProt, dataId, maxDelta, demEvt, smValid, smInvalid */
-    { CVC_COM_RX_FZC_HEARTBEAT,     4u,   150u, TRUE ,  3u,  7u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x011 @satisfies SG-008 */
-    { CVC_COM_RX_RZC_HEARTBEAT,     4u,   150u, TRUE ,  4u,  7u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x012 @satisfies SG-008 */
-    { CVC_COM_RX_SC_STATUS,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x013 @satisfies SG-008 */
+    { CVC_COM_RX_FZC_HEARTBEAT,     4u,   150u, TRUE ,  3u,  7u, 3, 3u, 3u },   /* CAN 0x011 @satisfies SG-008 */
+    { CVC_COM_RX_RZC_HEARTBEAT,     4u,   150u, TRUE ,  4u,  7u, 4, 3u, 3u },   /* CAN 0x012 @satisfies SG-008 */
+    { CVC_COM_RX_SC_STATUS,     4u,     0u, FALSE,  0u,  2u, 5, 0u, 0u },   /* CAN 0x013 @satisfies SG-008 */
     { CVC_COM_RX_ICU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x014 */
     { CVC_COM_RX_TCU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x015 */
     { CVC_COM_RX_BCM_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x016 */

@@ -56,6 +56,12 @@ ecus:
       Steer_Command: 0x07     # CAN 0x102
       Brake_Command: 0x08     # CAN 0x103
 
+    # E2E failure → DTC mapping: RX PDU name → DTC event name
+    e2e_dem_map:
+      FZC_Heartbeat: CVC_DTC_COMM_FZC_TIMEOUT
+      RZC_Heartbeat: CVC_DTC_COMM_RZC_TIMEOUT
+      SC_Status: CVC_DTC_COMM_SC_TIMEOUT
+
     enums:
       CVC_STATE_INIT: 0
       CVC_STATE_RUN: 1
@@ -159,6 +165,10 @@ ecus:
       Brake_Fault: 0x0B        # CAN 0x210
       Motor_Cutoff_Req: 0x0C   # CAN 0x211
       Lidar_Distance: 0x0D     # CAN 0x220
+
+    e2e_dem_map:
+      CVC_Heartbeat: FZC_DTC_CAN_BUS_OFF
+      Vehicle_State: FZC_DTC_CAN_BUS_OFF
 
     enums:
       FZC_STATE_INIT: 0
@@ -289,6 +299,11 @@ ecus:
       Motor_Temperature: 0x00   # CAN 0x302
       Battery_Status: 0x13      # CAN 0x303
       Encoder_Status: 0x27      # no DBC entry — keep as-is
+
+    e2e_dem_map:
+      CVC_Heartbeat: RZC_DTC_CAN_BUS_OFF
+      Vehicle_State: RZC_DTC_CAN_BUS_OFF
+      Torque_Request: RZC_DTC_CAN_BUS_OFF
 
     enums:
       RZC_STATE_INIT: 0

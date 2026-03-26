@@ -774,6 +774,15 @@ class ArxmlReader:
             if "pdu_e2e_map" in ecu_data:
                 global_pdu_e2e_map.update(ecu_data["pdu_e2e_map"])
 
+            # E2E failure → DTC event mapping (PDU name → DTC event name)
+            if "e2e_dem_map" in ecu_data:
+                e2e_dem = ecu_data["e2e_dem_map"]
+                for pdu in ecu.rx_pdus:
+                    if pdu.name in e2e_dem:
+                        dtc_name = e2e_dem[pdu.name]
+                        if dtc_name in ecu.dtc_events:
+                            pdu.e2e_dem_event_id = ecu.dtc_events[dtc_name]
+
             # Enums
             if "enums" in ecu_data:
                 ecu.enums.update(ecu_data["enums"])
