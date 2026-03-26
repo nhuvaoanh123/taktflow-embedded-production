@@ -211,10 +211,7 @@ ecus:
         period_ms: 10
         priority: 13
         wdgm_se_id: 0xFF
-      Swc_FzcCom_Receive:
-        period_ms: 10
-        priority: 12
-        wdgm_se_id: 0xFF
+      # Swc_FzcCom_Receive: REMOVED — RX auto-push handles all signal bridging
       Swc_FzcSensorFeeder_MainFunction:
         period_ms: 10
         priority: 11
@@ -247,10 +244,7 @@ ecus:
         period_ms: 10
         priority: 4
         wdgm_se_id: 0xFF
-      Swc_FzcCom_TransmitSchedule:
-        period_ms: 10
-        priority: 3
-        wdgm_se_id: 0xFF
+      # Swc_FzcCom_TransmitSchedule: REMOVED — TX auto-pull handles all signal packing
       Com_MainFunction_Tx:
         period_ms: 10
         priority: 2
@@ -369,18 +363,12 @@ ecus:
         period_ms: 10
         priority: 8
         wdgm_se_id: 0xFF
-      Swc_RzcCom_Receive:
-        period_ms: 10
-        priority: 7
-        wdgm_se_id: 0xFF
+      # Swc_RzcCom_Receive: REMOVED — RX auto-push handles all signal bridging
       Swc_RzcSensorFeeder_MainFunction:
         period_ms: 10
         priority: 6
         wdgm_se_id: 0xFF
-      Swc_RzcCom_TransmitSchedule:
-        period_ms: 10
-        priority: 5
-        wdgm_se_id: 0xFF
+      # Swc_RzcCom_TransmitSchedule: REMOVED — TX auto-pull handles all signal packing
       Com_MainFunction_Tx:
         period_ms: 10
         priority: 4

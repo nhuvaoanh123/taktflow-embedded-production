@@ -28,8 +28,6 @@ extern void Swc_Encoder_Init(void);
 extern void Swc_Heartbeat_MainFunction(void);
 extern void Swc_Motor_MainFunction(void);
 extern void Swc_Motor_Init(void);
-extern void Swc_RzcCom_Receive(void);
-extern void Swc_RzcCom_TransmitSchedule(void);
 extern void Swc_RzcCom_Init(void);
 extern void Swc_RzcDcm_Init(void);
 extern void Swc_RzcNvm_Init(void);
@@ -262,9 +260,7 @@ static const Rte_RunnableConfigType rzc_runnable_config[] = {
     { Swc_Motor_MainFunction,                     10u,    10u, 0x01u },
     { Can_MainFunction_Read,                       1u,     9u, 0xFFu },
     { Com_MainFunction_Rx,                        10u,     8u, 0xFFu },
-    { Swc_RzcCom_Receive,                         10u,     7u, 0xFFu },
     { Swc_RzcSensorFeeder_MainFunction,           10u,     6u, 0xFFu },
-    { Swc_RzcCom_TransmitSchedule,                10u,     5u, 0xFFu },
     { Swc_Battery_MainFunction,                  100u,     4u, 0x04u },
     { Com_MainFunction_Tx,                        10u,     4u, 0xFFu },
     { Swc_TempMonitor_MainFunction,              100u,     4u, 0x03u },

@@ -682,7 +682,13 @@ class ArxmlReader:
                         elif evt.element_name == "INIT-EVENT":
                             r.is_init = True
 
-        return list(runnables_map.values())
+        # Filter out legacy Com bridge runnables — replaced by TX auto-pull
+        # and RX auto-push in Com_MainFunction_Tx / Com_RxIndication.
+        # Pattern: *Com_Receive, *Com_TransmitSchedule
+        filtered = [r for r in runnables_map.values()
+                    if not (r.name.endswith("Com_Receive") or
+                            r.name.endswith("Com_TransmitSchedule"))]
+        return filtered
 
     def _detect_asil(self, swc_elem) -> str:
         """Detect ASIL level from ADMIN-DATA annotations. Default QM."""
@@ -811,11 +817,13 @@ class ArxmlReader:
                                 r.period_ms = override["period_ms"]
 
                 # Create runnables from sidecar when ARXML has none
+                # Skip legacy Com bridge runnables (replaced by auto-pull/push)
+                _skip_com_bridge = lambda n: n.endswith("Com_Receive") or n.endswith("Com_TransmitSchedule")
                 missing = set(runnable_overrides.keys()) - found_names
                 if missing:
                     sidecar_runnables = []
                     for rname in runnable_overrides:
-                        if rname not in found_names:
+                        if rname not in found_names and not _skip_com_bridge(rname):
                             rdata = runnable_overrides[rname]
                             sidecar_runnables.append(Runnable(
                                 name=rname,

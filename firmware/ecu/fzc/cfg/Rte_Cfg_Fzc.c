@@ -25,8 +25,6 @@ extern void Swc_Buzzer_MainFunction(void);
 extern void Swc_Buzzer_Init(void);
 extern void Swc_FzcCanMonitor_Check(void);
 extern void Swc_FzcCanMonitor_Init(void);
-extern void Swc_FzcCom_Receive(void);
-extern void Swc_FzcCom_TransmitSchedule(void);
 extern void Swc_FzcCom_Init(void);
 extern void Swc_FzcDcm_Init(void);
 extern void Swc_FzcNvm_Init(void);
@@ -258,7 +256,6 @@ static const Rte_RunnableConfigType fzc_runnable_config[] = {
     /* func,                        periodMs, priority, seId */
     { Can_MainFunction_Read,                      10u,    14u, 0xFFu },
     { Com_MainFunction_Rx,                        10u,    13u, 0xFFu },
-    { Swc_FzcCom_Receive,                         10u,    12u, 0xFFu },
     { Swc_FzcSensorFeeder_MainFunction,           10u,    11u, 0xFFu },
     { Swc_Steering_MainFunction,                  10u,    10u, 0x00u },
     { Swc_Brake_MainFunction,                     10u,     9u, 0x01u },
@@ -267,7 +264,6 @@ static const Rte_RunnableConfigType fzc_runnable_config[] = {
     { Swc_FzcSafety_MainFunction,                 10u,     6u, 0x04u },
     { Swc_Buzzer_MainFunction,                    10u,     5u, 0x05u },
     { Swc_FzcCanMonitor_Check,                    10u,     4u, 0xFFu },
-    { Swc_FzcCom_TransmitSchedule,                10u,     3u, 0xFFu },
     { Com_MainFunction_Tx,                        10u,     2u, 0xFFu },
     { Can_MainFunction_BusOff,                    10u,     1u, 0xFFu },
 };
