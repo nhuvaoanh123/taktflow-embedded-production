@@ -1,0 +1,325 @@
+# Terminal Configuration - Ball Map
+
+> **Source:** TMS570LC4357 Combined Datasheet
+> **PDF:** datasheet-1518516-evaluation-board-launchxl2-570lc43-hercules-hercules.pdf
+> **Pages:** 9-10 (2 pages)
+> **Extracted:** 2026-03-05
+
+---
+
+
+<!-- Page 9 -->
+A B C D E F G H J K L M N P R T U V W
+19 VSS VSS TMSN2HET1
+[10]MIBSPI5
+NCS[0]MIBSPI1
+SIMO[0]MIBSPI1
+NENAMIBSPI5
+CLKMIBSPI5
+SIMO[0]N2HET1
+[28]DMM_
+DATA[0]DCAN3RX AD1EVTAD1IN[15]
+/
+AD2IN[15]AD1IN[22]
+/
+AD2IN[06]AD1IN
+[06]AD1IN[11]
+/
+AD2IN[11]AD2IN[24] VSSAD 19
+18 VSS TCK TDO nTRSTN2HET1
+[08]MIBSPI1
+CLKMIBSPI1
+SOMI[0]MIBSPI5
+NENAMIBSPI5
+SOMI[0]N2HET1
+[0]DMM_
+DATA[1]DCAN3TX AD1IN[24]AD1IN[08]
+/
+AD2IN[08]AD1IN[14]
+/
+AD2IN[14]AD1IN[13]
+/
+AD2IN[13]AD1IN
+[04]AD1IN
+[02]AD2IN[24] 18
+17 TDI nRSTEMIF_
+ADDR[21]EMIF_
+nWEMIBSPI5
+SOMI[1]DMM_
+CLKMIBSPI5
+SIMO[3]MIBSPI5
+SIMO[2]N2HET1
+[31]EMIF_
+nCS[3]EMIF_
+nCS[2]EMIF_
+nCS[4]EMIF_
+nCS[0]AD1IN[25]AD1IN
+[05]AD1IN
+[03]AD1IN[10]
+/
+AD2IN[10]AD1IN
+[01]AD1IN[09]
+/
+AD2IN[09]17
+16 RTCKFRAY
+TXEN1EMIF_
+ADDR[20]EMIF_
+BA[1]MIBSPI5
+SIMO[1]DMM_
+nENAMIBSPI5
+SOMI[3]MIBSPI5
+SOMI[2]DMM_
+SYNCN2HET2
+[08]N2HET2
+[09]N2HET2
+[10]N2HET2
+[11]AD1IN[26]AD1IN[23]
+/
+AD2IN[07]AD1IN[12]
+/
+AD2IN[12]AD1IN[19]
+/
+AD2IN[03]ADREFLO VSSAD 16
+15 FRAYRX1 FRAYTX1EMIF_
+ADDR[19]EMIF_
+ADDR[18]ETM
+DATA[06]ETM
+DATA[05]ETM
+DATA[04]ETM
+DATA[03]ETM
+DATA[02]ETM
+DATA[16] /
+EMIF_
+DATA[0]ETM
+DATA[17] /
+EMIF_
+DATA[1]ETM
+DATA[18] /
+EMIF_
+DATA[2]ETM
+DATA[19] /
+EMIF_
+DATA[3]AD1IN[27] AD1IN[28]AD1IN[21]
+/
+AD2IN[05]AD1IN[20]
+/
+AD2IN[04]ADREFHI VCCAD 15
+14N2HET1
+[26]nERROREMIF_
+ADDR[17]EMIF_
+ADDR[16]ETM
+DATA[07]VCCIO VCCIO VCCIO VCC VCC VCCIO VCCIO VCCIO VCCIO AD1IN[29] AD1IN[30]AD1IN[18]
+/
+AD2IN[02]AD1IN
+[07]AD1IN
+[0]14
+13N2HET1
+[17]N2HET1
+[19]EMIF_
+ADDR[15]N2HET2
+[04]ETM
+DATA[12] /
+EMIF_BA[
+0]VCCIO VCCIOETM
+DATA[01]AD1IN[31]AD1IN[17]
+/
+AD2IN[01]AD1IN[16]
+/
+AD2IN[0]AD2IN[16] 13
+12 ECLKN2HET1
+[04]EMIF_
+ADDR[14]N2HET2
+[05]ETM
+DATA[13] /
+EMIF_nOEVCCIO VSS VSS VCC VSS VSS VCCIOETM
+DATA[0]MIBSPI5
+NCS[3]AD2IN[19] AD2IN[18] AD2IN[17] 12
+11N2HET1
+[14]N2HET1
+[30]EMIF_
+ADDR[13]N2HET2
+[06]ETM
+DATA[14] /
+EMIF_
+nDQM[1]VCCIO VSS VSS VSS VSS VSS VCCPLLETM
+TRACE
+CTLAD2IN[20] AD2IN[21] AD2IN[22] AD2IN[23] 11
+10 DCAN1TX DCAN1RXEMIF_
+ADDR[12]ePWM1BETM
+DATA[15] /
+EMIF_
+nDQM[0]VCC VCC VSS VSS VSS VCC VCCETM
+TRACE
+CLKOUTAD2EVTMIBSPI1
+NCS[4]MIBSPI3
+NCS[0]GIOB[3] 10
+9N2HET1
+[27]FRAY
+TXEN2EMIF_
+ADDR[11]ePWM1AETM
+DATA[08] /
+EMIF_
+ADDR[5]VCC VSS VSS VSS VSS VSS VCCIOETM
+TRACE
+CLKINMDCLKMIBSPI1
+NCS[5]MIBSPI3
+CLKMIBSPI3
+NENA9
+8FRAYRX2 FRAYTX2EMIF_
+ADDR[10]N2HET2[1]ETM
+DATA[09] /
+EMIF_
+ADDR[4]VCCP VSS VSS VCC VSS VSS VCCIOETM
+DATA[31] /
+EMIF_
+DATA[15]N2HET2
+[23]MII_TXD
+[0]MIBSPI3
+SOMIMIBSPI3
+SIMO8
+7 LIN1RX LIN1TXEMIF_
+ADDR[9]N2HET2
+[2]ETM
+DATA[10] /
+EMIF_
+ADDR[3]VCCIO VCCIOETM
+DATA[30] /
+EMIF_
+DATA[14]N2HET2
+[22]MII_TX_
+CLKN2HET1
+[09]nPORRST 7
+6GIOA[4]MIBSPI5
+NCS[1]EMIF_
+ADDR[8]N2HET2
+[0]ETM
+DATA[11] /
+EMIF_
+ADDR[2]VCCIO VCCIO VCCIO VCCIO VCC VCC VCCIO VCCIO VCCIOETM
+DATA[29] /
+EMIF_
+DATA[13]N2HET2
+[21]MII_RX_
+DVN2HET1
+[05]MIBSPI5
+NCS[2]6
+5GIOA[0] GIOA[5]EMIF_
+ADDR[7]EMIF_
+ADDR[1]ETM
+DATA[20] /
+EMIF_
+DATA[4]ETM
+DATA[21] /
+EMIF_
+DATA[5]ETM
+DATA[22] /
+EMIF_
+DATA[6]FLTP2 FLTP1ETM
+DATA[23] /
+EMIF_
+DATA[7]ETM
+DATA[24] /
+EMIF_
+DATA[8]ETM
+DATA[25] /
+EMIF_
+DATA[9]ETM
+DATA[26] /
+EMIF_
+DATA[10]ETM
+DATA[27] /
+EMIF_
+DATA[11]ETM
+DATA[28] /
+EMIF_
+DATA[12]N2HET2
+[20]MII_RX_
+ERMIBSPI3
+NCS[1]N2HET1
+[02]5
+4N2HET1
+[16]N2HET1
+[12]EMIF_
+ADDR[6]EMIF_
+ADDR[0]MII_TXEN MDIOMII_TXD
+[3]N2HET1
+[21]N2HET1
+[23]N2HET2
+[15]N2HET2
+[16]N2HET2
+[17]N2HET2
+[18]N2HET2
+[19]EMIF_
+nCASMII_
+RXCLKMII_RXD
+[0]MII_CRS MII_COL 4
+3N2HET1
+[29]N2HET1
+[22]MIBSPI3
+NCS[3]N2HET2
+[12]N2HET1
+[11]MIBSPI1
+NCS[1]MIBSPI1
+NCS[2]GIOA[6]MIBSPI1
+NCS[3]EMIF_
+CLKEMIF_
+CKEN2HET1
+[25]N2HET2
+[7]EMIF_
+nWAITEMIF_
+nRASMII_RXD
+[1]MII_RXD
+[2]MII_RXD
+[3]N2HET1
+[06]3
+2 VSSMIBSPI3
+NCS[2]GIOA[1]N2HET2
+[13]N2HET2
+[3]GIOB[2] GIOB[5] DCAN2TX GIOB[6] GIOB[1]KELVIN_
+GNDGIOB[0]N2HET1
+[13]N2HET1
+[20]MIBSPI1
+NCS[0]MII_TXD
+[2]TESTN2HET1
+[1]VSS 2
+1 VSS VSS GIOA[2]N2HET2
+[14]GIOA[3] GIOB[7] GIOB[4] DCAN2RXN2HET1
+[18]OSCIN OSCOUT GIOA[7]N2HET1
+[15]N2HET1
+[24]MII_TXD
+[1]N2HET1
+[7]NHET1
+[03]VSS VSS 1
+A B C D E F G H J K L M N P R T U V W
+9TMS570LC4357
+www.ti.com SPNS195C -FEBRUARY 2014 -REVISED JUNE 2016
+Submit Documentation Feedback
+Product Folder Links: TMS570LC4357Terminal Configuration andFunctions Copyright ©2014 -2016, Texas Instruments Incorporated4Terminal Configuration andFunctions
+4.1 ZWT BGA Package Ball-Map (337 Terminal Grid Array)
+Figure 4-1.ZWT Package Pinout. TopView
+Note: Balls canhave multiplexed functions. See Section 4.2.2 fordetailed information.
+
+<!-- Page 10 -->
+10TMS570LC4357
+SPNS195C -FEBRUARY 2014 -REVISED JUNE 2016 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TMS570LC4357Terminal Configuration andFunctions Copyright ©2014 -2016, Texas Instruments Incorporated4.2 Terminal Functions
+Table 4-1through Table 4-27 identify theexternal signal names, theassociated terminal numbers along
+with themechanical package designator, theterminal type (Input, Output, I/O,Power, orGround), whether
+theterminal has any internal pullup/pulldown, whether theterminal can beconfigured asaGIO, and a
+functional terminal description. The first signal name listed istheprimary function forthat terminal. The
+signal name inBold isthefunction being described. Forinformation onhow toselect between different
+multiplexed functions, see the Section 4.2.2 ,Multiplexing ofthis data manual along with the I/O
+Multiplexing Module (IOMM) chapter intheTechnical Reference Manual (TRM) (SPNU563 ).
+NOTE
+IntheTerminal Functions tables below, the"Default PullState" isthestate ofthepullapplied
+totheterminal while nPORRST islowand immediately after nPORRST goes High. The
+default pulldirection may change when software configures thepinforanalternate function.
+The "Pull Type" isthetype ofpullasserted when thesignal name inbold isenabled forthe
+given terminal bytheIOMM control registers.
+AllI/Osignals except nRST areconfigured asinputs while nPORRST islowandimmediately
+after nPORRST goes High. While nPORRST islow, theinput buffers aredisabled, and the
+output buffers aredisabled with thedefault pulls enabled.
+Alloutput-only signals have theoutput buffer disabled and thedefault pull enabled while
+nPORRST islow, and areconfigured asoutputs with thepulls disabled immediately after
+nPORRST goes High.
