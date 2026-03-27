@@ -62,9 +62,25 @@
 **Fix:** Add 120Ω termination at both ends of the CAN bus. SC runs in normal mode (not silent) with TX enabled.
 **Principle:** CAN bus MUST have 120Ω termination at both ends. Single termination can work for RX but fails for TX. Always verify bus termination before debugging CAN TX errors. Don't blame firmware when the physics layer is wrong.
 
-## 11. ThreadX timer thread stack overflow → FZC boot-loop
-**Context:** FZC with `THREADX=1` printed `=== FZC Boot (PLL 170 MHz) ===` then immediately reset. CVC and RZC with ThreadX ran fine.
-**Mistake:** Default `TX_TIMER_THREAD_STACK_SIZE=1024` bytes. FZC's 1ms timer callback dispatches `Rte_MainFunction()` which calls 8+ SWC runnables (Brake, Steering, Lidar, Safety, SensorFeeder, Heartbeat, Buzzer, etc.). Each runnable uses ~100-200 bytes of stack → overflow → HardFault → reset loop.
-**Fix:** Set `TX_TIMER_THREAD_STACK_SIZE=4096` in `tx_user.h`.
-**Why CVC/RZC didn't crash:** Fewer and lighter runnables, total stack usage stayed under 1KB.
-**Principle:** When running application code from RTOS timer callbacks, always check the timer thread stack size. ThreadX's default 1KB is not enough for dispatching multiple SWC runnables. Profile stack usage or set conservatively high (4KB+).
+## 11. ThreadX timer thread stack overflow — three levels of failure
+**Context:** FZC with `THREADX=1`, `Rte_MainFunction()` dispatches 12 SWC runnables from the 1ms timer callback.
+**Root cause:** ThreadX timer thread stack too small for the combined call depth of 12 runnables.
+**Three failure modes at different stack sizes:**
+- **1KB (default):** HardFault → boot-loop. Timer thread dies on first `Rte_MainFunction()` call.
+- **4KB:** Boot succeeds, first dispatch cycle works (3 TX frames), then timer thread silently crashes. `Com_MainFunction_Tx` never called again. Symptom: `com=0 TX=3` — looked like an RTE dispatch bug, led to incorrect workaround (direct `Com_MainFunction_Tx` call in Timer_10ms_Callback).
+- **8KB:** Stable. All 12 runnables dispatch correctly for 20+ minutes. `com=1449 TX=3194` at 15s — proper rates.
+**Misdiagnosis chain:** 4KB fix appeared to work (no boot-loop) → RTE dispatch appeared broken (com=0) → added workaround (direct Com call) → workaround masked the real issue → 8KB revealed the timer crash was the root cause all along.
+**Fix:** `TX_TIMER_THREAD_STACK_SIZE=8192` in `tx_user.h`.
+**Principle:** Stack overflow in RTOS threads doesn't always cause an obvious crash. Partial overflow can silently kill a thread after the first execution, making the symptom look like a logic bug in the dispatched code. When debugging "function never called" in RTOS context, check thread stack size FIRST.
+
+## 12. ThreadX SysTick 100Hz → all timers 10x slow
+**Context:** FZC heartbeat appeared at 500ms instead of 50ms on CAN bus.
+**Mistake:** `tx_initialize_low_level.S` configured SysTick at `SYSTEM_CLOCK/100` = 100Hz (10ms tick). ThreadX timers created with `ticks=1` expected 1ms but ran at 10ms. All timer periods scaled 10x.
+**Fix:** Changed to `SYSTEM_CLOCK/1000` = 1000Hz (1ms tick).
+**Principle:** Verify the RTOS tick rate matches the application's timer assumptions. A 10ms tick with 1-tick timers gives 10ms, not 1ms.
+
+## 13. FDCAN AutoRetransmission=DISABLE → silent after 5 minutes
+**Context:** Changed `AutoRetransmission` from `ENABLE` to `DISABLE` to prevent FDCAN HAL stuck in BUSY state.
+**What actually happened:** The BUSY state was caused by the timer stack overflow (lesson 11), not auto-retransmission. With `DISABLE`, any lost TX frame (bus contention, arbitration loss) was permanently dropped. Over ~5 minutes, enough frames were lost that the FDCAN effectively went silent.
+**Fix:** Restore `AutoRetransmission=ENABLE`. The HAL BUSY issue doesn't occur with 8KB timer stack.
+**Principle:** Don't change CAN protocol settings (auto-retransmission, error handling) to work around software bugs. Fix the software bug (stack overflow) instead. CAN auto-retransmission is a fundamental protocol requirement — disabling it creates subtle long-term failures.
