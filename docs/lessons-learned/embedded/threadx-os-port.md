@@ -61,3 +61,10 @@
 **Debugging methodology:** Systematic test harness (TEST=0..6) isolating variables one at a time: silent vs normal, TX suppressed vs enabled, DAR on/off, PMD preserve, internal loopback, pure HALCoGen. Confirmed ACK (single-bit dominant) survived reflections but multi-bit TX data did not. Internal loopback TX worked → DCAN logic OK. Added 120Ω → TX works.
 **Fix:** Add 120Ω termination at both ends of the CAN bus. SC runs in normal mode (not silent) with TX enabled.
 **Principle:** CAN bus MUST have 120Ω termination at both ends. Single termination can work for RX but fails for TX. Always verify bus termination before debugging CAN TX errors. Don't blame firmware when the physics layer is wrong.
+
+## 11. ThreadX timer thread stack overflow → FZC boot-loop
+**Context:** FZC with `THREADX=1` printed `=== FZC Boot (PLL 170 MHz) ===` then immediately reset. CVC and RZC with ThreadX ran fine.
+**Mistake:** Default `TX_TIMER_THREAD_STACK_SIZE=1024` bytes. FZC's 1ms timer callback dispatches `Rte_MainFunction()` which calls 8+ SWC runnables (Brake, Steering, Lidar, Safety, SensorFeeder, Heartbeat, Buzzer, etc.). Each runnable uses ~100-200 bytes of stack → overflow → HardFault → reset loop.
+**Fix:** Set `TX_TIMER_THREAD_STACK_SIZE=4096` in `tx_user.h`.
+**Why CVC/RZC didn't crash:** Fewer and lighter runnables, total stack usage stayed under 1KB.
+**Principle:** When running application code from RTOS timer callbacks, always check the timer thread stack size. ThreadX's default 1KB is not enough for dispatching multiple SWC runnables. Profile stack usage or set conservatively high (4KB+).
