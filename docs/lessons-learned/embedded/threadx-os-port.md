@@ -54,7 +54,10 @@
 **Fix:** Removed PLATFORM_HIL, replaced with specific countermeasures: 30s grace period (`CVC_POST_INIT_GRACE_CYCLES=3000`), SC relay default to energized, AUTOSAR deadline monitor.
 **Principle:** Never use blanket #ifdef bypasses for testing. Each guard should have its own tunable parameter.
 
-## 10. SC heartbeat timeout → relay OFF → CVC SAFE_STOP
-**Context:** SC monitors FZC/RZC heartbeats. When they timeout, SC de-energizes relay and stops transmitting 0x013. CVC reads relay=0 → SAFE_STOP.
-**Status:** SC DCAN RX sees CVC but not FZC/RZC heartbeats. CAN ID routing in SC needs investigation.
-**Principle:** Test the complete safety chain (SC relay → CVC → zone controllers) before removing bypass guards.
+## 10. SC DCAN TX Bit1 Error → Bus-Off → all heartbeats lost
+**Context:** SC in normal CAN mode (non-silent). TX of SC_Status (0x013) every 100ms. CVC heartbeat (0x010) sometimes received, FZC (0x011) and RZC (0x012) never received. SC showed ES=0x231 (Error Passive + Stuff Error), then kill=5 (Bus-Off).
+**Mistake:** Missing 120Ω termination on the SC end of the CAN bus. Only the Pi's gs_usb had built-in 120Ω on one end. Without dual termination, TX dominant drive caused signal reflections → Bit1 Error (sent recessive, read dominant from reflection) → Error Passive → Bus-Off → all RX killed.
+**Why silent mode masked it:** Silent mode suppresses all TX including ACK, so no dominant drive → no reflections → no errors. This hid the termination problem for months.
+**Debugging methodology:** Systematic test harness (TEST=0..6) isolating variables one at a time: silent vs normal, TX suppressed vs enabled, DAR on/off, PMD preserve, internal loopback, pure HALCoGen. Confirmed ACK (single-bit dominant) survived reflections but multi-bit TX data did not. Internal loopback TX worked → DCAN logic OK. Added 120Ω → TX works.
+**Fix:** Add 120Ω termination at both ends of the CAN bus. SC runs in normal mode (not silent) with TX enabled.
+**Principle:** CAN bus MUST have 120Ω termination at both ends. Single termination can work for RX but fails for TX. Always verify bus termination before debugging CAN TX errors. Don't blame firmware when the physics layer is wrong.

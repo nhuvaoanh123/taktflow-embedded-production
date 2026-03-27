@@ -636,44 +636,44 @@ static const Com_TxPduConfigType fzc_tx_pdu_config[] = {
  * ================================================================== */
 
 static const Com_RxPduConfigType fzc_rx_pdu_config[] = {
-    /* pduId,                     dlc, timeoutMs, e2eProt, dataId, maxDelta, demEvt, smValid, smInvalid */
-    { FZC_COM_RX_ESTOP_BROADCAST,     4u,    30u, TRUE ,  1u,  3u, COM_DEM_EVENT_NONE, 3u, 10u },   /* CAN 0x001 @satisfies SG-008 */
-    { FZC_COM_RX_CVC_HEARTBEAT,     4u,   150u, TRUE ,  2u,  7u, 12, 3u, 3u },   /* CAN 0x010 @satisfies SG-008 */
-    { FZC_COM_RX_RZC_HEARTBEAT,     4u,   150u, TRUE ,  4u,  7u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x012 @satisfies SG-008 */
-    { FZC_COM_RX_SC_STATUS,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x013 @satisfies SG-008 */
-    { FZC_COM_RX_ICU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x014 */
-    { FZC_COM_RX_TCU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x015 */
-    { FZC_COM_RX_BCM_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x016 */
-    { FZC_COM_RX_VEHICLE_STATE,     6u,    30u, TRUE ,  5u,  3u, 12, 3u, 10u },   /* CAN 0x100 @satisfies SG-001,SG-008 */
-    { FZC_COM_RX_TORQUE_REQUEST,     8u,    30u, TRUE ,  6u,  3u, COM_DEM_EVENT_NONE, 3u, 10u },   /* CAN 0x101 @satisfies SG-001 */
-    { FZC_COM_RX_STEER_COMMAND,     8u,    30u, TRUE ,  7u,  3u, COM_DEM_EVENT_NONE, 3u, 10u },   /* CAN 0x102 @satisfies SG-003 */
-    { FZC_COM_RX_BRAKE_COMMAND,     8u,    30u, TRUE ,  8u,  3u, COM_DEM_EVENT_NONE, 3u, 10u },   /* CAN 0x103 @satisfies SG-004 */
-    { FZC_COM_RX_MOTOR_STATUS,     8u,   300u, TRUE , 14u, 12u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x300 @satisfies SG-002,SG-006 */
-    { FZC_COM_RX_MOTOR_CURRENT,     8u,   300u, TRUE , 15u, 12u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x301 @satisfies SG-006 */
-    { FZC_COM_RX_MOTOR_TEMPERATURE,     8u,   300u, TRUE ,  0u, 12u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x302 @satisfies SG-006 */
-    { FZC_COM_RX_BATTERY_STATUS,     6u,  3000u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u },   /* CAN 0x303 */
-    { FZC_COM_RX_BODY_CONTROL_CMD,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x350 */
-    { FZC_COM_RX_LIGHT_STATUS,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x400 */
-    { FZC_COM_RX_INDICATOR_STATE,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x401 */
-    { FZC_COM_RX_DOOR_LOCK_STATUS,     2u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x402 */
-    { FZC_COM_RX_DTC_BROADCAST,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x500 */
-    { FZC_COM_RX_XCP_REQ_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x550 */
-    { FZC_COM_RX_XCP_RESP_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x551 */
-    { FZC_COM_RX_XCP_REQ_FZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x552 */
-    { FZC_COM_RX_XCP_REQ_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x554 */
-    { FZC_COM_RX_XCP_RESP_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x555 */
-    { FZC_COM_RX_XCP_REQ_SC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x556 */
-    { FZC_COM_RX_XCP_RESP_SC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x557 */
-    { FZC_COM_RX_FZC_VIRTUAL_SENSORS,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x600 */
-    { FZC_COM_RX_RZC_VIRTUAL_SENSORS,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x601 */
-    { FZC_COM_RX_UDS_RESP_TCU,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x644 */
-    { FZC_COM_RX_UDS_FUNC_REQUEST,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7DF */
-    { FZC_COM_RX_UDS_PHYS_REQ_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7E0 */
-    { FZC_COM_RX_UDS_PHYS_REQ_FZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7E1 */
-    { FZC_COM_RX_UDS_PHYS_REQ_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7E2 */
-    { FZC_COM_RX_UDS_PHYS_REQ_TCU,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7E3 */
-    { FZC_COM_RX_UDS_RESP_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7E8 */
-    { FZC_COM_RX_UDS_RESP_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u },   /* CAN 0x7EA */
+    /* pduId,                     dlc, timeoutMs, e2eProt, dataId, maxDelta, demEvt, smValid, smInvalid, commStatusSigId */
+    { FZC_COM_RX_ESTOP_BROADCAST,     4u,    30u, TRUE ,  1u,  3u, COM_DEM_EVENT_NONE, 3u, 10u, COM_RTE_SIGNAL_NONE },   /* CAN 0x001 @satisfies SG-008 */
+    { FZC_COM_RX_CVC_HEARTBEAT,     4u,   150u, TRUE ,  2u,  7u, 12, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x010 @satisfies SG-008 */
+    { FZC_COM_RX_RZC_HEARTBEAT,     4u,   150u, TRUE ,  4u,  7u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x012 @satisfies SG-008 */
+    { FZC_COM_RX_SC_STATUS,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x013 @satisfies SG-008 */
+    { FZC_COM_RX_ICU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x014 */
+    { FZC_COM_RX_TCU_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x015 */
+    { FZC_COM_RX_BCM_HEARTBEAT,     4u,  1500u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x016 */
+    { FZC_COM_RX_VEHICLE_STATE,     6u,    30u, TRUE ,  5u,  3u, 12, 3u, 10u, COM_RTE_SIGNAL_NONE },   /* CAN 0x100 @satisfies SG-001,SG-008 */
+    { FZC_COM_RX_TORQUE_REQUEST,     8u,    30u, TRUE ,  6u,  3u, COM_DEM_EVENT_NONE, 3u, 10u, COM_RTE_SIGNAL_NONE },   /* CAN 0x101 @satisfies SG-001 */
+    { FZC_COM_RX_STEER_COMMAND,     8u,    30u, TRUE ,  7u,  3u, COM_DEM_EVENT_NONE, 3u, 10u, COM_RTE_SIGNAL_NONE },   /* CAN 0x102 @satisfies SG-003 */
+    { FZC_COM_RX_BRAKE_COMMAND,     8u,    30u, TRUE ,  8u,  3u, COM_DEM_EVENT_NONE, 3u, 10u, COM_RTE_SIGNAL_NONE },   /* CAN 0x103 @satisfies SG-004 */
+    { FZC_COM_RX_MOTOR_STATUS,     8u,   300u, TRUE , 14u, 12u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x300 @satisfies SG-002,SG-006 */
+    { FZC_COM_RX_MOTOR_CURRENT,     8u,   300u, TRUE , 15u, 12u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x301 @satisfies SG-006 */
+    { FZC_COM_RX_MOTOR_TEMPERATURE,     8u,   300u, TRUE ,  0u, 12u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x302 @satisfies SG-006 */
+    { FZC_COM_RX_BATTERY_STATUS,     6u,  3000u, TRUE ,  0u, 14u, COM_DEM_EVENT_NONE, 3u, 3u, COM_RTE_SIGNAL_NONE },   /* CAN 0x303 */
+    { FZC_COM_RX_BODY_CONTROL_CMD,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x350 */
+    { FZC_COM_RX_LIGHT_STATUS,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x400 */
+    { FZC_COM_RX_INDICATOR_STATE,     4u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x401 */
+    { FZC_COM_RX_DOOR_LOCK_STATUS,     2u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x402 */
+    { FZC_COM_RX_DTC_BROADCAST,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x500 */
+    { FZC_COM_RX_XCP_REQ_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x550 */
+    { FZC_COM_RX_XCP_RESP_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x551 */
+    { FZC_COM_RX_XCP_REQ_FZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x552 */
+    { FZC_COM_RX_XCP_REQ_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x554 */
+    { FZC_COM_RX_XCP_RESP_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x555 */
+    { FZC_COM_RX_XCP_REQ_SC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x556 */
+    { FZC_COM_RX_XCP_RESP_SC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x557 */
+    { FZC_COM_RX_FZC_VIRTUAL_SENSORS,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x600 */
+    { FZC_COM_RX_RZC_VIRTUAL_SENSORS,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x601 */
+    { FZC_COM_RX_UDS_RESP_TCU,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x644 */
+    { FZC_COM_RX_UDS_FUNC_REQUEST,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7DF */
+    { FZC_COM_RX_UDS_PHYS_REQ_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7E0 */
+    { FZC_COM_RX_UDS_PHYS_REQ_FZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7E1 */
+    { FZC_COM_RX_UDS_PHYS_REQ_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7E2 */
+    { FZC_COM_RX_UDS_PHYS_REQ_TCU,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7E3 */
+    { FZC_COM_RX_UDS_RESP_CVC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7E8 */
+    { FZC_COM_RX_UDS_RESP_RZC,     8u,     0u, FALSE,  0u,  2u, COM_DEM_EVENT_NONE, 0u, 0u, COM_RTE_SIGNAL_NONE },   /* CAN 0x7EA */
 };
 
 #define FZC_COM_RX_PDU_COUNT  (sizeof(fzc_rx_pdu_config) / sizeof(fzc_rx_pdu_config[0]))

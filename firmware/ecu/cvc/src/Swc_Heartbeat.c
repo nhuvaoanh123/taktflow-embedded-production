@@ -77,14 +77,15 @@ static boolean initialized;
 
 /** @brief E2E SM per-ECU configurations (const, flash)
  *  @safety_req SWR-CVC-022 */
-static const E2E_SmConfigType fzc_sm_config = {
+/* TODO:ISO Phase 3: E2E_Sm_Check() will use these configs */
+static const E2E_SmConfigType __attribute__((unused)) fzc_sm_config = {
     CVC_E2E_SM_FZC_WINDOW,
     CVC_E2E_SM_FZC_MIN_OK_INIT,
     CVC_E2E_SM_FZC_MAX_ERR_VALID,
     CVC_E2E_SM_FZC_MIN_OK_INV
 };
 
-static const E2E_SmConfigType rzc_sm_config = {
+static const E2E_SmConfigType __attribute__((unused)) rzc_sm_config = {
     CVC_E2E_SM_RZC_WINDOW,
     CVC_E2E_SM_RZC_MIN_OK_INIT,
     CVC_E2E_SM_RZC_MAX_ERR_VALID,
