@@ -296,6 +296,8 @@ void Timer_1ms_Callback(ULONG arg)
 void Timer_10ms_Callback(ULONG arg)
 {
     (void)arg;
+    Com_MainFunction_Tx();
+    Com_MainFunction_Rx();
     CanTp_MainFunction();
     Dcm_MainFunction();
     BswM_MainFunction();

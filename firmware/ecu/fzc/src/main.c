@@ -340,9 +340,11 @@ static volatile uint32 tick_us;
  * @note   Executes in ThreadX timer thread context.
  *         Dispatches all RTE runnables configured at 1ms period.
  */
+volatile uint32 g_dbg_1ms_count = 0u;
 void Timer_1ms_Callback(ULONG arg)
 {
     (void)arg;
+    g_dbg_1ms_count++;
     Rte_MainFunction();
 }
 
@@ -355,6 +357,8 @@ void Timer_1ms_Callback(ULONG arg)
 void Timer_10ms_Callback(ULONG arg)
 {
     (void)arg;
+    Com_MainFunction_Tx();  /* Explicit TX dispatch — RTE dispatch not working in ThreadX */
+    Com_MainFunction_Rx();
     Dcm_MainFunction();
     BswM_MainFunction();
     CanSM_MainFunction();

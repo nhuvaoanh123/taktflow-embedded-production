@@ -105,7 +105,7 @@ static Std_ReturnType Can_Hw_InitMode(uint32 mode)
     hfdcan1.Init.ClockDivider         = FDCAN_CLOCK_DIV1;
     hfdcan1.Init.FrameFormat          = FDCAN_FRAME_CLASSIC;
     hfdcan1.Init.Mode                 = mode;
-    hfdcan1.Init.AutoRetransmission   = ENABLE;
+    hfdcan1.Init.AutoRetransmission   = DISABLE;  /* DAR: drop failed TX instead of infinite retry */
     hfdcan1.Init.TransmitPause        = DISABLE;
     hfdcan1.Init.ProtocolException    = DISABLE;
     hfdcan1.Init.NominalPrescaler     = 17u;

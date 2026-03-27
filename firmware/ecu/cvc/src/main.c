@@ -338,6 +338,8 @@ void Timer_10ms_Callback(ULONG arg)
 {
     (void)arg;
     Swc_CvcCom_TransmitSchedule(Main_Hw_GetTick() / 1000u);
+    Com_MainFunction_Tx();
+    Com_MainFunction_Rx();
     Dcm_MainFunction();
     BswM_MainFunction();
     CanSM_MainFunction();
