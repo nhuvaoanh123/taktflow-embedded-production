@@ -19,6 +19,9 @@ on:
         options: ['mixed', 'vecu-only']
         default: 'mixed'
 
+permissions:
+  contents: read
+
 jobs:
   # --- Python hop-by-hop tests (mixed bench: 3 vECU + 4 physical) ---
   hil-hop-tests:

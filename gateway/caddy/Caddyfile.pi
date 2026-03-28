@@ -2,6 +2,13 @@
 # Access at http://192.168.0.195 from local network
 
 :80 {
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
     reverse_proxy /ws/telemetry localhost:8080
     reverse_proxy /api/sap/* localhost:8090
     reverse_proxy /api/fault/* localhost:8091

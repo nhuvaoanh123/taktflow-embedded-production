@@ -78,6 +78,12 @@ services:
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
     volumes:
       - nvm_cvc:/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Front Zone Controller ---
@@ -101,6 +107,12 @@ services:
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
     volumes:
       - nvm_fzc:/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Rear Zone Controller ---
@@ -124,6 +136,12 @@ services:
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
     volumes:
       - nvm_rzc:/tmp
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Safety Controller ---
@@ -145,6 +163,12 @@ services:
       - CAN_INTERFACE=vcan1
       - ECU_NAME=sc
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Body Control Module ---
@@ -166,6 +190,12 @@ services:
       - CAN_INTERFACE=vcan1
       - ECU_NAME=bcm
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Instrument Cluster Unit ---
@@ -189,6 +219,12 @@ services:
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
     stdin_open: true
     tty: true
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Telematics Control Unit ---
@@ -210,6 +246,12 @@ services:
       - CAN_INTERFACE=vcan1
       - ECU_NAME=tcu
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Godot Bridge (replaces plant-sim) ---
@@ -238,6 +280,12 @@ services:
       - BRIDGE_RATE=100
       - BRIDGE_VCAN_START=0
       - COMPOSE_FILE=/opt/taktflow-embedded/docker/docker-compose.gil.yml
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Mosquitto MQTT Broker (local only) ---
@@ -251,6 +299,12 @@ services:
       - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro
       - ../gateway/mosquitto/passwd:/mosquitto/config/passwd:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u taktflow -P taktflow-dev -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- CAN-to-MQTT Gateway ---
@@ -280,6 +334,12 @@ services:
       - MQTT_USER=${MQTT_USER:-taktflow}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
       - SAP_QM_API_URL=http://localhost:8090
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan1 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- WebSocket Telemetry Bridge ---
@@ -302,6 +362,12 @@ services:
       - MQTT_USER=${MQTT_USER:-taktflow}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
       - WS_PORT=8080
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # --- Caddy Reverse Proxy (LAN access) ---
@@ -318,6 +384,12 @@ services:
     depends_on:
       ws-bridge:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:80/ || exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- SAP QM Mock API ---
@@ -340,6 +412,12 @@ services:
       - MQTT_USER=${MQTT_USER:-taktflow}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
       - SAP_PORT=8090
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # --- ML Anomaly Detection (edge inference) ---
@@ -361,6 +439,12 @@ services:
       - MQTT_PORT=1883
       - MQTT_USER=${MQTT_USER:-taktflow}
       - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f python || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # --- Docker Socket Proxy (filtered API for fault-inject) ---
@@ -385,6 +469,12 @@ services:
       SYSTEM: 0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:2375/_ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Fault Injection API ---
@@ -416,6 +506,12 @@ services:
       - SIL_TIME_SCALE=${SIL_TIME_SCALE:-1}
       - DOCKER_HOST=tcp://127.0.0.1:2375
       - FAULT_API_KEY=${FAULT_API_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # --- Cloud Connector (local MQTT → AWS IoT Core) ---
@@ -440,9 +536,15 @@ services:
       - AWS_IOT_ENDPOINT=${AWS_IOT_ENDPOINT:-}
       - AWS_IOT_PORT=8883
       - AWS_CERT_DIR=/certs
-      - DEVICE_ID=taktflow-pi-001
+      - DEVICE_ID=${DEVICE_ID:-taktflow-dev-001}
     volumes:
       - ./certs:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f python || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 volumes:

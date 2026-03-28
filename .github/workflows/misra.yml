@@ -19,6 +19,9 @@ on:
       - 'tools/misra/**'
       - '.github/workflows/misra.yml'
 
+permissions:
+  contents: read
+
 jobs:
   misra:
     name: MISRA C:2012 Analysis

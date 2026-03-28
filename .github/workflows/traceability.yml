@@ -12,6 +12,9 @@ on:
   pull_request:
     paths: ['docs/**', 'firmware/**', 'test/**', 'gateway/**', 'tools/trace/**']
 
+permissions:
+  contents: read
+
 jobs:
   traceability:
     name: Traceability Matrix

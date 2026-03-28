@@ -14,7 +14,7 @@ ENV MQTT_PORT=1883
 ENV AWS_IOT_ENDPOINT=""
 ENV AWS_IOT_PORT=8883
 ENV AWS_CERT_DIR=/certs
-ENV DEVICE_ID=taktflow-pi-001
+ENV DEVICE_ID=""
 
 USER appuser
 CMD ["python", "-m", "cloud_connector.main"]

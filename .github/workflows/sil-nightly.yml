@@ -10,6 +10,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  contents: read
+
 env:
   CAN_CHANNEL: vcan0
   MQTT_HOST: localhost

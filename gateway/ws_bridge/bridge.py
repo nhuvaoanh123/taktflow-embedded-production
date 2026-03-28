@@ -600,9 +600,22 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Taktflow Telemetry Bridge", lifespan=lifespan)
 
 
+_ALLOWED_ORIGINS = {
+    "https://taktflow-systems.com",
+    "https://www.taktflow-systems.com",
+    "https://sil.taktflow-systems.com",
+    "http://localhost:3000",
+}
+
+
 @app.websocket("/ws/telemetry")
 async def telemetry_ws(websocket: WebSocket):
     """WebSocket endpoint for live telemetry."""
+    origin = websocket.headers.get("origin", "")
+    if origin and origin not in _ALLOWED_ORIGINS:
+        await websocket.close(code=4003, reason="Origin not allowed")
+        log.warning("Rejected WebSocket from origin: %s", origin)
+        return
     await websocket.accept()
     ws_clients.add(websocket)
     log.info("WebSocket client connected (%d total)", len(ws_clients))
@@ -647,7 +660,7 @@ async def broadcast_loop():
 
 def main():
     port = int(os.environ.get("WS_PORT", "8080"))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
 
 
 if __name__ == "__main__":

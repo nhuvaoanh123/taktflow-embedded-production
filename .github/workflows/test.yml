@@ -12,6 +12,9 @@ on:
   pull_request:
     paths: ['firmware/**', 'test/**', '.github/workflows/test.yml']
 
+permissions:
+  contents: read
+
 jobs:
   bsw-unit-tests:
     name: BSW Unit Tests + Coverage

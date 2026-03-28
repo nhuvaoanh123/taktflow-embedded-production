@@ -152,6 +152,11 @@ class FaultApiClient:
         self.client_id = client_id
         self.ssl_context = None
         if insecure_tls:
+            import warnings
+            warnings.warn(
+                "TLS verification disabled — DO NOT use in production",
+                stacklevel=2,
+            )
             self.ssl_context = ssl._create_unverified_context()
 
     def acquire(self):
