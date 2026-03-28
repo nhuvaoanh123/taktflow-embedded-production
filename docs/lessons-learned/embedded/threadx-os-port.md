@@ -84,3 +84,16 @@
 **What actually happened:** The BUSY state was caused by the timer stack overflow (lesson 11), not auto-retransmission. With `DISABLE`, any lost TX frame (bus contention, arbitration loss) was permanently dropped. Over ~5 minutes, enough frames were lost that the FDCAN effectively went silent.
 **Fix:** Restore `AutoRetransmission=ENABLE`. The HAL BUSY issue doesn't occur with 8KB timer stack.
 **Principle:** Don't change CAN protocol settings (auto-retransmission, error handling) to work around software bugs. Fix the software bug (stack overflow) instead. CAN auto-retransmission is a fundamental protocol requirement — disabling it creates subtle long-term failures.
+
+## 14. CVC FAULT code path overflows 8KB timer stack
+**Context:** SC silent mode (no 0x013 TX) → CVC reads relay=killed → CVC enters FAULT state → timer thread crashes after ~20s. SC normal mode (TEST=5, TX enabled) → CVC reads relay=energized → CVC stays in RUN → stable for 20+ min.
+**Root cause:** CVC FAULT code path is heavier than RUN path (Dem reporting, fault logging, safety shutdown). The additional stack usage pushes the 8KB timer thread over the limit. RUN path stays under 8KB.
+**Misdiagnosis:** Tried 16KB stack — didn't help because CVC FAULT also triggers other ECUs to go FAULT (cascading: no CVC heartbeat → FZC/RZC timeout → FAULT). The cascade makes ALL ECUs take the heavy code path simultaneously.
+**Fix:** Keep SC in normal mode (TEST=5) so CVC receives 0x013 and stays in RUN. The bench SN65HVD230 causes intermittent Error Passive under load, but CVC/FZC/RZC heartbeat reception survives (occasional drops recover within timeout window).
+**Principle:** ECU operating state affects stack usage. FAULT/DEGRADED code paths are often heavier than RUN. When debugging RTOS stack issues, test in BOTH normal and fault states. A stack that survives RUN may crash in FAULT.
+
+## 15. Bench CAN transceiver limits — SN65HVD230 on breadboard
+**Context:** SC DCAN TX causes Bit1 Error → Error Passive under full bus load (~963 frames/s, ~40% utilization at 500 kbps). Works clean on quiet bus (15 min soak, 0 errors). Fails intermittently under load → selective heartbeat loss (whichever ECU's timing aligns with SC error recovery window).
+**Root cause:** Breadboard SN65HVD230 with jumper wires can't sustain clean TX signal at 500k under contention. Signal integrity degrades at high bus load. Not a firmware bug.
+**Fix for bench:** SC operates in normal mode (TEST=5) which allows TX but accepts occasional Error Passive. The heartbeat timeout/recovery logic handles brief drops. Production PCB with proper differential routing will eliminate this.
+**Principle:** Don't chase firmware bugs when the physics layer is marginal. Characterize the hardware first (quiet bus vs loaded bus), then set firmware expectations accordingly. For bench testing, accept the hardware limitations and design firmware to be resilient.
