@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/godot_bridge/bridge.py /app/bridge.py
 
-RUN useradd -r -s /usr/sbin/nologin appuser
+RUN useradd -r -s /usr/sbin/nologin appuser && chown -R appuser /app
 
 ENV CAN_INTERFACE=can0
 ENV GODOT_HOST=192.168.0.158

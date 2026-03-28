@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/cloud_connector/ /app/cloud_connector/
 
-RUN useradd -r -s /usr/sbin/nologin appuser
+RUN useradd -r -s /usr/sbin/nologin appuser && chown -R appuser /app
 
 ENV MQTT_HOST=localhost
 ENV MQTT_PORT=1883

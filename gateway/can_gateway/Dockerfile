@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY gateway/taktflow_vehicle.dbc /app/taktflow_vehicle.dbc
 COPY gateway/can_gateway/ /app/can_gateway/
 
-RUN useradd -r -s /usr/sbin/nologin appuser
+RUN useradd -r -s /usr/sbin/nologin appuser && chown -R appuser /app
 
 ENV DBC_PATH=/app/taktflow_vehicle.dbc
 ENV CAN_CHANNEL=vcan0

@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/sap_qm_mock/ /app/sap_qm_mock/
 
-RUN useradd -r -s /usr/sbin/nologin appuser
+RUN useradd -r -s /usr/sbin/nologin appuser && chown -R appuser /app
 
 ENV SAP_PORT=8090
 ENV MQTT_HOST=localhost
