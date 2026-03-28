@@ -26,6 +26,7 @@ services:
     mem_limit: 128m
     cpus: 0.5
     cap_drop: [ALL]
+    cap_add: [SETGID, SETUID, DAC_OVERRIDE]
     volumes:
       - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro

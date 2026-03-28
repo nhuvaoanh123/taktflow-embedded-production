@@ -23,6 +23,10 @@ services:
     mem_limit: 128m
     cpus: 0.5
     cap_drop: [ALL]
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
     volumes:
       - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro
@@ -198,6 +202,10 @@ services:
     mem_limit: 128m
     cpus: 0.25
     cap_drop: [ALL]
+    cap_add:
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
     volumes:
       - ../gateway/caddy/Caddyfile.pi:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -223,7 +231,9 @@ services:
     cpus: 0.5
     cap_drop: [ALL]
     read_only: true
-    tmpfs: [/tmp]
+    tmpfs:
+      - /tmp
+      - /app/sap_qm_mock:size=10m
     depends_on:
       mqtt-broker:
         condition: service_started
@@ -251,7 +261,9 @@ services:
     cpus: 1.0
     cap_drop: [ALL]
     read_only: true
-    tmpfs: [/tmp]
+    tmpfs:
+      - /tmp
+      - /app/ml_inference:size=50m
     depends_on:
       mqtt-broker:
         condition: service_started
