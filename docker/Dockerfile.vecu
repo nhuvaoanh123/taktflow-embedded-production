@@ -32,12 +32,8 @@ WORKDIR /build
 # DIAG=1 enables SIL diagnostic printf for state machine tracing.
 RUN set -e && for ecu in bcm icu tcu cvc fzc rzc sc; do \
         echo "=== Building $ecu ===" && \
-        rm -rf build && \
-        make -f firmware/platform/posix/Makefile.posix TARGET=$ecu DIAG=1 && \
-        cp build/${ecu}_posix /tmp/${ecu}_posix; \
-    done && \
-    mkdir -p build && \
-    cp /tmp/*_posix build/
+        make -f firmware/platform/posix/Makefile.posix TARGET=$ecu DIAG=1; \
+    done
 
 # ---------------------------------------------------------------------------
 # Runtime stage — minimal image with CAN utilities
@@ -51,13 +47,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy compiled binaries from builder
-COPY --from=builder /build/build/bcm_posix /usr/local/bin/bcm
-COPY --from=builder /build/build/icu_posix /usr/local/bin/icu
-COPY --from=builder /build/build/tcu_posix /usr/local/bin/tcu
-COPY --from=builder /build/build/cvc_posix /usr/local/bin/cvc
-COPY --from=builder /build/build/fzc_posix /usr/local/bin/fzc
-COPY --from=builder /build/build/rzc_posix /usr/local/bin/rzc
-COPY --from=builder /build/build/sc_posix  /usr/local/bin/sc
+COPY --from=builder /build/build/bcm/bcm_posix /usr/local/bin/bcm
+COPY --from=builder /build/build/icu/icu_posix /usr/local/bin/icu
+COPY --from=builder /build/build/tcu/tcu_posix /usr/local/bin/tcu
+COPY --from=builder /build/build/cvc/cvc_posix /usr/local/bin/cvc
+COPY --from=builder /build/build/fzc/fzc_posix /usr/local/bin/fzc
+COPY --from=builder /build/build/rzc/rzc_posix /usr/local/bin/rzc
+COPY --from=builder /build/build/sc/sc_posix   /usr/local/bin/sc
 
 # Default CAN interface (host vcan0 via network_mode: host)
 ENV CAN_INTERFACE=vcan0

@@ -41,7 +41,7 @@ BSW       = $(FW)/bsw
 ECU       = $(FW)/ecu
 PLAT      = $(FW)/platform/posix
 UNITY     = $(FW)/lib/vendor/unity
-BUILD     = build
+BUILD     = build/$(TARGET)
 
 # --- BSW include paths ---
 BSW_INC = \
@@ -232,7 +232,11 @@ coverage: clean $(OUTPUT) $(TEST_BINS)
 
 clean:
 	rm -rf $(BUILD) coverage
-	@echo "=== Cleaned ==="
+	@echo "=== Cleaned $(TARGET) ==="
+
+clean-all:
+	rm -rf build coverage
+	@echo "=== Cleaned all ==="
 
 # =============================================================================
 # MISRA C:2012 Static Analysis (cppcheck + MISRA addon)
@@ -261,7 +265,9 @@ MISRA_BSW_SRCS = \
     $(BSW)/services/WdgM/src/WdgM.c $(BSW)/services/BswM/src/BswM.c \
     $(BSW)/services/NvM/src/NvM.c $(BSW)/services/Det/src/Det.c \
     $(BSW)/services/SchM/src/SchM.c $(BSW)/services/CanTp/src/CanTp.c \
-    $(BSW)/rte/src/Rte.c
+    $(BSW)/rte/src/Rte.c \
+    $(BSW)/services/CanSM/src/CanSM.c $(BSW)/services/FiM/src/FiM.c \
+    $(BSW)/services/Xcp/src/Xcp.c
 
 # --- ECU application sources (src/ + cfg/, no test/) ---
 MISRA_ECU_TARGETS = bcm icu tcu cvc fzc rzc

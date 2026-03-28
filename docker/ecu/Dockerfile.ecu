@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ARG ECU_NAME
-COPY --from=builder /build/build/${ECU_NAME}_posix /app/${ECU_NAME}
+COPY --from=builder /build/build/${ECU_NAME}/${ECU_NAME}_posix /app/${ECU_NAME}
 
 COPY docker/ecu/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
