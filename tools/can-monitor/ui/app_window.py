@@ -149,8 +149,8 @@ class AppWindow(QMainWindow):
 
         # ---- Remote TCP bridges (always available, any OS) ----
         self._port_combo.addItem(
-            "🟣 QNX Pi 4 SIL (192.168.137.184:9877)",
-            ("remote", "192.168.137.184", 9877)
+            "🟣 QNX Pi 4 SIL (192.168.0.197:9877)",
+            ("remote", "192.168.0.197", 9877)
         )
         self._port_combo.addItem(
             "🌐 Linux vcan0 (laptop 192.168.0.158:9876)",

@@ -15,9 +15,9 @@
 
 ## How to Start the SIL
 
-### QNX Pi (192.168.137.184, user: qnxuser)
+### QNX Pi (192.168.0.197, user: qnxuser)
 ```bash
-ssh qnxuser@192.168.137.184
+ssh qnxuser@192.168.0.197
 # Kill any leftovers
 slay -f -s SIGKILL cvc_qnx fzc_qnx rzc_qnx sc_qnx python3 2>/dev/null
 sleep 2
@@ -112,8 +112,8 @@ Run CAN gateway on laptop: PCAN-USB → MQTT → Netcup VPS → dashboard.
 
 | Service | Host | Port |
 |---------|------|------|
-| QNX CAN bridge | 192.168.137.184 | 9879 |
+| QNX CAN bridge | 192.168.0.197 | 9879 |
 | Laptop CAN bridge | 192.168.0.158 | 9876 |
 | MQTT broker | localhost (laptop) | 1883 |
-| CAN monitor (QNX) | 192.168.137.184 | 9879 |
+| CAN monitor (QNX) | 192.168.0.197 | 9879 |
 | CAN monitor (laptop) | 192.168.0.158 | 9876 |

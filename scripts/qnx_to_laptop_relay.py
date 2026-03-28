@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Windows relay: QNX Pi (192.168.137.184) <-> Laptop vcan0 (192.168.0.158)
+"""Windows relay: QNX Pi (192.168.0.197) <-> Laptop vcan0 (192.168.0.158)
 
 Bridges two TCP CAN bridges:
-- QNX Pi: 192.168.137.184:9877 (UDP multicast CAN -> TCP)
+- QNX Pi: 192.168.0.197:9877 (UDP multicast CAN -> TCP)
 - Laptop: 192.168.0.158:9876 (TCP -> vcan0, bidirectional)
 
-Run on Windows (which has access to both subnets).
+Run on Windows (all devices on same LAN 192.168.0.x).
 QNX frames appear on laptop vcan0 -> Linux ECUs (BCM/TCU/ICU) see them.
 """
 import socket
@@ -13,7 +13,7 @@ import threading
 import sys
 import time
 
-QNX_HOST = "192.168.137.184"
+QNX_HOST = "192.168.0.197"
 QNX_PORT = 9877
 LAPTOP_HOST = "192.168.0.158"
 LAPTOP_PORT = 9876  # Laptop's taktflow-can-bridge service
