@@ -3,13 +3,11 @@
 # Physical ECUs (CVC, FZC, RZC, SC) run on real hardware via CAN bridge
 #
 # Prerequisites:
-#   sudo scripts/hil/setup_can_bridge.sh    # vcan0 ↔ can0 bridge
+#   sudo scripts/hil/setup_can_bridge.sh    # vcan0 <-> can0 bridge
 #   scripts/hil/flash_all.sh                # flash physical ECUs
 #
 # Usage:
 #   docker compose -f docker/docker-compose.hil.yml up --build
-
-version: "3.8"
 
 services:
   # --- vECUs (QM, POSIX on laptop) ---
@@ -22,9 +20,18 @@ services:
       args:
         ECU_NAME: bcm
     network_mode: host
-    cap_add: [NET_ADMIN]
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=vcan0
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan0 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # Telematic Control Unit (QM)
@@ -35,9 +42,18 @@ services:
       args:
         ECU_NAME: tcu
     network_mode: host
-    cap_add: [NET_ADMIN]
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=vcan0
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan0 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # Instrument Cluster Unit (QM)
@@ -48,10 +64,19 @@ services:
       args:
         ECU_NAME: icu
     network_mode: host
-    cap_add: [NET_ADMIN]
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=vcan0
       - TERM=dumb
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan0 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Infrastructure ---
@@ -62,18 +87,40 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.plant-sim
     network_mode: host
-    cap_add: [NET_ADMIN]
+    mem_limit: 256m
+    cpus: 1.0
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - MQTT_HOST=localhost
       - MQTT_PORT=1883
+      - MQTT_USER=${MQTT_USER:-taktflow}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
       - CAN_INTERFACE=vcan0
     depends_on: [mqtt]
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show vcan0 2>/dev/null | grep -q UP || ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # MQTT Broker (fault injection + telemetry)
   mqtt:
     image: eclipse-mosquitto:2
     network_mode: host
+    mem_limit: 128m
+    cpus: 0.5
+    cap_drop: [ALL]
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro
+      - ../gateway/mosquitto/passwd:/mosquitto/config/passwd:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u taktflow -P taktflow-dev -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped

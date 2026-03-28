@@ -41,6 +41,9 @@ DBC_PATH = os.environ.get("DBC_PATH", "gateway/taktflow_vehicle.dbc")
 MQTT_HOST = os.environ.get("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 MQTT_TOPIC = "taktflow/command/plant_inject"
+_MQTT_USER = os.environ.get("MQTT_USER", "taktflow")
+_MQTT_PASS = os.environ.get("MQTT_PASSWORD", "taktflow-dev")
+MQTT_AUTH = {"username": _MQTT_USER, "password": _MQTT_PASS} if _MQTT_USER else None
 
 # HIL uses can0 (physical) by default; test runner observes on can0 which
 # sees all traffic from both vcan0 (bridged) and physical ECUs
@@ -124,7 +127,7 @@ def precondition_all_ecus_healthy(bus, timeout=15.0):
     try:
         mqtt_pub.single(
             MQTT_TOPIC, json.dumps({"type": "reset"}),
-            hostname=MQTT_HOST, port=MQTT_PORT,
+            hostname=MQTT_HOST, port=MQTT_PORT, auth=MQTT_AUTH,
         )
         print("  [OK] Plant-sim faults reset via MQTT")
     except Exception as e:
@@ -336,7 +339,7 @@ def mqtt_inject(cmd_type, **kwargs):
     payload = {"type": cmd_type}
     payload.update(kwargs)
     mqtt_pub.single(MQTT_TOPIC, json.dumps(payload),
-                    hostname=MQTT_HOST, port=MQTT_PORT)
+                    hostname=MQTT_HOST, port=MQTT_PORT, auth=MQTT_AUTH)
 
 
 def uds_ecu_reset_rzc(bus_or_channel=None):

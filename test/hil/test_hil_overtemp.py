@@ -29,7 +29,7 @@ import cantools
 import paho.mqtt.publish as mqtt_pub
 
 from hil_test_lib import (
-    DBC_PATH, MQTT_HOST, MQTT_PORT, MQTT_TOPIC,
+    DBC_PATH, MQTT_HOST, MQTT_PORT, MQTT_TOPIC, MQTT_AUTH,
     CAN_VEHICLE_STATE, CAN_MOTOR_STATUS, CAN_MOTOR_TEMP,
     CAN_RZC_VSENSOR, CAN_DTC,
     STATE_NAMES, ECU_NAMES,
@@ -101,7 +101,7 @@ def main():
     def _sustain():
         while not _inject_stop.is_set():
             mqtt_pub.single(MQTT_TOPIC, json.dumps({"type": "inject_temp", "temp_c": 110.0}),
-                            hostname=MQTT_HOST, port=MQTT_PORT)
+                            hostname=MQTT_HOST, port=MQTT_PORT, auth=MQTT_AUTH)
             time.sleep(0.1)
     t = threading.Thread(target=_sustain, daemon=True)
     t.start()

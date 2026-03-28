@@ -23,8 +23,19 @@ services:
   mqtt:
     image: eclipse-mosquitto:2
     network_mode: host
+    mem_limit: 128m
+    cpus: 0.5
+    cap_drop: [ALL]
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro
+      - ../gateway/mosquitto/passwd:/mosquitto/config/passwd:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h 127.0.0.1 -p 1883 -u taktflow -P taktflow-dev -t '$$SYS/broker/uptime' -C 1 -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- Plant Simulator ---
@@ -33,6 +44,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.plant-sim
     network_mode: host
+    mem_limit: 256m
+    cpus: 1.0
+    cap_drop: [ALL]
     cap_add: [NET_ADMIN, NET_RAW]
     depends_on:
       mqtt:
@@ -42,6 +56,14 @@ services:
       - DBC_PATH=/app/gateway/taktflow_vehicle.dbc
       - MQTT_HOST=localhost
       - MQTT_PORT=1883
+      - MQTT_USER=${MQTT_USER:-taktflow}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-taktflow-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   # --- vECUs (BCM, ICU, TCU on can0 — no bridge needed) ---
@@ -50,10 +72,19 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=can0
       - ECU_NAME=bcm
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   icu:
@@ -61,10 +92,19 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=can0
       - ECU_NAME=icu
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped
 
   tcu:
@@ -72,8 +112,17 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add: [NET_ADMIN, NET_RAW]
     environment:
       - CAN_INTERFACE=can0
       - ECU_NAME=tcu
+    healthcheck:
+      test: ["CMD-SHELL", "ip link show can0 2>/dev/null | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     restart: unless-stopped

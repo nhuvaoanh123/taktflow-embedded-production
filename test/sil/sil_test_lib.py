@@ -33,6 +33,9 @@ DBC_PATH = "gateway/taktflow_vehicle.dbc"
 MQTT_HOST = os.environ.get("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 MQTT_TOPIC = "taktflow/command/plant_inject"
+_MQTT_USER = os.environ.get("MQTT_USER", "taktflow")
+_MQTT_PASS = os.environ.get("MQTT_PASSWORD", "taktflow-dev")
+MQTT_AUTH = {"username": _MQTT_USER, "password": _MQTT_PASS} if _MQTT_USER else None
 CAN_CHANNEL = os.environ.get("CAN_INTERFACE", "vcan0")
 
 CAN_VEHICLE_STATE = 0x100
@@ -135,7 +138,7 @@ def mqtt_inject(cmd_type, **kwargs):
     payload = {"type": cmd_type}
     payload.update(kwargs)
     mqtt_pub.single(MQTT_TOPIC, json.dumps(payload),
-                    hostname=MQTT_HOST, port=MQTT_PORT)
+                    hostname=MQTT_HOST, port=MQTT_PORT, auth=MQTT_AUTH)
 
 
 def mqtt_reset():

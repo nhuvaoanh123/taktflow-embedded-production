@@ -350,12 +350,16 @@ def inject_mqtt_fault(
     try:
         import paho.mqtt.publish as publish
 
+        _user = os.environ.get("MQTT_USER", "taktflow")
+        _pass = os.environ.get("MQTT_PASSWORD", "taktflow-dev")
+        _auth = {"username": _user, "password": _pass} if _user else None
         publish.single(
             topic,
             payload=json.dumps(payload),
             hostname=host,
             port=port,
             qos=0,
+            auth=_auth,
         )
         log.info("MQTT inject -> %s: %s", topic, payload)
         return True
