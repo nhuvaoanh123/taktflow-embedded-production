@@ -396,10 +396,6 @@ services:
     mem_limit: 256m
     cpus: 0.5
     cap_drop: [ALL]
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /app/sap_qm_mock:size=10m
     depends_on:
       mqtt-broker:
         condition: service_started
@@ -426,10 +422,6 @@ services:
     mem_limit: 512m
     cpus: 1.0
     cap_drop: [ALL]
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /app/ml_inference:size=50m
     depends_on:
       mqtt-broker:
         condition: service_started
