@@ -20,6 +20,9 @@ services:
   mqtt-broker:
     image: eclipse-mosquitto:2
     network_mode: host
+    mem_limit: 128m
+    cpus: 0.5
+    cap_drop: [ALL]
     volumes:
       - ../gateway/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../gateway/mosquitto/acl:/mosquitto/config/acl:ro
@@ -32,6 +35,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -45,6 +51,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -58,6 +67,9 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.vecu
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -73,6 +85,9 @@ services:
       context: ..
       dockerfile: gateway/plant_sim/Dockerfile
     network_mode: host
+    mem_limit: 256m
+    cpus: 1.0
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -94,6 +109,9 @@ services:
       context: ..
       dockerfile: gateway/can_gateway/Dockerfile
     network_mode: host
+    mem_limit: 256m
+    cpus: 0.5
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -115,6 +133,11 @@ services:
       context: ..
       dockerfile: gateway/ws_bridge/Dockerfile
     network_mode: host
+    mem_limit: 256m
+    cpus: 0.5
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
     depends_on:
       mqtt-broker:
         condition: service_started
@@ -130,6 +153,9 @@ services:
   caddy:
     image: caddy:2
     network_mode: host
+    mem_limit: 128m
+    cpus: 0.25
+    cap_drop: [ALL]
     volumes:
       - ../gateway/caddy/Caddyfile.pi:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -145,6 +171,11 @@ services:
       context: ..
       dockerfile: gateway/sap_qm_mock/Dockerfile
     network_mode: host
+    mem_limit: 256m
+    cpus: 0.5
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
     depends_on:
       mqtt-broker:
         condition: service_started
@@ -162,6 +193,11 @@ services:
       context: ..
       dockerfile: gateway/ml_inference/Dockerfile
     network_mode: host
+    mem_limit: 512m
+    cpus: 1.0
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
     depends_on:
       mqtt-broker:
         condition: service_started
@@ -176,6 +212,8 @@ services:
   docker-proxy:
     image: tecnativa/docker-socket-proxy:0.2
     network_mode: host
+    mem_limit: 64m
+    cpus: 0.25
     environment:
       CONTAINERS: 1
       POST: 1
@@ -200,6 +238,9 @@ services:
       context: ..
       dockerfile: gateway/fault_inject/Dockerfile
     network_mode: host
+    mem_limit: 256m
+    cpus: 1.0
+    cap_drop: [ALL]
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -225,6 +266,11 @@ services:
       context: ..
       dockerfile: gateway/cloud_connector/Dockerfile
     network_mode: host
+    mem_limit: 128m
+    cpus: 0.5
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs: [/tmp]
     depends_on:
       mqtt-broker:
         condition: service_started

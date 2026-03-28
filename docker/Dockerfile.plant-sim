@@ -2,7 +2,10 @@ FROM python:3.12-slim
 
 RUN pip install --no-cache-dir python-can cantools paho-mqtt
 
+RUN useradd -r -s /usr/sbin/nologin appuser
+
 WORKDIR /app
 COPY gateway/ gateway/
 
+USER appuser
 CMD ["python3", "-m", "gateway.plant_sim_py.simulator"]

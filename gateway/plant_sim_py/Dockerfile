@@ -9,8 +9,10 @@ COPY gateway/taktflow_vehicle.dbc /app/taktflow_vehicle.dbc
 COPY gateway/lib/ /app/gateway/lib/
 COPY gateway/plant_sim_py/ /app/plant_sim/
 RUN touch /app/gateway/__init__.py
+RUN useradd -r -s /usr/sbin/nologin appuser
 
 ENV DBC_PATH=/app/taktflow_vehicle.dbc
 ENV CAN_CHANNEL=vcan0
 
+USER appuser
 CMD ["python", "-m", "plant_sim.simulator"]

@@ -10,8 +10,11 @@ COPY gateway/lib/ /app/lib/
 COPY gateway/taktflow_vehicle.dbc /app/taktflow_vehicle.dbc
 RUN touch /app/__init__.py
 
+RUN useradd -r -s /usr/sbin/nologin appuser
+
 ENV CAN_CHANNEL=vcan0
 ENV FAULT_PORT=8091
 ENV DBC_PATH=/app/taktflow_vehicle.dbc
 
+USER appuser
 CMD ["python", "-m", "fault_inject.app"]

@@ -18,12 +18,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/godot_bridge/bridge.py /app/bridge.py
 
+RUN useradd -r -s /usr/sbin/nologin appuser
+
 ENV CAN_INTERFACE=can0
 ENV GODOT_HOST=192.168.0.158
 ENV BRIDGE_CARS=1
 ENV BRIDGE_RATE=100
 ENV BRIDGE_VCAN_START=0
 
+USER appuser
 CMD python bridge.py \
     --cars ${BRIDGE_CARS} \
     --rate ${BRIDGE_RATE} \

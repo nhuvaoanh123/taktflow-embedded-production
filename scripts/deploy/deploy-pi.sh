@@ -57,6 +57,13 @@ rsync -avz --delete \
     --exclude 'test/hil/reports/' \
     --exclude 'test/hil/__pycache__/' \
     --exclude '.claude/' \
+    --exclude '.env' \
+    --exclude '.env.*' \
+    --exclude 'docker/certs/' \
+    --exclude '*.pem' \
+    --exclude '*.key' \
+    --exclude 'gateway/mosquitto/passwd' \
+    --exclude 'private/' \
     "$REPO_ROOT/" "${PI_HOST}:${PI_DIR}/"
 echo "  [OK] Sync complete"
 echo ""

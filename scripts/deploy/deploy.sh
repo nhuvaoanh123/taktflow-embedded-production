@@ -27,6 +27,14 @@ fi
 
 VPS_HOST="$1"
 
+# Warn if deploying as root
+if [[ "$VPS_HOST" == root@* ]]; then
+    echo "WARNING: Deploying as root is not recommended."
+    echo "  Create a deploy user: adduser deploy && usermod -aG docker deploy"
+    echo "  Then use: $0 deploy@<host>"
+    echo ""
+fi
+
 echo "=== Taktflow SIL Demo Deployment ==="
 echo "VPS: $VPS_HOST"
 echo "Remote dir: $REMOTE_DIR"
@@ -44,6 +52,14 @@ rsync -avz --delete \
     --exclude '__pycache__' \
     --exclude '*.pyc' \
     --exclude 'build/' \
+    --exclude '.env' \
+    --exclude '.env.*' \
+    --exclude 'docker/certs/' \
+    --exclude '*.pem' \
+    --exclude '*.key' \
+    --exclude 'gateway/mosquitto/passwd' \
+    --exclude '.claude/' \
+    --exclude 'private/' \
     "$REPO_ROOT/" "$VPS_HOST:$REMOTE_DIR/"
 
 # Step 3: Build containers (--no-cache ensures firmware is recompiled from fresh source)

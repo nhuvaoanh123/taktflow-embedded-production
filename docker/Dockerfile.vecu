@@ -62,6 +62,10 @@ COPY --from=builder /build/build/sc_posix  /usr/local/bin/sc
 # Default CAN interface (host vcan0 via network_mode: host)
 ENV CAN_INTERFACE=vcan0
 
+# Run as non-root
+RUN useradd -r -s /usr/sbin/nologin vecu
+USER vecu
+
 # ECU_NAME selects which binary to run (bcm|icu|tcu|cvc|fzc|rzc|sc)
 ARG ECU_NAME=bcm
 ENV ECU_NAME=${ECU_NAME}
