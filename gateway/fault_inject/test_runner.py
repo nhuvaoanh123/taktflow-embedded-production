@@ -350,13 +350,19 @@ class DashboardTestRunner:
         log.info("[TEST %s] Stop requested", self._run_id)
         return True
 
-    def _wait_for_run(self, run_id: str, timeout: float = 60.0,
-                      stable_sec: float = 5.0) -> bool:
+    def _wait_for_run(self, run_id: str, timeout: float = 90.0,
+                      stable_sec: float = 8.0) -> bool:
         """Poll MQTT verdict monitor until vehicle_state == 1 (RUN) and stable.
 
         Requires CVC to stay in RUN for ``stable_sec`` consecutive seconds
         before returning True.  This handles the SC relay-kill transient that
         can briefly push CVC to SAFE_STOP during Docker container startup.
+
+        Timeouts increased for VPS reliability:
+        - timeout: 90s (was 60s) — container restart on shared-CPU VPS can
+          take 15-30s, leaving less margin for the 3s INIT→RUN + stable_sec.
+        - stable_sec: 8s (was 5s) — VPS scheduling jitter can cause brief
+          state flickers; 8s confirms genuine stability.
 
         Returns True if stable RUN was reached within timeout, False otherwise.
         """

@@ -190,7 +190,14 @@ class PlantSimulator:
             self.brake.reset_state()
             self.battery.reset_state()
             self._active_dtcs.clear()
-            log.info("Plant FULL RESET — all physics returned to power-on defaults")
+            # Reset vehicle state machine — without this, plant-sim stays
+            # stuck in SAFE_STOP/LIMP/DEGRADED after fault injection tests,
+            # causing physics to apply emergency braking indefinitely.
+            self.vehicle_state = VS_INIT
+            self._startup_ticks = 0
+            self.estop_active = False
+            self.sc_relay_killed = False
+            log.info("Plant FULL RESET — all physics + state machine returned to power-on defaults")
 
     def _process_rx(self, msg: can.Message):
         """Process a received CAN frame from ECU actuator commands."""

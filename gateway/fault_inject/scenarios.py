@@ -681,7 +681,8 @@ def _reset_all_containers() -> list[str]:
         log.warning("Failed to start %s: %s", _PLANT_CONTAINER, exc)
 
     # Brief pause — let plant-sim's neutral frames propagate on CAN bus
-    _scaled_sleep(1)
+    # VPS shared-CPU needs more time for container startup + first CAN frames
+    _scaled_sleep(2)
 
     # Phase 2b: start zone controllers (heartbeat senders)
     for name in _ZONE_CONTAINERS:
@@ -705,7 +706,8 @@ def _reset_all_containers() -> list[str]:
         log.warning("Failed to start %s: %s", _SC_CONTAINER, exc)
 
     # Phase 4: wait for SC to boot, then start CVC last
-    _scaled_sleep(2)
+    # VPS needs more time — SC 5s grace period + margin
+    _scaled_sleep(3)
     try:
         c = client.containers.get(_CVC_CONTAINER)
         c.start()
@@ -722,20 +724,22 @@ def reset() -> str:
     """Power-cycle reset: restart ECU containers to clear all latched faults.
 
     Order is critical — plant-sim must be at neutral BEFORE any ECU boots:
-    1. Kill ALL ECU containers — stops stale CAN commands (brake=100%, steer=-45 deg)
-    2. Reset plant-sim via MQTT — with no ECUs sending, physics settles to neutral
-    3. Wait 1s for plant-sim to publish neutral CAN frames on vcan0
-    4. Start ECU containers in phased order — they read neutral on first cycle
+    1. Clear NVM files (requires running containers for exec_run)
+    2. Kill ALL ECU containers — stops stale CAN commands (brake=100%, steer=-45 deg)
+    3. Reset plant-sim via MQTT — full state machine reset (vehicle_state, estop, etc.)
+    4. Wait for plant-sim to settle at neutral
+    5. Start ECU containers in phased order — they read neutral on first cycle
     """
     import concurrent.futures
     clear_pedal_override()
     send_estop_clear()
+    # Clear NVM BEFORE stopping — exec_run requires running containers
     _clear_nvm_files()
 
     client = _docker_client()
     all_ecu_names = _ZONE_CONTAINERS + [_SC_CONTAINER, _CVC_CONTAINER]
 
-    # Phase 1: Kill ALL ECU containers (plant-sim stays running)
+    # Phase 2: Kill ALL ECU containers (plant-sim stays running)
     def _stop(name):
         try:
             client.containers.get(name).stop(timeout=2)
@@ -745,16 +749,31 @@ def reset() -> str:
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         pool.map(_stop, all_ecu_names)
 
-    # Phase 2: Reset plant-sim physics — ECUs are dead, no one fights the reset
+    # Phase 3: Reset plant-sim physics + state machine — ECUs are dead,
+    # no one fights the reset. Plant-sim handler now also resets
+    # vehicle_state -> INIT, estop_active -> False, sc_relay_killed -> False.
     if _mqtt_client is not None:
         reset_payload = json.dumps({"action": "reset", "ts": time.time()})
         _mqtt_client.publish("taktflow/command/reset", reset_payload, qos=1)
         reset_plant_faults(_mqtt_client)
+        # Explicitly clear battery and temp overrides that may linger
+        plant_inject_voltage(_mqtt_client, 12600, 100)
+        _mqtt_client.publish(
+            "taktflow/command/plant_inject",
+            json.dumps({"type": "clear_temp_override"}), qos=1,
+        )
+        # Small delay then clear battery override so physics resumes nominal
+        time.sleep(0.2)
+        _mqtt_client.publish(
+            "taktflow/command/plant_inject",
+            json.dumps({"type": "reset"}), qos=1,
+        )
 
-    # Phase 3: Wait for plant-sim to settle at neutral (brake=0%, steer=0 deg)
-    _scaled_sleep(2)
+    # Phase 4: Wait for plant-sim to settle at neutral (brake=0%, steer=0 deg)
+    # VPS shared-CPU can be slow — use 3s instead of 2s for reliability
+    _scaled_sleep(3)
 
-    # Phase 4: Start zone controllers (heartbeat senders)
+    # Phase 5: Start zone controllers (heartbeat senders)
     restarted = []
     for name in _ZONE_CONTAINERS:
         try:
@@ -763,15 +782,16 @@ def reset() -> str:
         except Exception as exc:
             log.warning("Failed to start %s: %s", name, exc)
 
-    # Phase 5: Start SC (needs heartbeats)
+    # Phase 6: Start SC (needs heartbeats)
     try:
         client.containers.get(_SC_CONTAINER).start()
         restarted.append(_SC_CONTAINER)
     except Exception as exc:
         log.warning("Failed to start %s: %s", _SC_CONTAINER, exc)
 
-    # Phase 6: Wait for SC to boot, then start CVC
-    _scaled_sleep(2)
+    # Phase 7: Wait for SC to boot, then start CVC
+    # VPS needs more time — SC 5s grace + margin
+    _scaled_sleep(3)
     try:
         client.containers.get(_CVC_CONTAINER).start()
         restarted.append(_CVC_CONTAINER)

@@ -3,26 +3,27 @@
 Supports external override via inject_voltage() for fault injection demos.
 """
 
-import time
-
 
 class BatteryModel:
     V_NOMINAL_MV = 12600   # 12.6V fully charged
     R_INTERNAL_MOHM = 50   # 50 milliohm internal resistance
-    OVERRIDE_TIMEOUT = 8.0 # seconds before override expires
 
     def __init__(self):
         self.voltage_mv = self.V_NOMINAL_MV
         self.soc = 100
         self._override_voltage: int | None = None
         self._override_soc: int | None = None
-        self._override_ts = 0.0
 
     def inject_voltage(self, voltage_mv: int, soc_pct: int):
-        """Override battery state (called when external Battery_Status CAN received)."""
+        """Override battery state — persists until clear_override() or reset_state().
+
+        Previous 8s auto-expiry caused mid-test voltage snap-back on VPS
+        (battery_low scenario observe window is 8s, so the override expired
+        during observation, returning voltage to nominal and clearing the
+        UV condition before the verdict checker could record it).
+        """
         self._override_voltage = voltage_mv
         self._override_soc = soc_pct
-        self._override_ts = time.monotonic()
 
     def clear_override(self):
         """Clear voltage override (called on reset)."""
@@ -36,16 +37,12 @@ class BatteryModel:
         self.clear_override()
 
     def update(self, motor_current_ma: float, dt: float):
-        # Check if override is active and not expired
+        # Override active — hold injected values until explicitly cleared
         if self._override_voltage is not None:
-            if time.monotonic() - self._override_ts < self.OVERRIDE_TIMEOUT:
-                self.voltage_mv = self._override_voltage
-                if self._override_soc is not None:
-                    self.soc = self._override_soc
-                return
-            else:
-                self._override_voltage = None
-                self._override_soc = None
+            self.voltage_mv = self._override_voltage
+            if self._override_soc is not None:
+                self.soc = self._override_soc
+            return
 
         # Normal physics
         drop_mv = (motor_current_ma / 1000.0) * self.R_INTERNAL_MOHM
