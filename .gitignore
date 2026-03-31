@@ -65,6 +65,10 @@ firmware/ecu/rzc_f4/
 firmware/ecu/*/cfg/Drivers/
 firmware/ecu/*/cfg/Core/
 
+# Vendor libraries (cloned repos with their own .git, not submodules)
+firmware/lib/cmsis6/
+firmware/lib/x-cube-azrtos-g4-full/
+
 # SCORE HSM (separate repo with its own .git)
 scorehsm/
 gateway/taktflow.dbc.bak
