@@ -87,7 +87,7 @@ static uint8   Safety_WdiToggle;          /* Alternates 0/1 for WDI pin */
 static uint8   Safety_Status;
 static uint8   Safety_CanLossLatched;     /* Once set, stays set until power cycle */
 static uint8   Safety_CanSilenceCounter;  /* Incremented each cycle, reset by NotifyCanRx */
-static uint8   Safety_CanErrWarnCounter;  /* Incremented while in error warning state */
+static uint16  Safety_CanErrWarnCounter;  /* Incremented while in error warning state */
 
 /* ==================================================================
  * API: Swc_RzcSafety_Init
