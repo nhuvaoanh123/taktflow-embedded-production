@@ -516,6 +516,7 @@ services:
 
   # --- foxBMS BMS Dashboard (vECU + plant + ML + web on vcan1) ---
   bms-web:
+    profiles: ["foxbms"]
     build:
       context: ${FOXBMS_DIR:-../../foxbms-posix}
       dockerfile: docker/Dockerfile.bms-web
