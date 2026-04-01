@@ -12,7 +12,9 @@
 # =============================================================================
 
 CC      = gcc
+GIT_HASH := $(shell git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
 CFLAGS  = -Wall -Wextra -Werror -std=c99 -D_DEFAULT_SOURCE -DPLATFORM_POSIX -DCANTP_ENABLED
+CFLAGS += -DGIT_HASH=\"$(GIT_HASH)\"
 LDFLAGS =
 COV_CFLAGS  =
 COV_LDFLAGS =
