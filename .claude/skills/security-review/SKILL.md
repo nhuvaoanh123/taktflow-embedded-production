@@ -3,7 +3,6 @@ name: security-review
 description: "Audit firmware code for security vulnerabilities, credential leaks, and unsafe patterns"
 argument-hint: "[file or directory path]"
 user-invocable: true
-allowed-tools: "Read, Grep, Glob, Bash(cppcheck *)"
 ---
 
 ## Human-in-the-Loop (HITL) Comment Lock

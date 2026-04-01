@@ -152,7 +152,7 @@ def uds_read_did(bus, ecu, did):
     return None
 
 
-def uds_request(bus, ecu, payload, timeout=2.0, retries=5):
+def uds_request(bus, ecu, payload, timeout=2.0, retries=10):
     """Send a UDS request with ISO 14229 P2 retry on timeout.
 
     Returns the response payload or None.  Retries are standard practice
@@ -376,8 +376,7 @@ def main():
     # This clears Motor+TempMonitor fault latches without power cycle
     print("Hop 15: RZC ECUReset (SID 0x11) — clears fault latches")
     if not hc.stopped:
-        uds_send(bus, ECU_RZC["req"], bytes([SID_ECU_RESET, 0x01]))
-        resp = uds_recv(bus, ECU_RZC["resp"], timeout=3.0)
+        resp = uds_request(bus, ECU_RZC, bytes([SID_ECU_RESET, 0x01]), timeout=3.0)
         if resp and len(resp) >= 2 and resp[0] == (SID_ECU_RESET + 0x40):
             hc.check(15, f"ECUReset positive response (sub=0x{resp[1]:02X})", True)
         else:

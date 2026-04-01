@@ -8,7 +8,7 @@ paths:
 # ISO 26262 & Automotive Compliance
 
 **Standards**: ISO 26262:2018 (primary), ASPICE 4.0 (OEM req), ISO/SAE 21434 (cybersecurity), MISRA C:2012/2023.
-**ASIL D** = S3 (fatal) + E4 (high exposure) + C3 (uncontrollable). Detailed constraints in `asil-d` section below.
+**ASIL D** = S3 (fatal) + E4 (high exposure) + C3 (uncontrollable). Detailed constraints in `asil-d.md` rule file.
 **TODO markers**: `// TODO:ISO`, `// TODO:ASIL`, `// TODO:ASPICE`, `// TODO:MISRA`
 Retain all safety docs for vehicle lifetime + 15 years.
 

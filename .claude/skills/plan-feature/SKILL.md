@@ -3,7 +3,6 @@ name: plan-feature
 description: "Create a structured implementation plan for a new feature or change"
 argument-hint: "<feature name or description>"
 user-invocable: true
-allowed-tools: "Read, Grep, Glob, Bash(ls *)"
 ---
 
 ## Human-in-the-Loop (HITL) Comment Lock

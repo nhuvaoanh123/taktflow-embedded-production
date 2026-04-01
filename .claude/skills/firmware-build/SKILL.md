@@ -3,7 +3,6 @@ name: firmware-build
 description: "Build, test, and validate firmware. Runs build, tests, static analysis, and size check."
 argument-hint: "[debug|release|test|all]"
 user-invocable: true
-allowed-tools: "Read, Grep, Glob, Bash(make *)"
 ---
 
 ## Human-in-the-Loop (HITL) Comment Lock

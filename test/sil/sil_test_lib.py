@@ -62,9 +62,10 @@ ECU_NAMES = {
 # ---------------------------------------------------------------------------
 
 def get_git_hash():
+    """Return the current git short hash (8 chars, matching Makefile GIT_HASH)."""
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=8", "HEAD"],
             stderr=subprocess.DEVNULL, timeout=5,
         ).decode().strip()
     except Exception:
@@ -76,6 +77,67 @@ def print_header(test_name):
     git_hash = get_git_hash()
     print(f"=== {test_name} ===")
     print(f"    Date: {now}  DUT: {git_hash}")
+    print()
+
+
+def verify_firmware_binaries(ecus=("cvc",), platform="posix"):
+    """Verify that built binaries match current git HEAD before running tests.
+
+    Extracts the GIT_HASH burned into each binary (via the boot banner string)
+    and compares against current repo HEAD. Aborts if stale or missing.
+    """
+    head_hash = get_git_hash()
+    print(f"Pre-test: Binary version check (HEAD: {head_hash})")
+
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)
+    )))
+
+    all_ok = True
+    for ecu in ecus:
+        if platform == "posix":
+            binary = os.path.join(project_root, "build", "posix", f"{ecu}_posix")
+        else:
+            binary = os.path.join(project_root, "build", platform, f"{ecu}.elf")
+
+        if not os.path.isfile(binary):
+            print(f"  [FAIL] {ecu.upper()}: binary not found — {binary}")
+            all_ok = False
+            continue
+
+        try:
+            result = subprocess.run(
+                ["strings", binary],
+                capture_output=True, text=True, timeout=10,
+            )
+            binary_hash = None
+            for line in result.stdout.splitlines():
+                if "Boot" in line and "[" in line:
+                    start = line.find("[") + 1
+                    end = line.find("]", start)
+                    if end - start == 8:
+                        binary_hash = line[start:end]
+                        break
+
+            if binary_hash is None:
+                print(f"  [FAIL] {ecu.upper()}: no GIT_HASH in binary — rebuild")
+                all_ok = False
+            elif binary_hash != head_hash:
+                print(f"  [FAIL] {ecu.upper()}: STALE — binary={binary_hash}, HEAD={head_hash}")
+                all_ok = False
+            else:
+                print(f"  [OK]   {ecu.upper()}: {binary_hash}")
+
+        except Exception as e:
+            print(f"  [FAIL] {ecu.upper()}: cannot read binary — {e}")
+            all_ok = False
+
+    if not all_ok:
+        print()
+        print("  ABORTING: firmware binaries do not match current commit.")
+        print(f"  Rebuild:  make -f firmware/platform/{platform}/Makefile.{platform}")
+        sys.exit(1)
+
     print()
 
 

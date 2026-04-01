@@ -221,8 +221,11 @@ def main():
 
     try:
         with CvcProcess() as cvc:
-            # Wait for startup
+            # Wait for CVC to initialize and start sending heartbeats
             time.sleep(1.0)
+            # Flush stale frames accumulated during startup (listener-first pattern)
+            while bus.recv(timeout=0) is not None:
+                pass
 
             tests = [
                 test_1_heartbeat_present,

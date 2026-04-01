@@ -18,6 +18,7 @@ Usage:
 import argparse
 import struct
 import sys
+import threading
 import time
 from collections import defaultdict
 
@@ -239,18 +240,43 @@ def main():
         print("Pass explicit ports: --cvc COMx --fzc COMx --rzc COMx --sc COMx")
         return 1
 
+    # Start CAN listener BEFORE sending reset pulses (listener-first pattern).
+    # This prevents missing early heartbeat frames from fast-booting ECUs.
+    print(f"\n[verify] opening CAN listener on {can_port} BEFORE reset...")
+    capture_result = {}
+    capture_error = [None]
+
+    def _capture_thread():
+        try:
+            id_counts, frame_count, error_count = capture_can_ids(
+                can_port, args.verify_seconds
+            )
+            capture_result["id_counts"] = id_counts
+            capture_result["frame_count"] = frame_count
+            capture_result["error_count"] = error_count
+        except Exception as exc:
+            capture_error[0] = exc
+
+    listener = threading.Thread(target=_capture_thread, daemon=True)
+    listener.start()
+    time.sleep(0.3)  # Let serial port open and protocol detection finish
+
     ok = True
     for ecu_name, port in [("cvc", cvc), ("fzc", fzc), ("rzc", rzc), ("sc", sc)]:
         if not pulse_uart_reset(ecu_name, port):
             ok = False
         time.sleep(max(args.inter_reset_ms, 0) / 1000.0)
 
-    print(f"\n[verify] listening on {can_port} for {args.verify_seconds:.1f}s")
-    try:
-        id_counts, frame_count, error_count = capture_can_ids(can_port, args.verify_seconds)
-    except Exception as exc:
-        print(f"[verify] FAILED to read CAN: {exc}")
+    print(f"[verify] listening on {can_port} for {args.verify_seconds:.1f}s")
+    listener.join(timeout=args.verify_seconds + 5)
+
+    if capture_error[0] is not None:
+        print(f"[verify] FAILED to read CAN: {capture_error[0]}")
         return 1
+
+    id_counts = capture_result.get("id_counts", {})
+    frame_count = capture_result.get("frame_count", 0)
+    error_count = capture_result.get("error_count", 0)
 
     print(f"[verify] frames={frame_count}, errors={error_count}")
     print("[verify] expected IDs:")

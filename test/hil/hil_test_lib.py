@@ -91,9 +91,10 @@ HIL_FTTI_BUDGET_MS = int(os.environ.get("HIL_FTTI_MS", "500"))
 # ---------------------------------------------------------------------------
 
 def get_git_hash():
+    """Return the current git short hash (8 chars, matching Makefile GIT_HASH)."""
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=8", "HEAD"],
             stderr=subprocess.DEVNULL, timeout=5,
         ).decode().strip()
     except Exception:
@@ -106,6 +107,73 @@ def print_header(test_name):
     print(f"=== {test_name} [HIL] ===")
     print(f"    Date: {now}  DUT: {git_hash}")
     print(f"    CAN:  {CAN_CHANNEL}  MQTT: {MQTT_HOST}:{MQTT_PORT}")
+    print()
+
+
+def verify_firmware_binaries(ecus=("cvc", "fzc", "rzc"), platform="stm32"):
+    """Verify that built binaries match current git HEAD before running tests.
+
+    Extracts the GIT_HASH burned into each .elf file (via the boot banner
+    string) and compares it against the current repo HEAD. Aborts if any
+    binary is stale or missing.
+
+    Call this BEFORE opening the CAN bus or starting any ECU process.
+    """
+    head_hash = get_git_hash()
+    print(f"Pre-test: Binary version check (HEAD: {head_hash})")
+
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)
+    )))
+
+    all_ok = True
+    for ecu in ecus:
+        if platform == "posix":
+            elf = os.path.join(project_root, "build", "posix", f"{ecu}_posix")
+        else:
+            elf = os.path.join(project_root, "build", platform, f"{ecu}.elf")
+
+        if not os.path.isfile(elf):
+            print(f"  [FAIL] {ecu.upper()}: binary not found — {elf}")
+            all_ok = False
+            continue
+
+        # Extract GIT_HASH from the boot banner string burned into the binary
+        try:
+            result = subprocess.run(
+                ["strings", elf],
+                capture_output=True, text=True, timeout=10,
+            )
+            binary_hash = None
+            for line in result.stdout.splitlines():
+                if "Boot" in line and "[" in line:
+                    # Extract [abc12345] from "=== CVC Boot (PLL 170 MHz) [abc12345] ==="
+                    start = line.find("[") + 1
+                    end = line.find("]", start)
+                    if end - start == 8:
+                        binary_hash = line[start:end]
+                        break
+
+            if binary_hash is None:
+                print(f"  [FAIL] {ecu.upper()}: no GIT_HASH in binary — rebuild")
+                all_ok = False
+            elif binary_hash != head_hash:
+                print(f"  [FAIL] {ecu.upper()}: STALE — binary={binary_hash}, HEAD={head_hash}")
+                all_ok = False
+            else:
+                print(f"  [OK]   {ecu.upper()}: {binary_hash}")
+
+        except Exception as e:
+            print(f"  [FAIL] {ecu.upper()}: cannot read binary — {e}")
+            all_ok = False
+
+    if not all_ok:
+        print()
+        print("  ABORTING: firmware binaries do not match current commit.")
+        print("  Rebuild:  make -f firmware/platform/{}/Makefile.{} TARGET=<ecu>".format(
+            platform, platform))
+        sys.exit(1)
+
     print()
 
 
@@ -186,8 +254,22 @@ def precondition_all_ecus_healthy(bus, timeout=15.0):
 
     state_name = STATE_NAMES.get(cvc_state, f"0x{cvc_state:02X}") if cvc_state is not None else "?"
     if cvc_state != 1:
-        print(f"  [FAIL] CVC not in RUN (state={state_name})")
-        sys.exit(1)
+        print(f"  [WARN] CVC in {state_name} — attempting UDS ECUReset...")
+        uds_ecu_reset_cvc(bus)
+        time.sleep(3.0)  # allow CVC to re-init through INIT→RUN
+        # Re-check CVC state
+        recheck_end = time.time() + 15.0
+        while time.time() < recheck_end:
+            msg = bus.recv(timeout=0.5)
+            if msg and msg.arbitration_id == CAN_VEHICLE_STATE and msg.dlc >= 3:
+                cvc_state = msg.data[2] & 0x0F
+                if cvc_state == 1:
+                    break
+        state_name = STATE_NAMES.get(cvc_state, f"0x{cvc_state:02X}") if cvc_state is not None else "?"
+        if cvc_state != 1:
+            print(f"  [FAIL] CVC still not in RUN after ECUReset (state={state_name})")
+            sys.exit(1)
+        print(f"  [OK] CVC recovered to RUN via UDS ECUReset")
 
     if motor_fault and motor_fault != 0:
         print(f"  [WARN] Stale MotorFaultStatus={motor_fault} — hardware reset RZC")
@@ -197,7 +279,7 @@ def precondition_all_ecus_healthy(bus, timeout=15.0):
             "C:/Program Files (x86)/STMicroelectronics/STM32Cube"
             "/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe"
         )
-        rzc_sn = "0670FF383930434B43202436"
+        rzc_sn = "001A00363235510B37333439"
         reset_cmd = f'"{stcli}" -c port=SWD sn={rzc_sn} -rst'
         host = CVC_RESET_HOST  # same PC hosts all ST-LINK probes
         try:
@@ -340,6 +422,39 @@ def mqtt_inject(cmd_type, **kwargs):
     payload.update(kwargs)
     mqtt_pub.single(MQTT_TOPIC, json.dumps(payload),
                     hostname=MQTT_HOST, port=MQTT_PORT, auth=MQTT_AUTH)
+
+
+def uds_ecu_reset_cvc(bus_or_channel=None):
+    """Send UDS ECUReset (SID 0x11) to CVC to clear VSM latched faults.
+
+    CVC physical request: 0x7E0, response: 0x7E8.
+    Clears vehicle state machine latches and DTCs via
+    Swc_VehicleState_Init() + Dem_ClearAllDTCs().
+    """
+    own_bus = False
+    if bus_or_channel is None:
+        bus_or_channel = can.interface.Bus(channel=CAN_CHANNEL, interface="socketcan")
+        own_bus = True
+    elif isinstance(bus_or_channel, str):
+        bus_or_channel = can.interface.Bus(channel=bus_or_channel, interface="socketcan")
+        own_bus = True
+
+    req = can.Message(arbitration_id=0x7E0, data=[0x02, 0x11, 0x01, 0, 0, 0, 0, 0],
+                      is_extended_id=False)
+    bus_or_channel.send(req)
+
+    end = time.time() + 2.0
+    got_response = False
+    while time.time() < end:
+        msg = bus_or_channel.recv(timeout=0.5)
+        if msg and msg.arbitration_id == 0x7E8:
+            if len(msg.data) >= 2 and msg.data[1] == 0x51:
+                got_response = True
+                break
+
+    if own_bus:
+        bus_or_channel.shutdown()
+    return got_response
 
 
 def uds_ecu_reset_rzc(bus_or_channel=None):
